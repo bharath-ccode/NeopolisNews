@@ -1,0 +1,355 @@
+import Link from "next/link";
+import {
+  Newspaper,
+  Camera,
+  Zap,
+  Users,
+  TrendingUp,
+  ArrowRight,
+  CheckCircle,
+  Clock,
+  Eye,
+} from "lucide-react";
+import SectionWrapper from "@/components/SectionWrapper";
+import LeadForm from "@/components/LeadForm";
+
+export const metadata = {
+  title: "Local News & Updates – NeopolisNews",
+  description:
+    "Construction milestones, new launches, infrastructure updates, and community stories from the Neopolis urban district.",
+};
+
+const CATEGORIES = [
+  { id: "construction", icon: Camera, label: "Construction", count: 42, color: "bg-orange-50 text-orange-600" },
+  { id: "launches", icon: Zap, label: "New Launches", count: 18, color: "bg-green-50 text-green-600" },
+  { id: "infrastructure", icon: TrendingUp, label: "Infrastructure", count: 25, color: "bg-blue-50 text-blue-600" },
+  { id: "community", icon: Users, label: "Community", count: 31, color: "bg-purple-50 text-purple-600" },
+];
+
+const FEATURED_ARTICLE = {
+  tag: "Infrastructure",
+  tagColor: "tag-blue",
+  title: "Metro Connectivity to Neopolis Confirmed — Phase 2 Station Announced by DMRC",
+  excerpt:
+    "The Delhi Metro Rail Corporation has officially confirmed a Phase 2 extension that will bring a metro station directly into the Neopolis district by mid-2028. The announcement is expected to push property values up by 15–25% over the next 24 months, according to real estate analysts.",
+  author: "NeopolisNews Staff",
+  date: "March 15, 2026",
+  readTime: "5 min read",
+  views: "8,421",
+  sponsored: false,
+};
+
+const ARTICLES = [
+  {
+    id: "a1",
+    tag: "Construction",
+    tagColor: "tag-orange",
+    title: "Apex Tower Reaches 18th Floor Slab — On Schedule for Dec 2026 Delivery",
+    excerpt: "Apex Realty confirms structural milestone. Tower A completes 18th floor slab cast; Tower B at 14th floor.",
+    date: "Mar 20, 2026",
+    readTime: "3 min",
+    views: "3,210",
+    sponsored: false,
+  },
+  {
+    id: "a2",
+    tag: "New Launch",
+    tagColor: "tag-green",
+    title: "Phase 3 Residential Towers Open for Pre-Bookings — Prices Start ₹85 Lakh",
+    excerpt: "SkyLine Corp opens Phase 3 pre-bookings with early-bird pricing. 120 ultra-luxury units launching.",
+    date: "Mar 10, 2026",
+    readTime: "4 min",
+    views: "5,820",
+    sponsored: true,
+  },
+  {
+    id: "a3",
+    tag: "Community",
+    tagColor: "tag-purple",
+    title: "Neopolis RWA Formed — First General Body Meeting Scheduled for April 5",
+    excerpt: "Residents of Neopolis Business Park and Apex Tower form a joint Residents Welfare Association.",
+    date: "Mar 8, 2026",
+    readTime: "2 min",
+    views: "2,100",
+    sponsored: false,
+  },
+  {
+    id: "a4",
+    tag: "Infrastructure",
+    tagColor: "tag-blue",
+    title: "6-Lane Arterial Road to Neopolis Gets NHAI Approval — Work Begins Q3 2026",
+    excerpt: "National Highways Authority of India approves the 14km arterial road connecting Neopolis to NH-48.",
+    date: "Mar 5, 2026",
+    readTime: "4 min",
+    views: "4,650",
+    sponsored: false,
+  },
+  {
+    id: "a5",
+    tag: "Construction",
+    tagColor: "tag-orange",
+    title: "Grand Mall Foundation Complete — Steel Frame Erection Begins Next Week",
+    excerpt: "Retail Spaces Ltd confirms completion of raft foundation for Neopolis Grand Mall's 5-level structure.",
+    date: "Mar 3, 2026",
+    readTime: "3 min",
+    views: "2,980",
+    sponsored: false,
+  },
+  {
+    id: "a6",
+    tag: "Community",
+    tagColor: "tag-purple",
+    title: "Neopolis Food Festival 2026 — Full Schedule & Participating Brands Revealed",
+    excerpt: "The inaugural Neopolis Food Festival will run April 5–7 with 60+ food brands, live music, and chef showdowns.",
+    date: "Feb 28, 2026",
+    readTime: "3 min",
+    views: "6,200",
+    sponsored: true,
+  },
+];
+
+const CONTENT_PACKAGES = [
+  {
+    name: "Press Release",
+    price: "₹25,000",
+    desc: "750-word developer/brand announcement published and indexed.",
+    features: ["Journalist-written", "SEO optimised", "Homepage feature 48hrs"],
+    highlight: false,
+  },
+  {
+    name: "Sponsored Feature",
+    price: "₹75,000",
+    desc: "1,500-word in-depth feature story with photography.",
+    features: [
+      "Long-form editorial",
+      "Professional photography",
+      "Homepage banner",
+      "Social media push",
+    ],
+    highlight: true,
+  },
+  {
+    name: "PR Package",
+    price: "₹2,00,000",
+    desc: "Full-month developer PR — 4 articles, weekly construction updates, banner ads.",
+    features: [
+      "4 articles/month",
+      "Weekly photo updates",
+      "Banner ads across site",
+      "Newsletter inclusion",
+      "Analytics report",
+    ],
+    highlight: false,
+  },
+];
+
+export default function NewsPage() {
+  return (
+    <>
+      {/* ── Hero ── */}
+      <section className="bg-gradient-to-br from-gray-900 to-gray-800 text-white py-14 md:py-20">
+        <SectionWrapper tight>
+          <div className="max-w-3xl">
+            <span className="tag-blue mb-4">Local News & Media</span>
+            <h1 className="text-3xl md:text-5xl font-extrabold mt-3 mb-4">
+              Neopolis, Week by{" "}
+              <span className="text-brand-400">Week</span>
+            </h1>
+            <p className="text-gray-300 text-lg mb-6">
+              Construction milestones, new launches, infrastructure news,
+              policy updates, and community stories — all hyper-local, all
+              verified.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <a href="#articles" className="btn-primary">
+                Read Latest
+              </a>
+              <Link href="/advertise#content" className="btn-secondary border-gray-500 text-gray-300 hover:bg-gray-700">
+                Sponsored Content <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+        </SectionWrapper>
+      </section>
+
+      {/* ── Categories ── */}
+      <section className="bg-white border-b border-gray-100">
+        <SectionWrapper tight>
+          <div className="flex flex-wrap gap-3">
+            {CATEGORIES.map((c) => (
+              <a
+                key={c.id}
+                href={`#${c.id}`}
+                className="flex items-center gap-2 border border-gray-200 hover:border-brand-400 hover:text-brand-700 text-gray-600 rounded-full px-4 py-2 text-sm font-medium transition-colors"
+              >
+                <c.icon className="w-4 h-4" />
+                {c.label}
+                <span className="bg-gray-100 text-gray-500 text-xs px-1.5 py-0.5 rounded-full">
+                  {c.count}
+                </span>
+              </a>
+            ))}
+          </div>
+        </SectionWrapper>
+      </section>
+
+      {/* ── Featured Article ── */}
+      <SectionWrapper>
+        <div className="card overflow-hidden">
+          <div className="h-56 md:h-72 bg-gradient-to-br from-blue-100 to-brand-200 flex items-center justify-center">
+            <Newspaper className="w-16 h-16 text-brand-300" />
+          </div>
+          <div className="p-6 md:p-8">
+            <span className={`${FEATURED_ARTICLE.tagColor} mb-3`}>
+              {FEATURED_ARTICLE.tag}
+            </span>
+            <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 mt-2 mb-3 leading-snug">
+              {FEATURED_ARTICLE.title}
+            </h2>
+            <p className="text-gray-500 text-sm leading-relaxed mb-4">
+              {FEATURED_ARTICLE.excerpt}
+            </p>
+            <div className="flex flex-wrap items-center gap-4 text-xs text-gray-400 mb-4">
+              <span>{FEATURED_ARTICLE.author}</span>
+              <span className="flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" /> {FEATURED_ARTICLE.readTime}
+              </span>
+              <span className="flex items-center gap-1">
+                <Eye className="w-3.5 h-3.5" /> {FEATURED_ARTICLE.views} views
+              </span>
+              <span>{FEATURED_ARTICLE.date}</span>
+            </div>
+            <Link href="/news/metro-connectivity" className="btn-primary text-sm py-2">
+              Read Full Article <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      </SectionWrapper>
+
+      {/* ── Article Grid ── */}
+      <section className="bg-gray-50" id="articles">
+        <SectionWrapper>
+          <h2 className="section-heading mb-8">Latest Stories</h2>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {ARTICLES.map((a) => (
+              <Link key={a.id} href={`/news/${a.id}`} className="card p-5 group relative">
+                {a.sponsored && (
+                  <span className="absolute top-3 right-3 bg-yellow-100 text-yellow-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                    Sponsored
+                  </span>
+                )}
+                {/* Image placeholder */}
+                <div className="h-36 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg mb-4 flex items-center justify-center">
+                  <Newspaper className="w-8 h-8 text-gray-300" />
+                </div>
+                <span className={`${a.tagColor} mb-2`}>{a.tag}</span>
+                <h3 className="font-bold text-gray-900 text-sm mt-2 mb-2 leading-snug group-hover:text-brand-600 transition-colors">
+                  {a.title}
+                </h3>
+                <p className="text-xs text-gray-500 leading-relaxed mb-3 line-clamp-2">
+                  {a.excerpt}
+                </p>
+                <div className="flex items-center gap-3 text-xs text-gray-400">
+                  <span>{a.date}</span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" /> {a.readTime}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Eye className="w-3 h-3" /> {a.views}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+          <div className="text-center mt-8">
+            <button className="btn-secondary">
+              Load More Stories <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </SectionWrapper>
+      </section>
+
+      {/* ── Content Packages ── */}
+      <SectionWrapper id="content-packages">
+        <div className="text-center mb-10">
+          <h2 className="section-heading">Sponsored Content Packages</h2>
+          <p className="text-gray-500 mt-2">
+            Native articles, press releases, and PR packages for developers and brands.
+          </p>
+        </div>
+        <div className="grid md:grid-cols-3 gap-5 max-w-4xl mx-auto">
+          {CONTENT_PACKAGES.map((pkg) => (
+            <div
+              key={pkg.name}
+              className={`card p-6 ${pkg.highlight ? "ring-2 ring-brand-500 relative" : ""}`}
+            >
+              {pkg.highlight && (
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                  Best Value
+                </span>
+              )}
+              <h3 className="font-bold text-lg text-gray-900 mb-1">{pkg.name}</h3>
+              <p className="text-3xl font-extrabold text-brand-700 mb-2">{pkg.price}</p>
+              <p className="text-xs text-gray-500 mb-4">{pkg.desc}</p>
+              <ul className="space-y-2 mb-6">
+                {pkg.features.map((f) => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
+                    <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/advertise#content"
+                className={`block text-center font-semibold py-2.5 rounded-lg text-sm transition-colors ${
+                  pkg.highlight
+                    ? "bg-brand-600 text-white hover:bg-brand-700"
+                    : "border border-brand-300 text-brand-600 hover:bg-brand-50"
+                }`}
+              >
+                Book This Package
+              </Link>
+            </div>
+          ))}
+        </div>
+      </SectionWrapper>
+
+      {/* ── Newsletter / Lead ── */}
+      <section className="bg-brand-950 text-white">
+        <SectionWrapper tight>
+          <div className="grid lg:grid-cols-2 gap-10 items-center">
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-3">
+                Get the Weekly Neopolis Digest
+              </h2>
+              <p className="text-brand-300 text-sm mb-4">
+                Every Friday: construction updates, new listings, upcoming events,
+                and district news — delivered to your inbox.
+              </p>
+              <ul className="space-y-2 text-sm text-brand-200">
+                {[
+                  "Construction milestone photos",
+                  "Price movement alerts",
+                  "New launches & pre-bookings",
+                  "Curated resident events",
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-400 shrink-0" /> {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="bg-brand-900 rounded-2xl border border-brand-700 p-6">
+              <LeadForm
+                title="Subscribe to Updates"
+                subtitle="Get the weekly Neopolis digest every Friday."
+                purpose="newsletter"
+                dark
+              />
+            </div>
+          </div>
+        </SectionWrapper>
+      </section>
+    </>
+  );
+}
