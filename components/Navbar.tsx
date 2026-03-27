@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Building2,
   Home,
@@ -13,8 +13,13 @@ import {
   Menu,
   X,
   ChevronDown,
+  LayoutDashboard,
+  LogOut,
+  User,
+  Briefcase,
 } from "lucide-react";
 import clsx from "clsx";
+import { useAuth } from "@/context/AuthContext";
 
 const NAV_ITEMS = [
   {
@@ -79,6 +84,93 @@ const NAV_ITEMS = [
     highlight: true,
   },
 ];
+
+function UserMenu() {
+  const { user, logout } = useAuth();
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  if (!user) {
+    return (
+      <div className="flex items-center gap-2">
+        <Link href="/auth/login" className="text-sm font-semibold text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+          Sign in
+        </Link>
+        <Link href="/auth/register" className="btn-primary text-sm py-2">
+          Register Free
+        </Link>
+      </div>
+    );
+  }
+
+  const dashboardHref =
+    user.userType === "individual" ? "/dashboard/individual" : "/dashboard/business";
+  const displayName = user.userType === "business" ? user.businessName ?? user.name : user.name;
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors"
+      >
+        <div className="w-7 h-7 rounded-full bg-brand-100 text-brand-700 font-bold text-xs flex items-center justify-center">
+          {displayName.charAt(0).toUpperCase()}
+        </div>
+        <span className="text-sm font-semibold text-gray-700 max-w-[100px] truncate">
+          {displayName.split(" ")[0]}
+        </span>
+        <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl border border-gray-100 shadow-lg py-1 z-50">
+          <div className="px-4 py-2.5 border-b border-gray-50">
+            <p className="text-xs font-semibold text-gray-900 truncate">{displayName}</p>
+            <p className="text-xs text-gray-400 truncate">{user.email ?? user.phone}</p>
+            <span className={`badge mt-1 ${user.userType === "individual" ? "tag-blue" : "tag-purple"}`}>
+              {user.userType === "individual" ? (
+                <><User className="w-3 h-3" /> Individual</>
+              ) : (
+                <><Briefcase className="w-3 h-3" /> Business</>
+              )}
+            </span>
+          </div>
+          <Link
+            href={dashboardHref}
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700"
+          >
+            <LayoutDashboard className="w-4 h-4" /> Dashboard
+          </Link>
+          <Link
+            href={user.userType === "individual" ? "/dashboard/individual/post" : "/dashboard/business/post"}
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700"
+          >
+            {user.userType === "individual" ? <Home className="w-4 h-4" /> : <ShoppingBag className="w-4 h-4" />}
+            {user.userType === "individual" ? "Post Listing" : "Post Classified"}
+          </Link>
+          <div className="border-t border-gray-50 mt-1" />
+          <button
+            onClick={() => { logout(); router.push("/"); setOpen(false); }}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-500 hover:bg-red-50 hover:text-red-600 w-full"
+          >
+            <LogOut className="w-4 h-4" /> Sign out
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -155,14 +247,11 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* CTA + Mobile toggle */}
+          {/* Auth + Mobile toggle */}
           <div className="flex items-center gap-3">
-            <Link
-              href="/advertise"
-              className="hidden lg:inline-flex btn-primary text-sm py-2"
-            >
-              List Now
-            </Link>
+            <div className="hidden lg:flex">
+              <UserMenu />
+            </div>
             <button
               className="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100"
               onClick={() => setMobileOpen(!mobileOpen)}
@@ -200,6 +289,11 @@ export default function Navbar() {
                 {item.label}
               </Link>
             ))}
+            <div className="pt-3 border-t border-gray-100 mt-2">
+              <div className="px-3">
+                <UserMenu />
+              </div>
+            </div>
           </div>
         </div>
       )}
