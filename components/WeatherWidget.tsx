@@ -84,7 +84,7 @@ function getMockWeather(): WeatherData {
   };
 }
 
-export default function WeatherWidget() {
+export default function WeatherWidget({ variant = "topbar" }: { variant?: "topbar" | "nav" }) {
   const [data, setData] = useState<WeatherData | null>(null);
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -147,18 +147,22 @@ export default function WeatherWidget() {
 
   return (
     <div className="relative">
-      {/* Summary chip in top bar */}
+      {/* Summary chip */}
       <button
         ref={buttonRef}
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 text-brand-200 hover:text-white transition-colors cursor-pointer"
+        className={`flex items-center gap-1.5 transition-colors cursor-pointer ${
+          variant === "nav"
+            ? "text-gray-600 hover:text-gray-900 text-sm"
+            : "text-brand-200 hover:text-white text-xs"
+        }`}
         aria-expanded={open}
         aria-label="Weather in Kokapet"
       >
         <span role="img" aria-hidden>{emoji}</span>
         <span className="font-semibold">{temp}°C</span>
-        <span className="hidden sm:inline opacity-70">{label}</span>
-        <span className="hidden sm:inline opacity-50">· Kokapet</span>
+        <span className="opacity-70">{label}</span>
+        {variant === "topbar" && <span className="hidden sm:inline opacity-50">· Kokapet</span>}
         <ChevronDown className={`w-3 h-3 opacity-60 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
       </button>
 

@@ -253,6 +253,10 @@ export default function Navbar() {
 
           {/* Auth + Mobile toggle */}
           <div className="flex items-center gap-3">
+            {/* Weather — always visible in main nav */}
+            <div className="hidden md:flex items-center border-r border-gray-200 pr-3 mr-1">
+              <WeatherWidget variant="nav" />
+            </div>
             <div className="hidden lg:flex">
               <UserMenu />
             </div>
