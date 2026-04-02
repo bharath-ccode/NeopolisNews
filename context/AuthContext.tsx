@@ -39,6 +39,7 @@ interface AuthContextValue {
   ) => Promise<void>;
   loginWithOtp: (contact: string, otp: string, userType: UserType) => Promise<void>;
   sendOtp: (contact: string) => Promise<void>;
+  verifyOtp: (contact: string, otp: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
 }
@@ -134,6 +135,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  const verifyOtp = useCallback(async (_contact: string, _otp: string) => {
+    // In production: POST /api/auth/otp/verify { contact, otp }
+    // Throws with an error message if OTP is invalid
+    await new Promise((r) => setTimeout(r, 600));
+  }, []);
+
   const register = useCallback(async (data: RegisterData) => {
     // In production: POST /api/auth/register
     const u = makeMockUser(data);
@@ -154,6 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loginWithEmail,
         loginWithOtp,
         sendOtp,
+        verifyOtp,
         register,
         logout,
       }}
