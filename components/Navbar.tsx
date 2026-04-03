@@ -27,9 +27,9 @@ import {
 import clsx from "clsx";
 import { useAuth } from "@/context/AuthContext";
 
-// Neopolis, Hyderabad coordinates
+// Kokapet, Telangana, India coordinates
 const WEATHER_URL =
-  "https://api.open-meteo.com/v1/forecast?latitude=17.385&longitude=78.4867&current=temperature_2m,weather_code&temperature_unit=celsius&timezone=Asia%2FKolkata";
+  "https://api.open-meteo.com/v1/forecast?latitude=17.4006&longitude=78.3398&current=temperature_2m,weather_code&temperature_unit=celsius&timezone=Asia%2FKolkata";
 
 function getWeatherLabel(code: number): { label: string; Icon: React.ElementType } {
   if (code === 0) return { label: "Clear", Icon: Sun };
@@ -42,7 +42,7 @@ function getWeatherLabel(code: number): { label: string; Icon: React.ElementType
 }
 
 function useWeather() {
-  const [weather, setWeather] = useState<{ temp: number; label: string; Icon: React.ElementType } | "error" | null>(null);
+  const [weather, setWeather] = useState<{ temp: number; label: string; Icon: React.ElementType } | null>(null);
 
   useEffect(() => {
     fetch(WEATHER_URL)
@@ -52,7 +52,7 @@ function useWeather() {
         const { label, Icon } = getWeatherLabel(data.current.weather_code);
         setWeather({ temp, label, Icon });
       })
-      .catch(() => setWeather("error"));
+      .catch(() => {});
   }, []);
 
   return weather;
@@ -287,7 +287,20 @@ export default function Navbar() {
 
           {/* Auth + Mobile toggle */}
           <div className="flex items-center gap-3">
-            <span className="hidden lg:inline text-sm text-gray-500">Loading</span>
+            <div className="hidden lg:flex items-center gap-1.5 text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 shrink-0">
+              {weather ? (
+                <>
+                  <weather.Icon className="w-4 h-4 text-brand-500" />
+                  <span className="font-medium text-gray-700">{weather.temp}°C</span>
+                  <span className="text-gray-400">{weather.label}</span>
+                </>
+              ) : (
+                <>
+                  <Thermometer className="w-4 h-4 text-gray-400 animate-pulse" />
+                  <span className="text-gray-400">Kokapet</span>
+                </>
+              )}
+            </div>
             <div className="hidden lg:flex">
               <UserMenu />
             </div>
