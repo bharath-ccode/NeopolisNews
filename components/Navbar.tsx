@@ -32,13 +32,15 @@ const LAT = 17.4006;
 const LON = 78.3398;
 const TZ = "Asia%2FKolkata";
 
-const CURRENT_URL = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,weather_code&temperature_unit=celsius&timezone=${TZ}`;
+const CURRENT_URL  = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,weather_code&temperature_unit=celsius&timezone=${TZ}`;
 const FORECAST_URL = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&hourly=temperature_2m,weather_code,precipitation_probability&temperature_unit=celsius&timezone=${TZ}&forecast_days=2`;
-const AQI_URL = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${LAT}&longitude=${LON}&current=us_aqi,pm2_5,pm10,nitrogen_dioxide,ozone&timezone=${TZ}`;
+const DAILY_URL    = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max,wind_speed_10m_max,uv_index_max&temperature_unit=celsius&timezone=${TZ}&forecast_days=5`;
+const AQI_URL      = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${LAT}&longitude=${LON}&current=us_aqi,pm2_5,pm10,nitrogen_dioxide,ozone&timezone=${TZ}`;
 
 type CurrentWeather = { temp: number; label: string; Icon: React.ElementType };
-type HourlySlice = { time: string; temp: number; code: number; precip: number };
-type AQIData = { us_aqi: number; pm2_5: number; pm10: number; nitrogen_dioxide: number; ozone: number };
+type HourlySlice   = { time: string; temp: number; code: number; precip: number };
+type DailySlice    = { date: string; max: number; min: number; code: number; precip: number; wind: number; uv: number };
+type AQIData       = { us_aqi: number; pm2_5: number; pm10: number; nitrogen_dioxide: number; ozone: number };
 
 function getWeatherLabel(code: number): { label: string; Icon: React.ElementType } {
   if (code === 0) return { label: "Clear", Icon: Sun };
@@ -67,11 +69,22 @@ function formatHour(iso: string): string {
   return `${h - 12} PM`;
 }
 
+function formatDay(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00");
+  const today = new Date();
+  const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+  if (d.toDateString() === today.toDateString()) return "Today";
+  if (d.toDateString() === tomorrow.toDateString()) return "Tomorrow";
+  return d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+}
+
 function WeatherWidget() {
-  const [current, setCurrent] = useState<CurrentWeather | null>(null);
-  const [open, setOpen]       = useState(false);
+  const [current, setCurrent]   = useState<CurrentWeather | null>(null);
+  const [open, setOpen]         = useState(false);
+  const [tab, setTab]           = useState<"hourly" | "5day">("hourly");
   const [forecast, setForecast] = useState<HourlySlice[] | null>(null);
-  const [aqi, setAqi]         = useState<AQIData | null>(null);
+  const [daily, setDaily]       = useState<DailySlice[] | null>(null);
+  const [aqi, setAqi]           = useState<AQIData | null>(null);
   const [extended, setExtended] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -87,25 +100,36 @@ function WeatherWidget() {
       .catch(() => {});
   }, []);
 
-  // Fetch forecast + AQI when panel opens (only once)
+  // Fetch hourly forecast + daily + AQI when panel opens (only once)
   useEffect(() => {
     if (!open || forecast) return;
     Promise.all([
       fetch(FORECAST_URL).then((r) => r.json()),
+      fetch(DAILY_URL).then((r) => r.json()),
       fetch(AQI_URL).then((r) => r.json()),
-    ]).then(([fd, ad]) => {
+    ]).then(([fd, dd, ad]) => {
+      // Hourly slices from current hour
       const now = new Date();
       const pad = (n: number) => String(n).padStart(2, "0");
       const currentHour = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:00`;
       const startIdx = fd.hourly.time.findIndex((t: string) => t >= currentHour);
       const idx = startIdx === -1 ? 0 : startIdx;
-      const slices: HourlySlice[] = fd.hourly.time.slice(idx, idx + 24).map((t: string, i: number) => ({
+      setForecast(fd.hourly.time.slice(idx, idx + 24).map((t: string, i: number) => ({
         time: t,
         temp: Math.round(fd.hourly.temperature_2m[idx + i]),
         code: fd.hourly.weather_code[idx + i],
         precip: fd.hourly.precipitation_probability[idx + i],
-      }));
-      setForecast(slices);
+      })));
+      // Daily slices
+      setDaily(dd.daily.time.map((t: string, i: number) => ({
+        date:   t,
+        max:    Math.round(dd.daily.temperature_2m_max[i]),
+        min:    Math.round(dd.daily.temperature_2m_min[i]),
+        code:   dd.daily.weather_code[i],
+        precip: dd.daily.precipitation_probability_max[i],
+        wind:   Math.round(dd.daily.wind_speed_10m_max[i]),
+        uv:     Math.round(dd.daily.uv_index_max[i]),
+      })));
       setAqi(ad.current);
     }).catch(() => {});
   }, [open, forecast]);
@@ -195,46 +219,100 @@ function WeatherWidget() {
             })()}
           </div>
 
+          {/* Tab bar */}
+          <div className="flex border-b border-gray-100">
+            {(["hourly", "5day"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={clsx(
+                  "flex-1 py-2 text-xs font-semibold transition-colors",
+                  tab === t
+                    ? "text-brand-600 border-b-2 border-brand-600 -mb-px bg-white"
+                    : "text-gray-400 hover:text-gray-600"
+                )}
+              >
+                {t === "hourly" ? "Hourly" : "5 Days"}
+              </button>
+            ))}
+          </div>
+
           {/* Hourly forecast */}
-          <div className="px-4 py-3">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-              Next {extended ? 24 : 12} Hours
-            </p>
-            {!forecast ? (
-              <div className="flex justify-center py-6">
-                <div className="w-5 h-5 border-2 border-brand-400 border-t-transparent rounded-full animate-spin" />
-              </div>
-            ) : (
-              <>
-                <div className="space-y-1">
-                  {visibleForecast.map((h) => {
-                    const { Icon } = getWeatherLabel(h.code);
-                    return (
-                      <div key={h.time} className="flex items-center gap-2 text-sm py-0.5">
-                        <span className="text-gray-400 text-xs w-12 shrink-0">{formatHour(h.time)}</span>
-                        <Icon className="w-4 h-4 text-brand-400 shrink-0" />
-                        <span className="font-medium text-gray-700 w-12">{h.temp}°C</span>
-                        <div className="flex-1 flex items-center gap-1">
-                          <div className="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden">
-                            <div className="h-1 bg-blue-400 rounded-full" style={{ width: `${h.precip}%` }} />
+          {tab === "hourly" && (
+            <div className="px-4 py-3">
+              {!forecast ? (
+                <div className="flex justify-center py-6">
+                  <div className="w-5 h-5 border-2 border-brand-400 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-1">
+                    {visibleForecast.map((h) => {
+                      const { Icon } = getWeatherLabel(h.code);
+                      return (
+                        <div key={h.time} className="flex items-center gap-2 text-sm py-0.5">
+                          <span className="text-gray-400 text-xs w-12 shrink-0">{formatHour(h.time)}</span>
+                          <Icon className="w-4 h-4 text-brand-400 shrink-0" />
+                          <span className="font-medium text-gray-700 w-12">{h.temp}°C</span>
+                          <div className="flex-1 flex items-center gap-1">
+                            <div className="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-1 bg-blue-400 rounded-full" style={{ width: `${h.precip}%` }} />
+                            </div>
+                            <span className="text-xs text-blue-400 w-8 text-right">{h.precip}%</span>
                           </div>
-                          <span className="text-xs text-blue-400 w-8 text-right">{h.precip}%</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {!extended && (
+                    <button
+                      onClick={() => setExtended(true)}
+                      className="mt-2 w-full text-xs text-brand-600 hover:text-brand-800 py-1.5 border border-brand-100 rounded-lg hover:bg-brand-50 transition-colors"
+                    >
+                      Show next 12 more hours
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* 5-day forecast */}
+          {tab === "5day" && (
+            <div className="px-4 py-3">
+              {!daily ? (
+                <div className="flex justify-center py-6">
+                  <div className="w-5 h-5 border-2 border-brand-400 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {daily.map((d) => {
+                    const { Icon, label } = getWeatherLabel(d.code);
+                    return (
+                      <div key={d.date} className="rounded-lg hover:bg-gray-50 px-2 py-2 transition-colors">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-700 w-20 shrink-0">{formatDay(d.date)}</span>
+                          <Icon className="w-4 h-4 text-brand-400 shrink-0" />
+                          <span className="text-xs text-gray-500 flex-1 truncate">{label}</span>
+                          <span className="text-sm font-bold text-gray-800">{d.max}°</span>
+                          <span className="text-sm text-gray-400">{d.min}°</span>
+                        </div>
+                        <div className="flex items-center gap-3 mt-1.5 ml-22 pl-[88px] text-xs text-gray-400">
+                          <span className="flex items-center gap-1">
+                            <CloudRain className="w-3 h-3 text-blue-400" />{d.precip}%
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Zap className="w-3 h-3 text-yellow-400" />UV {d.uv}
+                          </span>
+                          <span>{d.wind} km/h wind</span>
                         </div>
                       </div>
                     );
                   })}
                 </div>
-                {!extended && (
-                  <button
-                    onClick={() => setExtended(true)}
-                    className="mt-2 w-full text-xs text-brand-600 hover:text-brand-800 py-1.5 border border-brand-100 rounded-lg hover:bg-brand-50 transition-colors"
-                  >
-                    Show next 12 more hours
-                  </button>
-                )}
-              </>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
         </div>
       )}
