@@ -17,9 +17,46 @@ import {
   LogOut,
   User,
   Briefcase,
+  Sun,
+  Cloud,
+  CloudRain,
+  CloudSnow,
+  CloudLightning,
+  Thermometer,
 } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "@/context/AuthContext";
+
+// Neopolis, Hyderabad coordinates
+const WEATHER_URL =
+  "https://api.open-meteo.com/v1/forecast?latitude=17.385&longitude=78.4867&current=temperature_2m,weather_code&temperature_unit=celsius&timezone=Asia%2FKolkata";
+
+function getWeatherLabel(code: number): { label: string; Icon: React.ElementType } {
+  if (code === 0) return { label: "Clear", Icon: Sun };
+  if (code <= 3) return { label: "Partly Cloudy", Icon: Cloud };
+  if (code <= 48) return { label: "Foggy", Icon: Cloud };
+  if (code <= 67) return { label: "Rainy", Icon: CloudRain };
+  if (code <= 77) return { label: "Snowy", Icon: CloudSnow };
+  if (code <= 82) return { label: "Showers", Icon: CloudRain };
+  return { label: "Thunderstorm", Icon: CloudLightning };
+}
+
+function useWeather() {
+  const [weather, setWeather] = useState<{ temp: number; label: string; Icon: React.ElementType } | null>(null);
+
+  useEffect(() => {
+    fetch(WEATHER_URL)
+      .then((r) => r.json())
+      .then((data) => {
+        const temp = Math.round(data.current.temperature_2m);
+        const { label, Icon } = getWeatherLabel(data.current.weather_code);
+        setWeather({ temp, label, Icon });
+      })
+      .catch(() => {/* silently fail */});
+  }, []);
+
+  return weather;
+}
 
 const NAV_ITEMS = [
   {
@@ -176,16 +213,30 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const pathname = usePathname();
+  const weather = useWeather();
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
       {/* Top bar */}
-      <div className="bg-brand-950 text-brand-200 text-xs py-1.5 px-4 text-center hidden md:block">
-        Neopolis — 100-acre mixed-use urban district &nbsp;·&nbsp; Live updates
-        every week &nbsp;·&nbsp;
-        <Link href="/advertise" className="underline hover:text-white">
-          List your property or business →
-        </Link>
+      <div className="bg-brand-950 text-brand-200 text-xs py-1.5 px-4 hidden md:flex items-center justify-between">
+        <span>
+          Neopolis — 100-acre mixed-use urban district &nbsp;·&nbsp; Live updates every week &nbsp;·&nbsp;
+          <Link href="/advertise" className="underline hover:text-white">
+            List your property or business →
+          </Link>
+        </span>
+        {weather ? (
+          <span className="flex items-center gap-1.5 text-brand-100 font-medium shrink-0 ml-4">
+            <weather.Icon className="w-3.5 h-3.5" />
+            <span>{weather.temp}°C</span>
+            <span className="text-brand-300">· {weather.label}</span>
+          </span>
+        ) : (
+          <span className="flex items-center gap-1.5 text-brand-400 shrink-0 ml-4">
+            <Thermometer className="w-3.5 h-3.5" />
+            <span>Loading…</span>
+          </span>
+        )}
       </div>
 
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
