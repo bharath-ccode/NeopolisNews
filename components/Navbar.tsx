@@ -287,17 +287,7 @@ export default function Navbar() {
 
           {/* Auth + Mobile toggle */}
           <div className="flex items-center gap-3">
-            <div className="hidden lg:flex items-center gap-1.5 text-sm border border-gray-200 rounded-lg px-2.5 py-1.5">
-              {weather === null && (
-                <><Thermometer className="w-4 h-4 text-gray-400" /><span className="text-gray-400">Weather…</span></>
-              )}
-              {weather === "error" && (
-                <><Thermometer className="w-4 h-4 text-gray-400" /><span className="text-gray-500">Hyderabad</span></>
-              )}
-              {weather && weather !== "error" && (
-                <><weather.Icon className="w-4 h-4 text-brand-500" /><span className="font-medium text-gray-700">{weather.temp}°C</span><span className="text-gray-400">{weather.label}</span></>
-              )}
-            </div>
+            <span className="hidden lg:inline text-sm text-gray-500">Loading</span>
             <div className="hidden lg:flex">
               <UserMenu />
             </div>
