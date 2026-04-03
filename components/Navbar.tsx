@@ -173,7 +173,7 @@ function WeatherWidget() {
               return (
                 <>
                   <div className={clsx("flex items-center justify-between rounded-lg px-3 py-2 mb-2", info.bg)}>
-                    <span className="text-sm text-gray-600 font-medium">AQI (US)</span>
+                    <span className="text-sm text-gray-600 font-medium">Air Quality Index</span>
                     <span className={clsx("text-sm font-bold", info.color)}>{aqi.us_aqi} · {info.label}</span>
                   </div>
                   <div className="grid grid-cols-4 gap-1.5">
