@@ -169,7 +169,7 @@ function WeatherWidget() {
 
       {/* Dropdown panel */}
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl border border-gray-100 shadow-xl z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl border border-gray-100 shadow-xl z-50 overflow-hidden">
 
           {/* Current conditions header */}
           <div className="px-4 py-3 bg-brand-50 border-b border-brand-100">
@@ -404,7 +404,7 @@ function UserMenu() {
   if (!user) {
     return (
       <div className="flex items-center gap-2">
-        <Link href="/auth/login" className="text-sm font-semibold text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+        <Link href="/auth/login" className="text-sm font-semibold text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors whitespace-nowrap">
           Sign in
         </Link>
         <Link href="/auth/register" className="btn-primary text-sm py-2">
