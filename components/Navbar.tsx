@@ -218,25 +218,12 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
       {/* Top bar */}
-      <div className="bg-brand-950 text-brand-200 text-xs py-1.5 px-4 hidden md:flex items-center justify-between">
-        <span>
-          Neopolis — 100-acre mixed-use urban district &nbsp;·&nbsp; Live updates every week &nbsp;·&nbsp;
-          <Link href="/advertise" className="underline hover:text-white">
-            List your property or business →
-          </Link>
-        </span>
-        {weather ? (
-          <span className="flex items-center gap-1.5 text-brand-100 font-medium shrink-0 ml-4">
-            <weather.Icon className="w-3.5 h-3.5" />
-            <span>{weather.temp}°C</span>
-            <span className="text-brand-300">· {weather.label}</span>
-          </span>
-        ) : (
-          <span className="flex items-center gap-1.5 text-brand-400 shrink-0 ml-4">
-            <Thermometer className="w-3.5 h-3.5" />
-            <span>Loading…</span>
-          </span>
-        )}
+      <div className="bg-brand-950 text-brand-200 text-xs py-1.5 px-4 text-center hidden md:block">
+        Neopolis — 100-acre mixed-use urban district &nbsp;·&nbsp; Live updates
+        every week &nbsp;·&nbsp;
+        <Link href="/advertise" className="underline hover:text-white">
+          List your property or business →
+        </Link>
       </div>
 
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -300,6 +287,13 @@ export default function Navbar() {
 
           {/* Auth + Mobile toggle */}
           <div className="flex items-center gap-3">
+            {weather && (
+              <div className="hidden lg:flex items-center gap-1.5 text-sm text-gray-500 border border-gray-200 rounded-lg px-2.5 py-1.5">
+                <weather.Icon className="w-4 h-4 text-brand-500" />
+                <span className="font-medium text-gray-700">{weather.temp}°C</span>
+                <span className="text-gray-400">{weather.label}</span>
+              </div>
+            )}
             <div className="hidden lg:flex">
               <UserMenu />
             </div>
