@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -21,7 +21,7 @@ import {
   Cloud,
   CloudRain,
   CloudSnow,
-  CloudLightning,
+  Zap,
   Thermometer,
 } from "lucide-react";
 import clsx from "clsx";
@@ -38,7 +38,7 @@ function getWeatherLabel(code: number): { label: string; Icon: React.ElementType
   if (code <= 67) return { label: "Rainy", Icon: CloudRain };
   if (code <= 77) return { label: "Snowy", Icon: CloudSnow };
   if (code <= 82) return { label: "Showers", Icon: CloudRain };
-  return { label: "Thunderstorm", Icon: CloudLightning };
+  return { label: "Thunderstorm", Icon: Zap };
 }
 
 function useWeather() {
