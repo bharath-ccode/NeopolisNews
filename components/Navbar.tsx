@@ -42,7 +42,7 @@ function getWeatherLabel(code: number): { label: string; Icon: React.ElementType
 }
 
 function useWeather() {
-  const [weather, setWeather] = useState<{ temp: number; label: string; Icon: React.ElementType } | null>(null);
+  const [weather, setWeather] = useState<{ temp: number; label: string; Icon: React.ElementType } | "error" | null>(null);
 
   useEffect(() => {
     fetch(WEATHER_URL)
@@ -52,7 +52,7 @@ function useWeather() {
         const { label, Icon } = getWeatherLabel(data.current.weather_code);
         setWeather({ temp, label, Icon });
       })
-      .catch(() => {/* silently fail */});
+      .catch(() => setWeather("error"));
   }, []);
 
   return weather;
@@ -287,13 +287,17 @@ export default function Navbar() {
 
           {/* Auth + Mobile toggle */}
           <div className="flex items-center gap-3">
-            {weather && (
-              <div className="hidden lg:flex items-center gap-1.5 text-sm text-gray-500 border border-gray-200 rounded-lg px-2.5 py-1.5">
-                <weather.Icon className="w-4 h-4 text-brand-500" />
-                <span className="font-medium text-gray-700">{weather.temp}°C</span>
-                <span className="text-gray-400">{weather.label}</span>
-              </div>
-            )}
+            <div className="hidden lg:flex items-center gap-1.5 text-sm border border-gray-200 rounded-lg px-2.5 py-1.5">
+              {weather === null && (
+                <><Thermometer className="w-4 h-4 text-gray-400" /><span className="text-gray-400">Weather…</span></>
+              )}
+              {weather === "error" && (
+                <><Thermometer className="w-4 h-4 text-gray-400" /><span className="text-gray-500">Hyderabad</span></>
+              )}
+              {weather && weather !== "error" && (
+                <><weather.Icon className="w-4 h-4 text-brand-500" /><span className="font-medium text-gray-700">{weather.temp}°C</span><span className="text-gray-400">{weather.label}</span></>
+              )}
+            </div>
             <div className="hidden lg:flex">
               <UserMenu />
             </div>
