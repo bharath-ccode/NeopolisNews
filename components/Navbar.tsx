@@ -27,9 +27,18 @@ import {
 import clsx from "clsx";
 import { useAuth } from "@/context/AuthContext";
 
-// Kokapet, Telangana, India coordinates
-const WEATHER_URL =
-  "https://api.open-meteo.com/v1/forecast?latitude=17.4006&longitude=78.3398&current=temperature_2m,weather_code&temperature_unit=celsius&timezone=Asia%2FKolkata";
+// Kokapet, Telangana, India
+const LAT = 17.4006;
+const LON = 78.3398;
+const TZ = "Asia%2FKolkata";
+
+const CURRENT_URL = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,weather_code&temperature_unit=celsius&timezone=${TZ}`;
+const FORECAST_URL = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&hourly=temperature_2m,weather_code,precipitation_probability&temperature_unit=celsius&timezone=${TZ}&forecast_days=2`;
+const AQI_URL = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${LAT}&longitude=${LON}&current=us_aqi,pm2_5,pm10,nitrogen_dioxide,ozone&timezone=${TZ}`;
+
+type CurrentWeather = { temp: number; label: string; Icon: React.ElementType };
+type HourlySlice = { time: string; temp: number; code: number; precip: number };
+type AQIData = { us_aqi: number; pm2_5: number; pm10: number; nitrogen_dioxide: number; ozone: number };
 
 function getWeatherLabel(code: number): { label: string; Icon: React.ElementType } {
   if (code === 0) return { label: "Clear", Icon: Sun };
@@ -41,21 +50,190 @@ function getWeatherLabel(code: number): { label: string; Icon: React.ElementType
   return { label: "Thunderstorm", Icon: Zap };
 }
 
-function useWeather() {
-  const [weather, setWeather] = useState<{ temp: number; label: string; Icon: React.ElementType } | null>(null);
+function getAQIInfo(aqi: number): { label: string; color: string; bg: string } {
+  if (aqi <= 50)  return { label: "Good",           color: "text-green-700",  bg: "bg-green-50" };
+  if (aqi <= 100) return { label: "Moderate",       color: "text-yellow-700", bg: "bg-yellow-50" };
+  if (aqi <= 150) return { label: "Unhealthy*",     color: "text-orange-600", bg: "bg-orange-50" };
+  if (aqi <= 200) return { label: "Unhealthy",      color: "text-red-600",    bg: "bg-red-50" };
+  if (aqi <= 300) return { label: "Very Unhealthy", color: "text-purple-700", bg: "bg-purple-50" };
+  return           { label: "Hazardous",            color: "text-red-900",    bg: "bg-red-100" };
+}
 
+function formatHour(iso: string): string {
+  const h = new Date(iso).getHours();
+  if (h === 0) return "12 AM";
+  if (h < 12)  return `${h} AM`;
+  if (h === 12) return "12 PM";
+  return `${h - 12} PM`;
+}
+
+function WeatherWidget() {
+  const [current, setCurrent] = useState<CurrentWeather | null>(null);
+  const [open, setOpen]       = useState(false);
+  const [forecast, setForecast] = useState<HourlySlice[] | null>(null);
+  const [aqi, setAqi]         = useState<AQIData | null>(null);
+  const [extended, setExtended] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Fetch current conditions on mount
   useEffect(() => {
-    fetch(WEATHER_URL)
+    fetch(CURRENT_URL)
       .then((r) => r.json())
-      .then((data) => {
-        const temp = Math.round(data.current.temperature_2m);
-        const { label, Icon } = getWeatherLabel(data.current.weather_code);
-        setWeather({ temp, label, Icon });
+      .then((d) => {
+        const temp = Math.round(d.current.temperature_2m);
+        const { label, Icon } = getWeatherLabel(d.current.weather_code);
+        setCurrent({ temp, label, Icon });
       })
       .catch(() => {});
   }, []);
 
-  return weather;
+  // Fetch forecast + AQI when panel opens (only once)
+  useEffect(() => {
+    if (!open || forecast) return;
+    Promise.all([
+      fetch(FORECAST_URL).then((r) => r.json()),
+      fetch(AQI_URL).then((r) => r.json()),
+    ]).then(([fd, ad]) => {
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const currentHour = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:00`;
+      const startIdx = fd.hourly.time.findIndex((t: string) => t >= currentHour);
+      const idx = startIdx === -1 ? 0 : startIdx;
+      const slices: HourlySlice[] = fd.hourly.time.slice(idx, idx + 24).map((t: string, i: number) => ({
+        time: t,
+        temp: Math.round(fd.hourly.temperature_2m[idx + i]),
+        code: fd.hourly.weather_code[idx + i],
+        precip: fd.hourly.precipitation_probability[idx + i],
+      }));
+      setForecast(slices);
+      setAqi(ad.current);
+    }).catch(() => {});
+  }, [open, forecast]);
+
+  // Close on outside click
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const visibleForecast = forecast ? forecast.slice(0, extended ? 24 : 12) : [];
+
+  return (
+    <div className="relative hidden lg:block" ref={ref}>
+      {/* Pill button */}
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 hover:bg-gray-50 transition-colors"
+      >
+        {current ? (
+          <>
+            <current.Icon className="w-4 h-4 text-brand-500" />
+            <span className="font-medium text-gray-700">{current.temp}°C</span>
+            <span className="text-gray-400">{current.label}</span>
+          </>
+        ) : (
+          <>
+            <Thermometer className="w-4 h-4 text-gray-400 animate-pulse" />
+            <span className="text-gray-400">Kokapet</span>
+          </>
+        )}
+        <ChevronDown className={clsx("w-3 h-3 text-gray-400 transition-transform", open && "rotate-180")} />
+      </button>
+
+      {/* Dropdown panel */}
+      {open && (
+        <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl border border-gray-100 shadow-xl z-50 overflow-hidden">
+
+          {/* Current conditions header */}
+          <div className="px-4 py-3 bg-brand-50 border-b border-brand-100">
+            <p className="text-xs text-brand-500 font-medium">Kokapet, Telangana</p>
+            {current ? (
+              <div className="flex items-center gap-2 mt-1">
+                <current.Icon className="w-6 h-6 text-brand-600" />
+                <span className="text-2xl font-bold text-brand-900">{current.temp}°C</span>
+                <span className="text-sm text-brand-600">{current.label}</span>
+              </div>
+            ) : (
+              <p className="text-sm text-brand-400 mt-1">Loading…</p>
+            )}
+          </div>
+
+          {/* Hourly forecast */}
+          <div className="px-4 py-3">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+              Next {extended ? 24 : 12} Hours
+            </p>
+            {!forecast ? (
+              <div className="flex justify-center py-6">
+                <div className="w-5 h-5 border-2 border-brand-400 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : (
+              <>
+                <div className="space-y-1">
+                  {visibleForecast.map((h) => {
+                    const { Icon } = getWeatherLabel(h.code);
+                    return (
+                      <div key={h.time} className="flex items-center gap-2 text-sm py-0.5">
+                        <span className="text-gray-400 text-xs w-12 shrink-0">{formatHour(h.time)}</span>
+                        <Icon className="w-4 h-4 text-brand-400 shrink-0" />
+                        <span className="font-medium text-gray-700 w-12">{h.temp}°C</span>
+                        <div className="flex-1 flex items-center gap-1">
+                          <div className="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-1 bg-blue-400 rounded-full" style={{ width: `${h.precip}%` }} />
+                          </div>
+                          <span className="text-xs text-blue-400 w-8 text-right">{h.precip}%</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {!extended && (
+                  <button
+                    onClick={() => setExtended(true)}
+                    className="mt-2 w-full text-xs text-brand-600 hover:text-brand-800 py-1.5 border border-brand-100 rounded-lg hover:bg-brand-50 transition-colors"
+                  >
+                    Show next 12 more hours
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Air quality */}
+          {aqi && (() => {
+            const info = getAQIInfo(aqi.us_aqi);
+            return (
+              <div className="px-4 py-3 border-t border-gray-100">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Air Quality</p>
+                <div className={clsx("flex items-center justify-between rounded-lg px-3 py-2 mb-2", info.bg)}>
+                  <span className="text-sm text-gray-600 font-medium">AQI (US)</span>
+                  <span className={clsx("text-sm font-bold", info.color)}>{aqi.us_aqi} · {info.label}</span>
+                </div>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {[
+                    { label: "PM2.5", value: aqi.pm2_5 },
+                    { label: "PM10",  value: aqi.pm10 },
+                    { label: "NO₂",   value: aqi.nitrogen_dioxide },
+                    { label: "O₃",    value: aqi.ozone },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="bg-gray-50 rounded-lg px-2 py-1.5 text-center">
+                      <p className="text-xs text-gray-400">{label}</p>
+                      <p className="text-xs font-semibold text-gray-700">{value != null ? value.toFixed(1) : "—"}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-300 mt-2 text-right">*Sensitive groups</p>
+              </div>
+            );
+          })()}
+
+        </div>
+      )}
+    </div>
+  );
 }
 
 const NAV_ITEMS = [
@@ -213,7 +391,6 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const pathname = usePathname();
-  const weather = useWeather();
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
@@ -287,20 +464,7 @@ export default function Navbar() {
 
           {/* Auth + Mobile toggle */}
           <div className="flex items-center gap-3">
-            <div className="hidden lg:flex items-center gap-1.5 text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 shrink-0">
-              {weather ? (
-                <>
-                  <weather.Icon className="w-4 h-4 text-brand-500" />
-                  <span className="font-medium text-gray-700">{weather.temp}°C</span>
-                  <span className="text-gray-400">{weather.label}</span>
-                </>
-              ) : (
-                <>
-                  <Thermometer className="w-4 h-4 text-gray-400 animate-pulse" />
-                  <span className="text-gray-400">Kokapet</span>
-                </>
-              )}
-            </div>
+            <WeatherWidget />
             <div className="hidden lg:flex">
               <UserMenu />
             </div>
