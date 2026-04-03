@@ -52,13 +52,13 @@ function getWeatherLabel(code: number): { label: string; Icon: React.ElementType
   return { label: "Thunderstorm", Icon: Zap };
 }
 
-function getAQIInfo(aqi: number): { label: string; color: string; bg: string } {
-  if (aqi <= 50)  return { label: "Good",           color: "text-green-700",  bg: "bg-green-50" };
-  if (aqi <= 100) return { label: "Moderate",       color: "text-yellow-700", bg: "bg-yellow-50" };
-  if (aqi <= 150) return { label: "Unhealthy*",     color: "text-orange-600", bg: "bg-orange-50" };
-  if (aqi <= 200) return { label: "Unhealthy",      color: "text-red-600",    bg: "bg-red-50" };
-  if (aqi <= 300) return { label: "Very Unhealthy", color: "text-purple-700", bg: "bg-purple-50" };
-  return           { label: "Hazardous",            color: "text-red-900",    bg: "bg-red-100" };
+function getAQIInfo(aqi: number): { label: string; color: string; bg: string; advice: string } {
+  if (aqi <= 50)  return { label: "Good",           color: "text-green-700",  bg: "bg-green-50",  advice: "Great for walk" };
+  if (aqi <= 100) return { label: "Moderate",       color: "text-yellow-700", bg: "bg-yellow-50", advice: "Walk with care" };
+  if (aqi <= 150) return { label: "Unhealthy*",     color: "text-orange-600", bg: "bg-orange-50", advice: "Limit outdoor walk" };
+  if (aqi <= 200) return { label: "Unhealthy",      color: "text-red-600",    bg: "bg-red-50",    advice: "Skip the jog" };
+  if (aqi <= 300) return { label: "Very Unhealthy", color: "text-purple-700", bg: "bg-purple-50", advice: "Stay indoors today" };
+  return           { label: "Hazardous",            color: "text-red-900",    bg: "bg-red-100",   advice: "Avoid all outdoors" };
 }
 
 function formatHour(iso: string): string {
@@ -197,7 +197,10 @@ function WeatherWidget() {
               return (
                 <>
                   <div className={clsx("flex items-center justify-between rounded-lg px-3 py-2 mb-2", info.bg)}>
-                    <span className="text-sm text-gray-600 font-medium">Air Quality Index</span>
+                    <div>
+                      <span className="text-sm text-gray-600 font-medium">Air Quality Index</span>
+                      <p className="text-xs text-gray-500 mt-0.5 italic">{info.advice}</p>
+                    </div>
                     <span className={clsx("text-sm font-bold", info.color)}>{aqi.us_aqi} · {info.label}</span>
                   </div>
                   <div className="grid grid-cols-4 gap-1.5">
