@@ -161,6 +161,40 @@ function WeatherWidget() {
             )}
           </div>
 
+          {/* Air quality — shown immediately on open */}
+          <div className="px-4 py-3 border-b border-gray-100">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Air Quality</p>
+            {!aqi ? (
+              <div className="flex justify-center py-3">
+                <div className="w-4 h-4 border-2 border-brand-400 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : (() => {
+              const info = getAQIInfo(aqi.us_aqi);
+              return (
+                <>
+                  <div className={clsx("flex items-center justify-between rounded-lg px-3 py-2 mb-2", info.bg)}>
+                    <span className="text-sm text-gray-600 font-medium">AQI (US)</span>
+                    <span className={clsx("text-sm font-bold", info.color)}>{aqi.us_aqi} · {info.label}</span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {[
+                      { label: "PM2.5", value: aqi.pm2_5 },
+                      { label: "PM10",  value: aqi.pm10 },
+                      { label: "NO₂",   value: aqi.nitrogen_dioxide },
+                      { label: "O₃",    value: aqi.ozone },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="bg-gray-50 rounded-lg px-2 py-1.5 text-center">
+                        <p className="text-xs text-gray-400">{label}</p>
+                        <p className="text-xs font-semibold text-gray-700">{value != null ? value.toFixed(1) : "—"}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-300 mt-1.5 text-right">*Sensitive groups</p>
+                </>
+              );
+            })()}
+          </div>
+
           {/* Hourly forecast */}
           <div className="px-4 py-3">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
@@ -201,34 +235,6 @@ function WeatherWidget() {
               </>
             )}
           </div>
-
-          {/* Air quality */}
-          {aqi && (() => {
-            const info = getAQIInfo(aqi.us_aqi);
-            return (
-              <div className="px-4 py-3 border-t border-gray-100">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Air Quality</p>
-                <div className={clsx("flex items-center justify-between rounded-lg px-3 py-2 mb-2", info.bg)}>
-                  <span className="text-sm text-gray-600 font-medium">AQI (US)</span>
-                  <span className={clsx("text-sm font-bold", info.color)}>{aqi.us_aqi} · {info.label}</span>
-                </div>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {[
-                    { label: "PM2.5", value: aqi.pm2_5 },
-                    { label: "PM10",  value: aqi.pm10 },
-                    { label: "NO₂",   value: aqi.nitrogen_dioxide },
-                    { label: "O₃",    value: aqi.ozone },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="bg-gray-50 rounded-lg px-2 py-1.5 text-center">
-                      <p className="text-xs text-gray-400">{label}</p>
-                      <p className="text-xs font-semibold text-gray-700">{value != null ? value.toFixed(1) : "—"}</p>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-xs text-gray-300 mt-2 text-right">*Sensitive groups</p>
-              </div>
-            );
-          })()}
 
         </div>
       )}
@@ -464,10 +470,10 @@ export default function Navbar() {
 
           {/* Auth + Mobile toggle */}
           <div className="flex items-center gap-3">
-            <WeatherWidget />
             <div className="hidden lg:flex">
               <UserMenu />
             </div>
+            <WeatherWidget />
             <button
               className="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100"
               onClick={() => setMobileOpen(!mobileOpen)}
