@@ -129,9 +129,9 @@ export default function WeatherWidget() {
       try {
         // Fetch weather + AQI in parallel
         const [weatherRes, aqiRes] = await Promise.allSettled([
-          fetch("https://wttr.in/Hyderabad?format=j1", { cache: "no-store" }),
+          fetch("https://wttr.in/Kokapet,Telangana?format=j1", { cache: "no-store" }),
           fetch(
-            "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=17.385&longitude=78.4867&current=us_aqi",
+            "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=17.4065&longitude=78.3772&current=us_aqi",
             { cache: "no-store" }
           ),
         ]);
@@ -237,7 +237,7 @@ export default function WeatherWidget() {
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-1.5 text-brand-300 text-xs">
                 <MapPin className="w-3 h-3" />
-                <span>Hyderabad, India</span>
+                <span>Kokapet, Telangana</span>
               </div>
               <span className="text-brand-400 text-xs">{weather.description}</span>
             </div>
