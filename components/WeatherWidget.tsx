@@ -211,18 +211,18 @@ export default function WeatherWidget() {
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-haspopup="true"
-        className="flex items-center gap-1.5 text-xs text-brand-200 hover:text-white cursor-pointer select-none transition-colors py-0.5 px-1 rounded hover:bg-brand-800"
+        className="flex items-center gap-1.5 text-sm text-white font-bold cursor-pointer select-none transition-colors py-1 px-2.5 rounded-lg bg-brand-700 hover:bg-brand-600 border border-brand-500"
       >
-        <WeatherIcon code={weather.weatherCode} className="w-3.5 h-3.5 text-brand-300" />
-        <span className="font-semibold">{weather.temp}°C</span>
-        <span className="hidden sm:inline text-brand-400">{weather.description}</span>
+        <WeatherIcon code={weather.weatherCode} className="w-4 h-4 text-brand-200" />
+        <span>{weather.temp}°C</span>
+        <span className="hidden sm:inline text-brand-200 font-medium">{weather.description}</span>
         {aqiInfo && (
-          <span className="hidden sm:inline text-brand-400">
+          <span className="hidden sm:inline text-brand-300 font-medium">
             · AQI {weather.aqi}
           </span>
         )}
         <ChevronDown
-          className={`w-3 h-3 text-brand-400 transition-transform duration-200 ${
+          className={`w-3.5 h-3.5 text-brand-300 transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
         />
