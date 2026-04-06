@@ -1,14 +1,13 @@
 import { createClient as _createClient } from "@supabase/supabase-js";
 
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://oasxtubjhtftazqhimnn.supabase.co";
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "sb_publishable_wJ-SzaHPmsmObfBrW8xRSw_ImEiKey9";
+
 let client: ReturnType<typeof _createClient> | null = null;
 
-// Singleton so we don't create a new client on every call
 export function createClient() {
   if (!client) {
-    client = _createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    client = _createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
   return client;
 }
