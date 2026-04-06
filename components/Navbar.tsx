@@ -114,7 +114,7 @@ function UserMenu() {
           Sign in
         </Link>
         <Link href="/auth/register" className="btn-primary text-sm py-2">
-          Register Free
+          Register
         </Link>
       </div>
     );
