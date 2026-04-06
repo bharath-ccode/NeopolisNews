@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -16,6 +16,8 @@ import {
   Loader2,
   CheckCircle,
   Briefcase,
+  ShieldCheck,
+  RefreshCw,
 } from "lucide-react";
 import { useAuth, UserType, RegisterData } from "@/context/AuthContext";
 
@@ -36,14 +38,16 @@ const BUSINESS_CATEGORIES = [
   "Other",
 ];
 
+const OTP_RESEND_SECONDS = 60;
+
 export default function RegisterPage() {
   const router = useRouter();
-  const { register, loginWithGoogle } = useAuth();
+  const { register, loginWithGoogle, sendOtp, verifyOtp } = useAuth();
 
   const [step, setStep] = useState<Step>("type");
   const [userType, setUserType] = useState<UserType>("individual");
 
-  // Shared
+  // Shared fields
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -56,8 +60,32 @@ export default function RegisterPage() {
   const [businessCategory, setBusinessCategory] = useState("");
   const [gstin, setGstin] = useState("");
 
+  // OTP state
+  const [otp, setOtp] = useState("");
+  const [resendTimer, setResendTimer] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Countdown timer for OTP resend
+  useEffect(() => {
+    if (resendTimer <= 0) return;
+    timerRef.current = setInterval(() => {
+      setResendTimer((t) => {
+        if (t <= 1) {
+          clearInterval(timerRef.current!);
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timerRef.current!);
+  }, [resendTimer]);
+
+  // Business is always phone-only; individual can choose email or phone
+  const effectiveContactMethod: "email" | "phone" = userType === "business" ? "phone" : contactMethod;
+  const contactDisplay = effectiveContactMethod === "email" ? email : `+91 ${phone}`;
 
   async function handleGoogle() {
     setLoading(true);
@@ -65,48 +93,95 @@ export default function RegisterPage() {
     router.push("/dashboard");
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  // Step 2 submit — send OTP for both user types
+  async function handleDetailsSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     if (!name) { setError("Please enter your name."); return; }
-    if (contactMethod === "email" && !email) { setError("Please enter your email."); return; }
-    if (contactMethod === "phone" && !phone) { setError("Please enter your phone number."); return; }
+    if (effectiveContactMethod === "email" && !email) { setError("Please enter your email."); return; }
+    if (effectiveContactMethod === "phone" && phone.length < 10) { setError("Please enter a valid 10-digit phone number."); return; }
     if (userType === "business" && !businessName) { setError("Please enter your business name."); return; }
     if (userType === "business" && !businessCategory) { setError("Please select a business category."); return; }
 
     setLoading(true);
-    const data: RegisterData = {
-      userType,
-      name,
-      email: contactMethod === "email" ? email : undefined,
-      phone: contactMethod === "phone" ? `+91${phone}` : undefined,
-      password: password || undefined,
-      businessName: userType === "business" ? businessName : undefined,
-      businessCategory: userType === "business" ? businessCategory : undefined,
-      gstin: userType === "business" && gstin ? gstin : undefined,
-    };
     try {
-      await register(data);
-      router.push("/dashboard");
+      const contact = effectiveContactMethod === "email" ? email : `+91${phone}`;
+      await sendOtp(contact);
+      setResendTimer(OTP_RESEND_SECONDS);
+      setOtp("");
+      setStep("verify");
     } catch {
-      setError("Registration failed. Please try again.");
+      setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
   }
 
+  // Step 3 submit — verify OTP then register
+  async function handleVerifySubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    if (otp.length < 6) { setError("Please enter the 6-digit OTP."); return; }
+
+    setLoading(true);
+    try {
+      const contact = effectiveContactMethod === "email" ? email : `+91${phone}`;
+      await verifyOtp(contact, otp);
+      await register(buildRegisterData());
+      router.push("/dashboard");
+    } catch {
+      setError("Invalid OTP. Please check and try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleResendOtp() {
+    if (resendTimer > 0) return;
+    setError("");
+    setLoading(true);
+    try {
+      const contact = effectiveContactMethod === "email" ? email : `+91${phone}`;
+      await sendOtp(contact);
+      setResendTimer(OTP_RESEND_SECONDS);
+      setOtp("");
+    } catch {
+      setError("Failed to resend OTP. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function buildRegisterData(): RegisterData {
+    return {
+      userType,
+      name,
+      email: effectiveContactMethod === "email" ? email : undefined,
+      phone: effectiveContactMethod === "phone" ? `+91${phone}` : undefined,
+      password: password || undefined,
+      businessName: userType === "business" ? businessName : undefined,
+      businessCategory: userType === "business" ? businessCategory : undefined,
+      gstin: userType === "business" && gstin ? gstin : undefined,
+    };
+  }
+
+  // ── Logo header (shared) ───────────────────────────────────────────────────
+  const Logo = () => (
+    <Link href="/" className="flex items-center gap-2 mb-8">
+      <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
+        <Building2 className="w-5 h-5 text-white" />
+      </div>
+      <span className="text-lg font-bold text-gray-900">
+        Neopolis<span className="text-brand-600">News</span>
+      </span>
+    </Link>
+  );
+
   // ── Step 1: Choose type ────────────────────────────────────────────────────
   if (step === "type") {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-12">
-        <Link href="/" className="flex items-center gap-2 mb-8">
-          <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
-            <Building2 className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-lg font-bold text-gray-900">
-            Neopolis<span className="text-brand-600">News</span>
-          </span>
-        </Link>
+        <Logo />
 
         <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
           <h1 className="text-2xl font-extrabold text-gray-900 mb-1">
@@ -124,7 +199,6 @@ export default function RegisterPage() {
           </p>
 
           <div className="grid grid-cols-2 gap-4 mb-8">
-            {/* Individual */}
             <button
               onClick={() => setUserType("individual")}
               className={`flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all ${
@@ -140,16 +214,13 @@ export default function RegisterPage() {
               </div>
               <div className="text-center">
                 <p className="font-bold text-sm text-gray-900">Individual</p>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  Home owner / buyer / tenant
-                </p>
+                <p className="text-xs text-gray-400 mt-0.5">Home owner / buyer / tenant</p>
               </div>
               {userType === "individual" && (
                 <CheckCircle className="w-5 h-5 text-brand-600" />
               )}
             </button>
 
-            {/* Business */}
             <button
               onClick={() => setUserType("business")}
               className={`flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all ${
@@ -165,9 +236,7 @@ export default function RegisterPage() {
               </div>
               <div className="text-center">
                 <p className="font-bold text-sm text-gray-900">Business</p>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  Developer / brand / broker
-                </p>
+                <p className="text-xs text-gray-400 mt-0.5">Developer / brand / broker</p>
               </div>
               {userType === "business" && (
                 <CheckCircle className="w-5 h-5 text-brand-600" />
@@ -175,7 +244,6 @@ export default function RegisterPage() {
             </button>
           </div>
 
-          {/* What you can do */}
           <div className="bg-gray-50 rounded-xl p-4 mb-6 text-sm text-gray-600">
             {userType === "individual" ? (
               <ul className="space-y-1.5">
@@ -207,17 +275,115 @@ export default function RegisterPage() {
     );
   }
 
+  // ── Step 3: OTP Verification (Individual only) ─────────────────────────────
+  if (step === "verify") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-12">
+        <Logo />
+
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+          <button
+            onClick={() => { setStep("details"); setError(""); }}
+            className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mb-4"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back
+          </button>
+
+          {/* Progress indicator */}
+          <div className="flex items-center gap-2 mb-6">
+            {["type", "details", "verify"].map((s, idx) => (
+              <div key={s} className="flex items-center gap-2">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                  s === "verify" ? "bg-brand-600 text-white" : "bg-brand-100 text-brand-600"
+                }`}>
+                  {idx + 1}
+                </div>
+                {idx < 2 && <div className="flex-1 h-px w-8 bg-brand-200" />}
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center">
+              <ShieldCheck className="w-5 h-5 text-brand-600" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-extrabold text-gray-900">Verify your {effectiveContactMethod}</h1>
+            </div>
+          </div>
+          <p className="text-sm text-gray-500 mb-6">
+            We sent a 6-digit OTP to{" "}
+            <span className="font-semibold text-gray-700">{contactDisplay}</span>.
+            Enter it below to complete registration.
+          </p>
+
+          {error && (
+            <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-4">{error}</p>
+          )}
+
+          <form onSubmit={handleVerifySubmit} className="space-y-5">
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5">
+                One-time password
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                placeholder="• • • • • •"
+                maxLength={6}
+                autoFocus
+                required
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg text-xl text-center tracking-[0.5em] font-mono focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading || otp.length < 6}
+              className="btn-primary w-full justify-center"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+              {loading ? "Verifying…" : "Verify & Create Account"}
+            </button>
+          </form>
+
+          <div className="mt-4 flex items-center justify-center gap-2 text-sm">
+            {resendTimer > 0 ? (
+              <p className="text-gray-400">
+                Resend OTP in{" "}
+                <span className="font-semibold text-gray-600">{resendTimer}s</span>
+              </p>
+            ) : (
+              <button
+                onClick={handleResendOtp}
+                disabled={loading}
+                className="flex items-center gap-1.5 text-brand-600 hover:text-brand-700 font-semibold"
+              >
+                <RefreshCw className="w-3.5 h-3.5" /> Resend OTP
+              </button>
+            )}
+          </div>
+
+          <p className="text-xs text-gray-400 text-center mt-4">
+            Wrong contact?{" "}
+            <button
+              onClick={() => { setStep("details"); setError(""); }}
+              className="text-brand-600 font-semibold hover:underline"
+            >
+              Go back and edit
+            </button>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // ── Step 2: Details ────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-12">
-      <Link href="/" className="flex items-center gap-2 mb-8">
-        <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
-          <Building2 className="w-5 h-5 text-white" />
-        </div>
-        <span className="text-lg font-bold text-gray-900">
-          Neopolis<span className="text-brand-600">News</span>
-        </span>
-      </Link>
+      <Logo />
 
       <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
         <button
@@ -226,6 +392,20 @@ export default function RegisterPage() {
         >
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
+
+        {/* Progress indicator — always 3 steps now */}
+        <div className="flex items-center gap-2 mb-6">
+          {["type", "details", "verify"].map((s, idx) => (
+            <div key={s} className="flex items-center gap-2">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                s === "details" ? "bg-brand-600 text-white" : "bg-brand-100 text-brand-600"
+              }`}>
+                {idx + 1}
+              </div>
+              {idx < 2 && <div className="flex-1 h-px w-8 bg-gray-200" />}
+            </div>
+          ))}
+        </div>
 
         <div className="flex items-center gap-2 mb-1">
           <h1 className="text-2xl font-extrabold text-gray-900">
@@ -236,7 +416,8 @@ export default function RegisterPage() {
           </span>
         </div>
         <p className="text-sm text-gray-500 mb-6">
-          Fill in your details to create your account.
+          We'll send an OTP to verify your{" "}
+          {userType === "business" ? "phone number" : "contact"}.
         </p>
 
         {/* Google shortcut */}
@@ -264,7 +445,7 @@ export default function RegisterPage() {
           <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-4">{error}</p>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleDetailsSubmit} className="space-y-4">
           {/* Name */}
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1.5">
@@ -333,26 +514,32 @@ export default function RegisterPage() {
           {/* Contact method */}
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-2">
-              Sign in with
+              {userType === "individual" ? "Verify via" : "Phone number"}
             </label>
-            <div className="flex gap-2 mb-3">
-              {(["email", "phone"] as const).map((m) => (
-                <button
-                  type="button"
-                  key={m}
-                  onClick={() => setContactMethod(m)}
-                  className={`flex-1 py-2 rounded-lg border text-xs font-semibold transition-colors ${
-                    contactMethod === m
-                      ? "bg-brand-50 border-brand-400 text-brand-700"
-                      : "border-gray-200 text-gray-400 hover:border-gray-300"
-                  }`}
-                >
-                  {m === "email" ? <><Mail className="w-3.5 h-3.5 inline mr-1" />Email</> : <><Phone className="w-3.5 h-3.5 inline mr-1" />Phone</>}
-                </button>
-              ))}
-            </div>
 
-            {contactMethod === "email" ? (
+            {/* Toggle only for individuals */}
+            {userType === "individual" && (
+              <div className="flex gap-2 mb-3">
+                {(["email", "phone"] as const).map((m) => (
+                  <button
+                    type="button"
+                    key={m}
+                    onClick={() => setContactMethod(m)}
+                    className={`flex-1 py-2 rounded-lg border text-xs font-semibold transition-colors ${
+                      contactMethod === m
+                        ? "bg-brand-50 border-brand-400 text-brand-700"
+                        : "border-gray-200 text-gray-400 hover:border-gray-300"
+                    }`}
+                  >
+                    {m === "email"
+                      ? <><Mail className="w-3.5 h-3.5 inline mr-1" />Email</>
+                      : <><Phone className="w-3.5 h-3.5 inline mr-1" />Phone</>}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {effectiveContactMethod === "email" ? (
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
@@ -379,7 +566,7 @@ export default function RegisterPage() {
             )}
           </div>
 
-          {/* Password */}
+          {/* Password — shown for both types */}
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1.5">
               Password <span className="font-normal text-gray-400">(optional — or use OTP to login)</span>
@@ -409,7 +596,7 @@ export default function RegisterPage() {
             className="btn-primary w-full justify-center"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
-            {loading ? "Creating account…" : "Create Account"}
+            {loading ? "Sending OTP…" : "Send OTP"}
           </button>
 
           <p className="text-xs text-gray-400 text-center">
