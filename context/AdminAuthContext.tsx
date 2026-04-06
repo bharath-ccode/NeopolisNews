@@ -20,14 +20,24 @@ interface AdminAuthContextValue {
   loading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<"ok" | "wrong_current">;
 }
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+// ─── Storage keys ─────────────────────────────────────────────────────────────
 
-const ADMIN_STORAGE_KEY = "neopolis_admin";
-// Default credentials — change in production
-const ADMIN_EMAIL = "admin@neopolisnews.com";
-const ADMIN_PASSWORD = "admin123";
+const ADMIN_SESSION_KEY = "neopolis_admin";
+const ADMIN_PWD_KEY     = "neopolis_admin_pwd";
+
+// Default credentials — overridden once the admin changes the password
+const DEFAULT_EMAIL    = "admin@neopolisnews.com";
+const DEFAULT_PASSWORD = "admin123";
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function getStoredPassword(): string {
+  if (typeof window === "undefined") return DEFAULT_PASSWORD;
+  return localStorage.getItem(ADMIN_PWD_KEY) ?? DEFAULT_PASSWORD;
+}
 
 // ─── Context ─────────────────────────────────────────────────────────────────
 
@@ -39,7 +49,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(ADMIN_STORAGE_KEY);
+      const raw = localStorage.getItem(ADMIN_SESSION_KEY);
       if (raw) setAdmin(JSON.parse(raw) as AdminUser);
     } catch {
       // ignore
@@ -50,12 +60,13 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(
     async (email: string, password: string): Promise<boolean> => {
       // In production: POST /api/admin/auth/login
+      const storedPassword = getStoredPassword();
       if (
-        email.trim().toLowerCase() === ADMIN_EMAIL &&
-        password === ADMIN_PASSWORD
+        email.trim().toLowerCase() === DEFAULT_EMAIL &&
+        password === storedPassword
       ) {
-        const adminUser: AdminUser = { email: ADMIN_EMAIL, name: "Admin" };
-        localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(adminUser));
+        const adminUser: AdminUser = { email: DEFAULT_EMAIL, name: "Admin" };
+        localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(adminUser));
         setAdmin(adminUser);
         return true;
       }
@@ -65,12 +76,25 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(() => {
-    localStorage.removeItem(ADMIN_STORAGE_KEY);
+    localStorage.removeItem(ADMIN_SESSION_KEY);
     setAdmin(null);
   }, []);
 
+  const changePassword = useCallback(
+    async (currentPassword: string, newPassword: string): Promise<"ok" | "wrong_current"> => {
+      // In production: POST /api/admin/auth/change-password
+      const storedPassword = getStoredPassword();
+      if (currentPassword !== storedPassword) {
+        return "wrong_current";
+      }
+      localStorage.setItem(ADMIN_PWD_KEY, newPassword);
+      return "ok";
+    },
+    []
+  );
+
   return (
-    <AdminAuthContext.Provider value={{ admin, loading, login, logout }}>
+    <AdminAuthContext.Provider value={{ admin, loading, login, logout, changePassword }}>
       {children}
     </AdminAuthContext.Provider>
   );

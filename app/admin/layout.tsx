@@ -13,14 +13,16 @@ import {
   PlusCircle,
   Loader2,
   ExternalLink,
+  Settings,
 } from "lucide-react";
 import clsx from "clsx";
 import { AdminAuthProvider, useAdminAuth } from "@/context/AdminAuthContext";
 
 const NAV = [
-  { href: "/admin",           icon: LayoutDashboard, label: "Dashboard"     },
-  { href: "/admin/news",      icon: Newspaper,       label: "News Articles" },
-  { href: "/admin/analytics", icon: BarChart3,        label: "Analytics"     },
+  { href: "/admin",            icon: LayoutDashboard, label: "Dashboard"     },
+  { href: "/admin/news",       icon: Newspaper,       label: "News Articles" },
+  { href: "/admin/analytics",  icon: BarChart3,       label: "Analytics"     },
+  { href: "/admin/settings",   icon: Settings,        label: "Settings"      },
 ];
 
 function AdminShell({ children }: { children: React.ReactNode }) {
@@ -205,10 +207,12 @@ function AdminShell({ children }: { children: React.ReactNode }) {
               })}
             </p>
           </div>
-          <Link href="/admin/news/create" className="btn-primary text-sm py-2">
-            <PlusCircle className="w-3.5 h-3.5" />
-            New Article
-          </Link>
+          {pathname !== "/admin/settings" && (
+            <Link href="/admin/news/create" className="btn-primary text-sm py-2">
+              <PlusCircle className="w-3.5 h-3.5" />
+              New Article
+            </Link>
+          )}
         </div>
 
         <div className="p-4 md:p-8">{children}</div>
