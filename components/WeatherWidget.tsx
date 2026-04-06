@@ -230,7 +230,7 @@ export default function WeatherWidget() {
 
       {/* ── Expanded dropdown panel ── */}
       {open && (
-        <div className="absolute left-0 top-full mt-2 w-72 bg-white rounded-xl border border-gray-100 shadow-xl z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl border border-gray-100 shadow-xl z-50 overflow-hidden">
 
           {/* Header */}
           <div className="bg-gradient-to-br from-brand-700 to-brand-900 text-white px-4 py-3">
