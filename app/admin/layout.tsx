@@ -51,8 +51,8 @@ function AdminShell({ children }: { children: React.ReactNode }) {
 
   if (!admin) return null;
 
-  function handleLogout() {
-    logout();
+  async function handleLogout() {
+    await logout();
     router.push("/admin/login");
   }
 

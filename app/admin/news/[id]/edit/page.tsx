@@ -14,8 +14,7 @@ export default function EditArticlePage() {
   const [article, setArticle] = useState<Article | null | undefined>(undefined);
 
   useEffect(() => {
-    const found = getArticleById(id);
-    setArticle(found);
+    getArticleById(id).then(setArticle);
   }, [id]);
 
   if (article === undefined) {

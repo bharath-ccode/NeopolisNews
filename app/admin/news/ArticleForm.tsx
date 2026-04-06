@@ -89,9 +89,9 @@ export default function ArticleForm({ article }: Props) {
       };
 
       if (isEdit) {
-        updateArticle(article.id, payload);
+        await updateArticle(article.id, payload);
       } else {
-        createArticle(payload);
+        await createArticle(payload);
       }
 
       router.push("/admin/news");

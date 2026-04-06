@@ -51,6 +51,8 @@ export default function AdminSettingsPage() {
       const result = await changePassword(currentPwd, newPwd);
       if (result === "wrong_current") {
         setError("Current password is incorrect.");
+      } else if (result === "error") {
+        setError("Failed to update password. Please try again.");
       } else {
         setSuccess(true);
         setCurrentPwd("");
@@ -266,15 +268,14 @@ export default function AdminSettingsPage() {
         </form>
       </div>
 
-      {/* Production migration note */}
-      <div className="card p-5 border-orange-100 bg-orange-50">
-        <p className="text-xs font-semibold text-orange-700 uppercase tracking-wider mb-2">
-          Dev mode — localStorage only
+      {/* Security note */}
+      <div className="card p-5 border-brand-100 bg-brand-50">
+        <p className="text-xs font-semibold text-brand-700 uppercase tracking-wider mb-2">
+          Secured by Supabase Auth
         </p>
-        <p className="text-xs text-orange-700 leading-relaxed">
-          Passwords are currently stored in browser localStorage. This is suitable
-          for local development only. See the production migration guide to move to
-          a real backend with hashed credentials.
+        <p className="text-xs text-brand-700 leading-relaxed">
+          Passwords are hashed and stored securely by Supabase. Sessions are
+          managed via httpOnly cookies and verified server-side on every request.
         </p>
       </div>
     </div>

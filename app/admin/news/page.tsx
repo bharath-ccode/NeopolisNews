@@ -44,8 +44,8 @@ export default function AdminNewsPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  const refresh = useCallback(() => {
-    setArticles(getArticles());
+  const refresh = useCallback(async () => {
+    setArticles(await getArticles());
   }, []);
 
   useEffect(() => {
@@ -62,15 +62,15 @@ export default function AdminNewsPage() {
     return matchSearch && matchCat && matchStatus;
   });
 
-  function handleDelete(id: string) {
-    deleteArticle(id);
+  async function handleDelete(id: string) {
+    await deleteArticle(id);
     setDeleteConfirm(null);
     refresh();
   }
 
-  function handleToggleStatus(article: Article) {
+  async function handleToggleStatus(article: Article) {
     const newStatus = article.status === "published" ? "draft" : "published";
-    updateArticle(article.id, { status: newStatus });
+    await updateArticle(article.id, { status: newStatus });
     refresh();
   }
 

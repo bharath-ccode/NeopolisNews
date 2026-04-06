@@ -20,11 +20,13 @@ export default function AdminLoginPage() {
     setError("");
     setLoading(true);
     try {
-      const ok = await login(email, password);
-      if (ok) {
+      const result = await login(email, password);
+      if (result === "ok") {
         router.push("/admin");
-      } else {
+      } else if (result === "invalid_credentials") {
         setError("Invalid email or password. Please try again.");
+      } else {
+        setError("Something went wrong. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -123,15 +125,6 @@ export default function AdminLoginPage() {
             </button>
           </form>
 
-          {/* Hint */}
-          <div className="mt-5 p-3 bg-gray-50 rounded-lg border border-gray-100">
-            <p className="text-xs text-gray-500 font-medium mb-1">
-              Demo credentials
-            </p>
-            <p className="text-xs text-gray-600 font-mono">
-              admin@neopolisnews.com / admin123
-            </p>
-          </div>
         </div>
 
         <p className="text-center text-xs text-gray-500 mt-6">

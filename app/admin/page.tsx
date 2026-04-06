@@ -27,9 +27,8 @@ export default function AdminDashboardPage() {
   });
 
   useEffect(() => {
-    const all = getArticles();
-    setArticles(all);
-    setStats(getArticleStats());
+    getArticles().then(setArticles);
+    getArticleStats().then(setStats);
   }, []);
 
   const recent = [...articles]
