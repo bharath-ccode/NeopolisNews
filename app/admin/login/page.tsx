@@ -23,10 +23,11 @@ export default function AdminLoginPage() {
       const result = await login(email, password);
       if (result === "ok") {
         router.push("/admin");
+        router.refresh();
       } else if (result === "invalid_credentials") {
         setError("Invalid email or password. Please try again.");
       } else {
-        setError("Something went wrong. Please try again.");
+        setError("Login failed. Check your credentials or that your admin account exists in Supabase.");
       }
     } finally {
       setLoading(false);

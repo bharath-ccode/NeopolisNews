@@ -48,9 +48,21 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(
     async (email: string, password: string): Promise<"ok" | "invalid_credentials" | "error"> => {
       const supabase = createClient();
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (!error) return "ok";
-      if (error.message.toLowerCase().includes("invalid")) return "invalid_credentials";
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        console.error("Supabase login error:", error.message, error.status);
+        const msg = error.message.toLowerCase();
+        if (
+          msg.includes("invalid") ||
+          msg.includes("wrong") ||
+          msg.includes("not found") ||
+          msg.includes("credentials") ||
+          error.status === 400 ||
+          error.status === 401
+        ) return "invalid_credentials";
+        return "error";
+      }
+      if (data.user) return "ok";
       return "error";
     },
     []
