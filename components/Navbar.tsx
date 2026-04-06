@@ -262,7 +262,7 @@ export default function Navbar() {
 
           {/* Auth + Mobile toggle */}
           <div className="flex items-center gap-3">
-            <div className="hidden lg:flex">
+            <div className="hidden lg:flex ml-4">
               <WeatherWidget />
             </div>
             <div className="hidden lg:flex">
