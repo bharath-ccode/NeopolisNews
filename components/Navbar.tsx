@@ -17,6 +17,10 @@ import {
   LogOut,
   User,
   Briefcase,
+  Cloud,
+  Sun,
+  CloudRain,
+  Wind,
 } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "@/context/AuthContext";
@@ -85,6 +89,24 @@ const NAV_ITEMS = [
     highlight: true,
   },
 ];
+
+// Mock weather — swap for a real API call when ready
+const WEATHER = { temp: 32, condition: "Partly Cloudy", humidity: 68, wind: 14 };
+
+function WeatherWidget() {
+  return (
+    <div className="flex items-center gap-2 text-brand-200 text-xs">
+      <Cloud className="w-3.5 h-3.5 text-brand-300" />
+      <span className="font-semibold text-white">{WEATHER.temp}°C</span>
+      <span>{WEATHER.condition}</span>
+      <span className="text-brand-400">·</span>
+      <Wind className="w-3 h-3 text-brand-400" />
+      <span>{WEATHER.wind} km/h</span>
+      <span className="text-brand-400">·</span>
+      <span>Humidity {WEATHER.humidity}%</span>
+    </div>
+  );
+}
 
 function UserMenu() {
   const { user, logout } = useAuth();
@@ -176,17 +198,29 @@ function UserMenu() {
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pathname = usePathname();
+
+  function handleMouseEnter(href: string) {
+    if (leaveTimer.current) clearTimeout(leaveTimer.current);
+    setActiveDropdown(href);
+  }
+
+  function handleMouseLeave() {
+    leaveTimer.current = setTimeout(() => setActiveDropdown(null), 150);
+  }
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
       {/* Top bar */}
-      <div className="bg-brand-950 text-brand-200 text-xs py-1.5 px-4 text-center hidden md:block">
-        Neopolis — 100-acre mixed-use urban district &nbsp;·&nbsp; Live updates
-        every week &nbsp;·&nbsp;
-        <Link href="/advertise" className="underline hover:text-white">
-          List your property or business →
-        </Link>
+      <div className="bg-brand-950 text-brand-200 text-xs py-1.5 px-4 hidden md:flex items-center justify-between">
+        <span>
+          Neopolis — 100-acre mixed-use urban district &nbsp;·&nbsp; Live updates every week &nbsp;·&nbsp;
+          <Link href="/advertise" className="underline hover:text-white">
+            List your property or business →
+          </Link>
+        </span>
+        <WeatherWidget />
       </div>
 
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -209,8 +243,8 @@ export default function Navbar() {
                 <div
                   key={item.href}
                   className="relative"
-                  onMouseEnter={() => setActiveDropdown(item.href)}
-                  onMouseLeave={() => setActiveDropdown(null)}
+                  onMouseEnter={() => handleMouseEnter(item.href)}
+                  onMouseLeave={handleMouseLeave}
                 >
                   <Link
                     href={item.href}
@@ -231,7 +265,7 @@ export default function Navbar() {
                   </Link>
 
                   {item.sub && activeDropdown === item.href && (
-                    <div className="absolute top-full left-0 w-52 bg-white rounded-xl border border-gray-100 shadow-lg pt-2 pb-1 z-50">
+                    <div className="absolute top-full left-0 mt-1 w-52 bg-white rounded-xl border border-gray-100 shadow-lg py-1 z-50">
                       {item.sub.map((s) => (
                         <Link
                           key={s.href}
