@@ -100,7 +100,7 @@ export default function AdminSettingsPage() {
           A
         </div>
         <div>
-          <p className="font-semibold text-gray-900">{admin?.name ?? "Admin"}</p>
+          <p className="font-semibold text-gray-900">{admin?.user_metadata?.name ?? admin?.email ?? "Admin"}</p>
           <p className="text-sm text-gray-500">{admin?.email}</p>
           <span className="badge bg-green-100 text-green-700 text-xs mt-1">
             <ShieldCheck className="w-3 h-3" /> Administrator
