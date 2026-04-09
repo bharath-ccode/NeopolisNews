@@ -230,7 +230,7 @@ export default function Navbar() {
                   </Link>
 
                   {item.sub && activeDropdown === item.href && (
-                    <div className="absolute top-full left-0 mt-1 w-52 bg-white rounded-xl border border-gray-100 shadow-lg py-1 z-50">
+                    <div className="absolute top-full left-0 w-52 bg-white rounded-xl border border-gray-100 shadow-lg pt-2 pb-1 z-50">
                       {item.sub.map((s) => (
                         <Link
                           key={s.href}
