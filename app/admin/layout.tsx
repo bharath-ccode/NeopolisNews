@@ -14,6 +14,8 @@ import {
   Loader2,
   ExternalLink,
   Settings,
+  HardHat,
+  Layers,
 } from "lucide-react";
 import clsx from "clsx";
 import { AdminAuthProvider, useAdminAuth } from "@/context/AdminAuthContext";
@@ -21,6 +23,8 @@ import { AdminAuthProvider, useAdminAuth } from "@/context/AdminAuthContext";
 const NAV = [
   { href: "/admin",            icon: LayoutDashboard, label: "Dashboard"     },
   { href: "/admin/news",       icon: Newspaper,       label: "News Articles" },
+  { href: "/admin/builders",   icon: HardHat,         label: "Builders"      },
+  { href: "/admin/projects",   icon: Layers,          label: "Projects"      },
   { href: "/admin/analytics",  icon: BarChart3,       label: "Analytics"     },
   { href: "/admin/settings",   icon: Settings,        label: "Settings"      },
 ];
@@ -83,7 +87,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold text-gray-900 truncate">
-                {admin.name}
+                {admin.user_metadata?.name ?? admin.email}
               </p>
               <p className="text-xs text-gray-400 truncate">{admin.email}</p>
             </div>
