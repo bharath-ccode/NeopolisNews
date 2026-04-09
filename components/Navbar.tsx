@@ -17,6 +17,7 @@ import {
   LogOut,
   User,
   Briefcase,
+  HeartPulse,
 } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "@/context/AuthContext";
@@ -46,6 +47,17 @@ const NAV_ITEMS = [
       { label: "Office Leasing",      href: "/rentals#office"      },
       { label: "Retail Shops",        href: "/rentals#retail"      },
       { label: "Resale Listings",     href: "/rentals#resale"      },
+    ],
+  },
+  {
+    label: "Health",
+    href: "/health",
+    icon: HeartPulse,
+    sub: [
+      { label: "Hospitals",            href: "/health#hospitals"   },
+      { label: "Ambulance Services",   href: "/health#ambulance"  },
+      { label: "Clinics",              href: "/health#clinics"    },
+      { label: "Pharmacies",           href: "/health#pharmacies" },
     ],
   },
   {
