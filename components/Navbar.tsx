@@ -31,6 +31,7 @@ const NAV_ITEMS = [
     icon: Building2,
     sub: [
       { label: "Project Pages",         href: "/real-estate#projects"     },
+      { label: "Resale & Rentals",      href: "/real-estate/classifieds"  },
       { label: "Price Trends",          href: "/real-estate#prices"       },
       { label: "Construction Updates",  href: "/real-estate#construction" },
       { label: "Floor Plans",           href: "/real-estate#floorplans"   },
@@ -190,7 +191,17 @@ function UserMenu() {
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pathname = usePathname();
+
+  function handleMouseEnter(href: string) {
+    if (leaveTimer.current) clearTimeout(leaveTimer.current);
+    setActiveDropdown(href);
+  }
+
+  function handleMouseLeave() {
+    leaveTimer.current = setTimeout(() => setActiveDropdown(null), 150);
+  }
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
@@ -223,8 +234,8 @@ export default function Navbar() {
                 <div
                   key={item.href}
                   className="relative"
-                  onMouseEnter={() => setActiveDropdown(item.href)}
-                  onMouseLeave={() => setActiveDropdown(null)}
+                  onMouseEnter={() => handleMouseEnter(item.href)}
+                  onMouseLeave={handleMouseLeave}
                 >
                   <Link
                     href={item.href}
