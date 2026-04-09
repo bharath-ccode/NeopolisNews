@@ -30,6 +30,9 @@ import {
   Stethoscope,
   PhoneCall,
   Ambulance,
+  Landmark,
+  Wine,
+  Trees,
 } from "lucide-react";
 import { useAuth, UserType, RegisterData, BusinessHours } from "@/context/AuthContext";
 
@@ -50,6 +53,12 @@ const HEALTH_TYPES = [
   { id: "Pharmacy",   label: "Pharmacy",   Icon: Pill,       color: "bg-teal-50 text-teal-600"  },
   { id: "Clinic",     label: "Clinic",     Icon: Stethoscope,color: "bg-cyan-50 text-cyan-600"  },
   { id: "Ambulance",  label: "Ambulance",  Icon: Ambulance,  color: "bg-orange-50 text-orange-600" },
+];
+
+const EVENT_TYPES = [
+  { id: "Convention Center", label: "Convention Center", Icon: Landmark, color: "bg-violet-50 text-violet-600" },
+  { id: "Banquet Hall",      label: "Banquet Hall",      Icon: Wine,     color: "bg-rose-50 text-rose-600"    },
+  { id: "Outdoor Space",     label: "Outdoor Space",     Icon: Trees,    color: "bg-lime-50 text-lime-600"    },
 ];
 
 // types that require an emergency / helpline number
@@ -516,6 +525,16 @@ export default function RegisterPage() {
                   selected={businessType}
                   onSelect={(id) => { setBusinessType(id); setEmergencyPhone(""); }}
                   healthStyle
+                />
+                <div className="flex items-center gap-2 my-2">
+                  <div className="flex-1 h-px bg-violet-100" />
+                  <span className="text-xs font-semibold text-violet-500 uppercase tracking-wide">Events</span>
+                  <div className="flex-1 h-px bg-violet-100" />
+                </div>
+                <TypeGrid
+                  types={EVENT_TYPES}
+                  selected={businessType}
+                  onSelect={(id) => { setBusinessType(id); setEmergencyPhone(""); }}
                 />
               </div>
 

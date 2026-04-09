@@ -24,6 +24,9 @@ import {
   Stethoscope,
   PhoneCall,
   Ambulance,
+  Landmark,
+  Wine,
+  Trees,
 } from "lucide-react";
 import { useAuth, BusinessHours } from "@/context/AuthContext";
 import Link from "next/link";
@@ -47,7 +50,13 @@ const HEALTH_TYPES: BizType[] = [
   { id: "Ambulance",  label: "Ambulance",  Icon: Ambulance,  color: "bg-orange-50 text-orange-600" },
 ];
 
-const ALL_TYPES: BizType[] = [...LIFESTYLE_TYPES, ...HEALTH_TYPES];
+const EVENT_TYPES: BizType[] = [
+  { id: "Convention Center", label: "Convention Center", Icon: Landmark, color: "bg-violet-50 text-violet-600" },
+  { id: "Banquet Hall",      label: "Banquet Hall",      Icon: Wine,     color: "bg-rose-50 text-rose-600"    },
+  { id: "Outdoor Space",     label: "Outdoor Space",     Icon: Trees,    color: "bg-lime-50 text-lime-600"    },
+];
+
+const ALL_TYPES: BizType[] = [...LIFESTYLE_TYPES, ...HEALTH_TYPES, ...EVENT_TYPES];
 const EMERGENCY_TYPES = new Set(["Hospital", "Clinic", "Ambulance"]);
 
 function TypeGrid({
@@ -198,6 +207,16 @@ export default function BusinessProfile() {
               selected={businessType}
               onSelect={(id) => { setBusinessType(id); setEmergencyPhone(""); }}
               healthStyle
+            />
+            <div className="flex items-center gap-2 my-2">
+              <div className="flex-1 h-px bg-violet-100" />
+              <span className="text-xs font-semibold text-violet-500 uppercase tracking-wide">Events</span>
+              <div className="flex-1 h-px bg-violet-100" />
+            </div>
+            <TypeGrid
+              types={EVENT_TYPES}
+              selected={businessType}
+              onSelect={(id) => { setBusinessType(id); setEmergencyPhone(""); }}
             />
           </div>
 

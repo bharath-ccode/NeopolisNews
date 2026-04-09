@@ -18,6 +18,7 @@ import {
   User,
   Briefcase,
   HeartPulse,
+  CalendarDays,
 } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "@/context/AuthContext";
@@ -58,6 +59,15 @@ const NAV_ITEMS = [
       { label: "Ambulance Services",   href: "/health#ambulance"  },
       { label: "Clinics",              href: "/health#clinics"    },
       { label: "Pharmacies",           href: "/health#pharmacies" },
+    ],
+  },
+  {
+    label: "Events",
+    href: "/events",
+    icon: CalendarDays,
+    sub: [
+      { label: "Event Spaces",    href: "/events/spaces" },
+      { label: "Upcoming Events", href: "/events"        },
     ],
   },
   {
