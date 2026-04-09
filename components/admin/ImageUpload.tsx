@@ -37,8 +37,10 @@ export default function ImageUpload({
     try {
       const url = await uploadImage(file, folder);
       onChange(url);
-    } catch {
-      setError("Upload failed. Please try again.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Upload failed";
+      setError(msg);
+      console.error("ImageUpload error:", err);
     } finally {
       setUploading(false);
       // Reset input so same file can be re-selected
