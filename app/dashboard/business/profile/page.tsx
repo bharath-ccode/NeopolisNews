@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   Briefcase,
   Mail,
@@ -19,19 +19,74 @@ import {
   Coffee,
   Dumbbell,
   Building2,
+  Hospital,
+  Pill,
+  Stethoscope,
+  PhoneCall,
 } from "lucide-react";
 import { useAuth, BusinessHours } from "@/context/AuthContext";
 import Link from "next/link";
 
-const BUSINESS_TYPES = [
-  { id: "Restaurant",  label: "Restaurant",    Icon: Utensils,    color: "bg-orange-50 text-orange-600 border-orange-200" },
-  { id: "Movie Hall",  label: "Movie Hall",    Icon: Film,        color: "bg-purple-50 text-purple-600 border-purple-200" },
-  { id: "Shop",        label: "Shop / Retail", Icon: ShoppingBag, color: "bg-blue-50 text-blue-600 border-blue-200"       },
-  { id: "Saloon",      label: "Saloon",        Icon: Scissors,    color: "bg-pink-50 text-pink-600 border-pink-200"       },
-  { id: "Cafe",        label: "Cafe",          Icon: Coffee,      color: "bg-yellow-50 text-yellow-700 border-yellow-200" },
-  { id: "Fitness",     label: "Fitness & Gym", Icon: Dumbbell,    color: "bg-green-50 text-green-600 border-green-200"    },
-  { id: "Other",       label: "Other",         Icon: Building2,   color: "bg-gray-50 text-gray-600 border-gray-200"       },
+type BizType = { id: string; label: string; Icon: React.ComponentType<{ className?: string }>; color: string };
+
+const LIFESTYLE_TYPES: BizType[] = [
+  { id: "Restaurant",  label: "Restaurant",    Icon: Utensils,    color: "bg-orange-50 text-orange-600" },
+  { id: "Movie Hall",  label: "Movie Hall",    Icon: Film,        color: "bg-purple-50 text-purple-600" },
+  { id: "Shop",        label: "Shop / Retail", Icon: ShoppingBag, color: "bg-blue-50 text-blue-600"     },
+  { id: "Saloon",      label: "Saloon",        Icon: Scissors,    color: "bg-pink-50 text-pink-600"     },
+  { id: "Cafe",        label: "Cafe",          Icon: Coffee,      color: "bg-yellow-50 text-yellow-700" },
+  { id: "Fitness",     label: "Fitness & Gym", Icon: Dumbbell,    color: "bg-green-50 text-green-600"   },
+  { id: "Other",       label: "Other",         Icon: Building2,   color: "bg-gray-50 text-gray-600"     },
 ];
+
+const HEALTH_TYPES: BizType[] = [
+  { id: "Hospital",  label: "Hospital",  Icon: Hospital,    color: "bg-red-50 text-red-600"   },
+  { id: "Pharmacy",  label: "Pharmacy",  Icon: Pill,        color: "bg-teal-50 text-teal-600" },
+  { id: "Clinic",    label: "Clinic",    Icon: Stethoscope, color: "bg-cyan-50 text-cyan-600" },
+];
+
+const ALL_TYPES: BizType[] = [...LIFESTYLE_TYPES, ...HEALTH_TYPES];
+const EMERGENCY_TYPES = new Set(["Hospital", "Clinic"]);
+
+function TypeGrid({
+  types,
+  selected,
+  onSelect,
+  healthStyle = false,
+}: {
+  types: BizType[];
+  selected: string;
+  onSelect: (id: string) => void;
+  healthStyle?: boolean;
+}) {
+  return (
+    <div className="grid grid-cols-4 gap-2">
+      {types.map(({ id, label, Icon, color }) => {
+        const sel = selected === id;
+        return (
+          <button
+            key={id}
+            type="button"
+            onClick={() => onSelect(id)}
+            className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all text-center ${
+              sel
+                ? healthStyle ? "border-red-500 bg-red-50" : "border-brand-500 bg-brand-50"
+                : "border-gray-100 hover:border-gray-300 bg-white"
+            }`}
+          >
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${sel ? (healthStyle ? "bg-red-100" : "bg-brand-100") : color}`}>
+              <Icon className={`w-4 h-4 ${sel ? (healthStyle ? "text-red-600" : "text-brand-600") : ""}`} />
+            </div>
+            <span className={`text-xs font-semibold leading-tight ${sel ? (healthStyle ? "text-red-700" : "text-brand-700") : "text-gray-600"}`}>
+              {label}
+            </span>
+            {sel && <CheckCircle className={`w-3.5 h-3.5 ${healthStyle ? "text-red-600" : "text-brand-600"}`} />}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -54,6 +109,7 @@ export default function BusinessProfile() {
   const [hoursOpen, setHoursOpen] = useState(initHours.open);
   const [hoursClose, setHoursClose] = useState(initHours.close);
   const [openDays, setOpenDays] = useState<string[]>(initHours.days);
+  const [emergencyPhone, setEmergencyPhone] = useState(user?.emergencyPhone?.replace("+91", "") ?? "");
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -73,7 +129,7 @@ export default function BusinessProfile() {
     setTimeout(() => setSaved(false), 3000);
   }
 
-  const selectedType = BUSINESS_TYPES.find((t) => t.id === businessType);
+  const selectedType = ALL_TYPES.find((t) => t.id === businessType);
   const inputClass = "w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500";
 
   return (
@@ -125,30 +181,45 @@ export default function BusinessProfile() {
           {/* Business type — visual cards */}
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-2">Business type</label>
-            <div className="grid grid-cols-4 gap-2">
-              {BUSINESS_TYPES.map(({ id, label, Icon, color }) => {
-                const selected = businessType === id;
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => setBusinessType(id)}
-                    className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all text-center ${
-                      selected ? "border-brand-500 bg-brand-50" : "border-gray-100 hover:border-gray-300 bg-white"
-                    }`}
-                  >
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${selected ? "bg-brand-100" : color}`}>
-                      <Icon className={`w-4 h-4 ${selected ? "text-brand-600" : ""}`} />
-                    </div>
-                    <span className={`text-xs font-semibold leading-tight ${selected ? "text-brand-700" : "text-gray-600"}`}>
-                      {label}
-                    </span>
-                    {selected && <CheckCircle className="w-3.5 h-3.5 text-brand-600" />}
-                  </button>
-                );
-              })}
+            <TypeGrid
+              types={LIFESTYLE_TYPES}
+              selected={businessType}
+              onSelect={(id) => { setBusinessType(id); setEmergencyPhone(""); }}
+            />
+            <div className="flex items-center gap-2 my-2">
+              <div className="flex-1 h-px bg-red-100" />
+              <span className="text-xs font-semibold text-red-500 uppercase tracking-wide">Health</span>
+              <div className="flex-1 h-px bg-red-100" />
             </div>
+            <TypeGrid
+              types={HEALTH_TYPES}
+              selected={businessType}
+              onSelect={(id) => { setBusinessType(id); setEmergencyPhone(""); }}
+              healthStyle
+            />
           </div>
+
+          {/* Emergency number — hospitals & clinics only */}
+          {EMERGENCY_TYPES.has(businessType) && (
+            <div className="border border-red-200 bg-red-50 rounded-xl p-3 space-y-2">
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-red-700">
+                <PhoneCall className="w-3.5 h-3.5" /> Emergency / 24h helpline number
+              </label>
+              <div className="flex">
+                <span className="flex items-center px-3 border border-r-0 border-red-200 rounded-l-lg bg-red-100 text-sm text-red-600 font-semibold">
+                  +91
+                </span>
+                <input
+                  type="tel"
+                  value={emergencyPhone}
+                  onChange={(e) => setEmergencyPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  placeholder="Emergency contact number"
+                  className="flex-1 px-3 py-2.5 border border-red-200 rounded-r-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400 bg-white"
+                />
+              </div>
+              <p className="text-xs text-red-500">Displayed prominently on your listing for patients.</p>
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1.5">About your business</label>

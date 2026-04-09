@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -25,22 +25,77 @@ import {
   Coffee,
   Dumbbell,
   Clock,
+  Hospital,
+  Pill,
+  Stethoscope,
+  PhoneCall,
 } from "lucide-react";
 import { useAuth, UserType, RegisterData, BusinessHours } from "@/context/AuthContext";
 
 type Step = "type" | "details" | "verify";
 
-const BUSINESS_TYPES = [
-  { id: "Restaurant",  label: "Restaurant",    Icon: Utensils,    color: "bg-orange-50 text-orange-600 border-orange-200" },
-  { id: "Movie Hall",  label: "Movie Hall",    Icon: Film,        color: "bg-purple-50 text-purple-600 border-purple-200" },
-  { id: "Shop",        label: "Shop / Retail", Icon: ShoppingBag, color: "bg-blue-50 text-blue-600 border-blue-200"       },
-  { id: "Saloon",      label: "Saloon",        Icon: Scissors,    color: "bg-pink-50 text-pink-600 border-pink-200"       },
-  { id: "Cafe",        label: "Cafe",          Icon: Coffee,      color: "bg-yellow-50 text-yellow-700 border-yellow-200" },
-  { id: "Fitness",     label: "Fitness & Gym", Icon: Dumbbell,    color: "bg-green-50 text-green-600 border-green-200"    },
-  { id: "Other",       label: "Other",         Icon: Building2,   color: "bg-gray-50 text-gray-600 border-gray-200"       },
+const LIFESTYLE_TYPES = [
+  { id: "Restaurant",  label: "Restaurant",    Icon: Utensils,    color: "bg-orange-50 text-orange-600" },
+  { id: "Movie Hall",  label: "Movie Hall",    Icon: Film,        color: "bg-purple-50 text-purple-600" },
+  { id: "Shop",        label: "Shop / Retail", Icon: ShoppingBag, color: "bg-blue-50 text-blue-600"     },
+  { id: "Saloon",      label: "Saloon",        Icon: Scissors,    color: "bg-pink-50 text-pink-600"     },
+  { id: "Cafe",        label: "Cafe",          Icon: Coffee,      color: "bg-yellow-50 text-yellow-700" },
+  { id: "Fitness",     label: "Fitness & Gym", Icon: Dumbbell,    color: "bg-green-50 text-green-600"   },
+  { id: "Other",       label: "Other",         Icon: Building2,   color: "bg-gray-50 text-gray-600"     },
 ];
 
+const HEALTH_TYPES = [
+  { id: "Hospital",  label: "Hospital",  Icon: Hospital,     color: "bg-red-50 text-red-600"  },
+  { id: "Pharmacy",  label: "Pharmacy",  Icon: Pill,         color: "bg-teal-50 text-teal-600" },
+  { id: "Clinic",    label: "Clinic",    Icon: Stethoscope,  color: "bg-cyan-50 text-cyan-600" },
+];
+
+// types that require an emergency / helpline number
+const EMERGENCY_TYPES = new Set(["Hospital", "Clinic"]);
+
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+type BizType = { id: string; label: string; Icon: React.ComponentType<{ className?: string }>; color: string };
+
+function TypeGrid({
+  types,
+  selected,
+  onSelect,
+  healthStyle = false,
+}: {
+  types: BizType[];
+  selected: string;
+  onSelect: (id: string) => void;
+  healthStyle?: boolean;
+}) {
+  return (
+    <div className="grid grid-cols-4 gap-2">
+      {types.map(({ id, label, Icon, color }) => {
+        const sel = selected === id;
+        return (
+          <button
+            key={id}
+            type="button"
+            onClick={() => onSelect(id)}
+            className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all text-center ${
+              sel
+                ? healthStyle ? "border-red-500 bg-red-50" : "border-brand-500 bg-brand-50"
+                : "border-gray-100 hover:border-gray-300 bg-white"
+            }`}
+          >
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${sel ? (healthStyle ? "bg-red-100" : "bg-brand-100") : color}`}>
+              <Icon className={`w-4 h-4 ${sel ? (healthStyle ? "text-red-600" : "text-brand-600") : ""}`} />
+            </div>
+            <span className={`text-xs font-semibold leading-tight ${sel ? (healthStyle ? "text-red-700" : "text-brand-700") : "text-gray-600"}`}>
+              {label}
+            </span>
+            {sel && <CheckCircle className={`w-3.5 h-3.5 ${healthStyle ? "text-red-600" : "text-brand-600"}`} />}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 const OTP_RESEND_SECONDS = 60;
 
@@ -68,6 +123,7 @@ export default function RegisterPage() {
   // Business only
   const [businessName, setBusinessName] = useState("");
   const [businessType, setBusinessType] = useState("");
+  const [emergencyPhone, setEmergencyPhone] = useState("");
   const [hoursOpen, setHoursOpen] = useState(DEFAULT_HOURS.open);
   const [hoursClose, setHoursClose] = useState(DEFAULT_HOURS.close);
   const [openDays, setOpenDays] = useState<string[]>(DEFAULT_HOURS.days);
@@ -177,6 +233,8 @@ export default function RegisterPage() {
       businessName: userType === "business" ? businessName : undefined,
       businessType: userType === "business" ? businessType : undefined,
       businessCategory: userType === "business" ? businessType : undefined,
+      emergencyPhone: userType === "business" && EMERGENCY_TYPES.has(businessType) && emergencyPhone
+        ? emergencyPhone : undefined,
       businessHours: userType === "business"
         ? { open: hoursOpen, close: hoursClose, days: openDays }
         : undefined,
@@ -441,32 +499,45 @@ export default function RegisterPage() {
               {/* Business type — visual cards */}
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-2">What type of business?</label>
-                <div className="grid grid-cols-4 gap-2">
-                  {BUSINESS_TYPES.map(({ id, label, Icon, color }) => {
-                    const selected = businessType === id;
-                    return (
-                      <button
-                        key={id}
-                        type="button"
-                        onClick={() => setBusinessType(id)}
-                        className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all text-center ${
-                          selected
-                            ? "border-brand-500 bg-brand-50"
-                            : "border-gray-100 hover:border-gray-300 bg-white"
-                        }`}
-                      >
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${selected ? "bg-brand-100" : color}`}>
-                          <Icon className={`w-4 h-4 ${selected ? "text-brand-600" : ""}`} />
-                        </div>
-                        <span className={`text-xs font-semibold leading-tight ${selected ? "text-brand-700" : "text-gray-600"}`}>
-                          {label}
-                        </span>
-                        {selected && <CheckCircle className="w-3.5 h-3.5 text-brand-600" />}
-                      </button>
-                    );
-                  })}
+                <TypeGrid
+                  types={LIFESTYLE_TYPES}
+                  selected={businessType}
+                  onSelect={(id) => { setBusinessType(id); setEmergencyPhone(""); }}
+                />
+                <div className="flex items-center gap-2 my-2">
+                  <div className="flex-1 h-px bg-red-100" />
+                  <span className="text-xs font-semibold text-red-500 uppercase tracking-wide">Health</span>
+                  <div className="flex-1 h-px bg-red-100" />
                 </div>
+                <TypeGrid
+                  types={HEALTH_TYPES}
+                  selected={businessType}
+                  onSelect={(id) => { setBusinessType(id); setEmergencyPhone(""); }}
+                  healthStyle
+                />
               </div>
+
+              {/* Emergency number — hospitals & clinics only */}
+              {EMERGENCY_TYPES.has(businessType) && (
+                <div className="border border-red-200 bg-red-50 rounded-xl p-3 space-y-2">
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-red-700">
+                    <PhoneCall className="w-3.5 h-3.5" /> Emergency / 24h helpline number
+                  </label>
+                  <div className="flex">
+                    <span className="flex items-center px-3 border border-r-0 border-red-200 rounded-l-lg bg-red-100 text-sm text-red-600 font-semibold">
+                      +91
+                    </span>
+                    <input
+                      type="tel"
+                      value={emergencyPhone}
+                      onChange={(e) => setEmergencyPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                      placeholder="Emergency contact number"
+                      className="flex-1 px-3 py-2.5 border border-red-200 rounded-r-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400 bg-white"
+                    />
+                  </div>
+                  <p className="text-xs text-red-500">Displayed prominently on your listing for patients.</p>
+                </div>
+              )}
 
               {/* Business hours */}
               <div>
