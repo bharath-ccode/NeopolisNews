@@ -28,6 +28,7 @@ const NAV_ITEMS = [
     icon: Building2,
     sub: [
       { label: "Project Pages", href: "/real-estate#projects" },
+      { label: "Resale & Rentals", href: "/real-estate/classifieds" },
       { label: "Price Trends", href: "/real-estate#prices" },
       { label: "Construction Updates", href: "/real-estate#construction" },
       { label: "Floor Plans", href: "/real-estate#floorplans" },
