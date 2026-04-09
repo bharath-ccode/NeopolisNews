@@ -27,33 +27,35 @@ import {
   Landmark,
   Wine,
   Trees,
+  Microscope,
 } from "lucide-react";
 import { useAuth, BusinessHours } from "@/context/AuthContext";
 import Link from "next/link";
 
-type BizType = { id: string; label: string; Icon: React.ComponentType<{ className?: string }>; color: string };
+type BizType = { id: string; label: string; group: string; Icon: React.ComponentType<{ className?: string }>; color: string };
 
 const LIFESTYLE_TYPES: BizType[] = [
-  { id: "Restaurant",  label: "Restaurant",    Icon: Utensils,    color: "bg-orange-50 text-orange-600" },
-  { id: "Movie Hall",  label: "Movie Hall",    Icon: Film,        color: "bg-purple-50 text-purple-600" },
-  { id: "Shop",        label: "Shop / Retail", Icon: ShoppingBag, color: "bg-blue-50 text-blue-600"     },
-  { id: "Saloon",      label: "Saloon",        Icon: Scissors,    color: "bg-pink-50 text-pink-600"     },
-  { id: "Cafe",        label: "Cafe",          Icon: Coffee,      color: "bg-yellow-50 text-yellow-700" },
-  { id: "Fitness",     label: "Fitness & Gym", Icon: Dumbbell,    color: "bg-green-50 text-green-600"   },
-  { id: "Other",       label: "Other",         Icon: Building2,   color: "bg-gray-50 text-gray-600"     },
+  { id: "Restaurant",  label: "Restaurant",    group: "Lifestyle", Icon: Utensils,    color: "bg-orange-50 text-orange-600" },
+  { id: "Movie Hall",  label: "Movie Hall",    group: "Lifestyle", Icon: Film,        color: "bg-purple-50 text-purple-600" },
+  { id: "Shop",        label: "Shop / Retail", group: "Lifestyle", Icon: ShoppingBag, color: "bg-blue-50 text-blue-600"     },
+  { id: "Saloon",      label: "Saloon",        group: "Lifestyle", Icon: Scissors,    color: "bg-pink-50 text-pink-600"     },
+  { id: "Cafe",        label: "Cafe",          group: "Lifestyle", Icon: Coffee,      color: "bg-yellow-50 text-yellow-700" },
+  { id: "Fitness",     label: "Fitness & Gym", group: "Lifestyle", Icon: Dumbbell,    color: "bg-green-50 text-green-600"   },
+  { id: "Other",       label: "Other",         group: "Lifestyle", Icon: Building2,   color: "bg-gray-50 text-gray-600"     },
 ];
 
 const HEALTH_TYPES: BizType[] = [
-  { id: "Hospital",   label: "Hospital",   Icon: Hospital,   color: "bg-red-50 text-red-600"       },
-  { id: "Pharmacy",   label: "Pharmacy",   Icon: Pill,       color: "bg-teal-50 text-teal-600"     },
-  { id: "Clinic",     label: "Clinic",     Icon: Stethoscope,color: "bg-cyan-50 text-cyan-600"     },
-  { id: "Ambulance",  label: "Ambulance",  Icon: Ambulance,  color: "bg-orange-50 text-orange-600" },
+  { id: "Hospital",    label: "Hospital",    group: "Health", Icon: Hospital,    color: "bg-red-50 text-red-600"        },
+  { id: "Pharmacy",    label: "Pharmacy",    group: "Health", Icon: Pill,        color: "bg-teal-50 text-teal-600"     },
+  { id: "Clinic",      label: "Clinic",      group: "Health", Icon: Stethoscope, color: "bg-cyan-50 text-cyan-600"     },
+  { id: "Ambulance",   label: "Ambulance",   group: "Health", Icon: Ambulance,   color: "bg-orange-50 text-orange-600" },
+  { id: "Diagnostics", label: "Diagnostics", group: "Health", Icon: Microscope,  color: "bg-sky-50 text-sky-600"       },
 ];
 
 const EVENT_TYPES: BizType[] = [
-  { id: "Convention Center", label: "Convention Center", Icon: Landmark, color: "bg-violet-50 text-violet-600" },
-  { id: "Banquet Hall",      label: "Banquet Hall",      Icon: Wine,     color: "bg-rose-50 text-rose-600"    },
-  { id: "Outdoor Space",     label: "Outdoor Space",     Icon: Trees,    color: "bg-lime-50 text-lime-600"    },
+  { id: "Convention Center", label: "Convention Center", group: "Events", Icon: Landmark, color: "bg-violet-50 text-violet-600" },
+  { id: "Banquet Hall",      label: "Banquet Hall",      group: "Events", Icon: Wine,     color: "bg-rose-50 text-rose-600"    },
+  { id: "Outdoor Space",     label: "Outdoor Space",     group: "Events", Icon: Trees,    color: "bg-lime-50 text-lime-600"    },
 ];
 
 const ALL_TYPES: BizType[] = [...LIFESTYLE_TYPES, ...HEALTH_TYPES, ...EVENT_TYPES];
@@ -108,7 +110,8 @@ export default function BusinessProfile() {
 
   const [contactName, setContactName] = useState(user?.name ?? "");
   const [businessName, setBusinessName] = useState(user?.businessName ?? "");
-  const [businessType, setBusinessType] = useState(user?.businessType ?? "");
+  // bizSubType is the specific type e.g. "Diagnostics"; businessType (group) is derived
+  const [bizSubType, setBizSubType] = useState(user?.businessSubType ?? user?.businessType ?? "");
   const [gstin, setGstin] = useState(user?.gstin ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
   const [phone, setPhone] = useState(user?.phone?.replace("+91", "") ?? "");
@@ -140,7 +143,7 @@ export default function BusinessProfile() {
     setTimeout(() => setSaved(false), 3000);
   }
 
-  const selectedType = ALL_TYPES.find((t) => t.id === businessType);
+  const selectedType = ALL_TYPES.find((t) => t.id === bizSubType);
   const inputClass = "w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500";
 
   return (
@@ -194,8 +197,8 @@ export default function BusinessProfile() {
             <label className="block text-xs font-semibold text-gray-500 mb-2">Business type</label>
             <TypeGrid
               types={LIFESTYLE_TYPES}
-              selected={businessType}
-              onSelect={(id) => { setBusinessType(id); setEmergencyPhone(""); }}
+              selected={bizSubType}
+              onSelect={(id) => { setBizSubType(id); setEmergencyPhone(""); }}
             />
             <div className="flex items-center gap-2 my-2">
               <div className="flex-1 h-px bg-red-100" />
@@ -204,8 +207,8 @@ export default function BusinessProfile() {
             </div>
             <TypeGrid
               types={HEALTH_TYPES}
-              selected={businessType}
-              onSelect={(id) => { setBusinessType(id); setEmergencyPhone(""); }}
+              selected={bizSubType}
+              onSelect={(id) => { setBizSubType(id); setEmergencyPhone(""); }}
               healthStyle
             />
             <div className="flex items-center gap-2 my-2">
@@ -215,13 +218,13 @@ export default function BusinessProfile() {
             </div>
             <TypeGrid
               types={EVENT_TYPES}
-              selected={businessType}
-              onSelect={(id) => { setBusinessType(id); setEmergencyPhone(""); }}
+              selected={bizSubType}
+              onSelect={(id) => { setBizSubType(id); setEmergencyPhone(""); }}
             />
           </div>
 
           {/* Emergency number — hospitals & clinics only */}
-          {EMERGENCY_TYPES.has(businessType) && (
+          {EMERGENCY_TYPES.has(bizSubType) && (
             <div className="border border-red-200 bg-red-50 rounded-xl p-3 space-y-2">
               <label className="flex items-center gap-1.5 text-xs font-semibold text-red-700">
                 <PhoneCall className="w-3.5 h-3.5" /> Emergency / 24h helpline number

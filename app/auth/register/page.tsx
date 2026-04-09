@@ -33,40 +33,48 @@ import {
   Landmark,
   Wine,
   Trees,
+  Microscope,
 } from "lucide-react";
 import { useAuth, UserType, RegisterData, BusinessHours } from "@/context/AuthContext";
 
 type Step = "type" | "details" | "verify";
 
-const LIFESTYLE_TYPES = [
-  { id: "Restaurant",  label: "Restaurant",    Icon: Utensils,    color: "bg-orange-50 text-orange-600" },
-  { id: "Movie Hall",  label: "Movie Hall",    Icon: Film,        color: "bg-purple-50 text-purple-600" },
-  { id: "Shop",        label: "Shop / Retail", Icon: ShoppingBag, color: "bg-blue-50 text-blue-600"     },
-  { id: "Saloon",      label: "Saloon",        Icon: Scissors,    color: "bg-pink-50 text-pink-600"     },
-  { id: "Cafe",        label: "Cafe",          Icon: Coffee,      color: "bg-yellow-50 text-yellow-700" },
-  { id: "Fitness",     label: "Fitness & Gym", Icon: Dumbbell,    color: "bg-green-50 text-green-600"   },
-  { id: "Other",       label: "Other",         Icon: Building2,   color: "bg-gray-50 text-gray-600"     },
+const LIFESTYLE_TYPES: BizType[] = [
+  { id: "Restaurant",  label: "Restaurant",    group: "Lifestyle", Icon: Utensils,    color: "bg-orange-50 text-orange-600" },
+  { id: "Movie Hall",  label: "Movie Hall",    group: "Lifestyle", Icon: Film,        color: "bg-purple-50 text-purple-600" },
+  { id: "Shop",        label: "Shop / Retail", group: "Lifestyle", Icon: ShoppingBag, color: "bg-blue-50 text-blue-600"     },
+  { id: "Saloon",      label: "Saloon",        group: "Lifestyle", Icon: Scissors,    color: "bg-pink-50 text-pink-600"     },
+  { id: "Cafe",        label: "Cafe",          group: "Lifestyle", Icon: Coffee,      color: "bg-yellow-50 text-yellow-700" },
+  { id: "Fitness",     label: "Fitness & Gym", group: "Lifestyle", Icon: Dumbbell,    color: "bg-green-50 text-green-600"   },
+  { id: "Other",       label: "Other",         group: "Lifestyle", Icon: Building2,   color: "bg-gray-50 text-gray-600"     },
 ];
 
-const HEALTH_TYPES = [
-  { id: "Hospital",   label: "Hospital",   Icon: Hospital,   color: "bg-red-50 text-red-600"    },
-  { id: "Pharmacy",   label: "Pharmacy",   Icon: Pill,       color: "bg-teal-50 text-teal-600"  },
-  { id: "Clinic",     label: "Clinic",     Icon: Stethoscope,color: "bg-cyan-50 text-cyan-600"  },
-  { id: "Ambulance",  label: "Ambulance",  Icon: Ambulance,  color: "bg-orange-50 text-orange-600" },
+const HEALTH_TYPES: BizType[] = [
+  { id: "Hospital",    label: "Hospital",     group: "Health", Icon: Hospital,    color: "bg-red-50 text-red-600"       },
+  { id: "Pharmacy",    label: "Pharmacy",     group: "Health", Icon: Pill,        color: "bg-teal-50 text-teal-600"    },
+  { id: "Clinic",      label: "Clinic",       group: "Health", Icon: Stethoscope, color: "bg-cyan-50 text-cyan-600"    },
+  { id: "Ambulance",   label: "Ambulance",    group: "Health", Icon: Ambulance,   color: "bg-orange-50 text-orange-600" },
+  { id: "Diagnostics", label: "Diagnostics",  group: "Health", Icon: Microscope,  color: "bg-sky-50 text-sky-600"      },
 ];
 
-const EVENT_TYPES = [
-  { id: "Convention Center", label: "Convention Center", Icon: Landmark, color: "bg-violet-50 text-violet-600" },
-  { id: "Banquet Hall",      label: "Banquet Hall",      Icon: Wine,     color: "bg-rose-50 text-rose-600"    },
-  { id: "Outdoor Space",     label: "Outdoor Space",     Icon: Trees,    color: "bg-lime-50 text-lime-600"    },
+const EVENT_TYPES: BizType[] = [
+  { id: "Convention Center", label: "Convention Center", group: "Events", Icon: Landmark, color: "bg-violet-50 text-violet-600" },
+  { id: "Banquet Hall",      label: "Banquet Hall",      group: "Events", Icon: Wine,     color: "bg-rose-50 text-rose-600"    },
+  { id: "Outdoor Space",     label: "Outdoor Space",     group: "Events", Icon: Trees,    color: "bg-lime-50 text-lime-600"    },
 ];
+
+// populate flat lookup after arrays are defined
+ALL_BIZ_TYPES.push(...LIFESTYLE_TYPES, ...HEALTH_TYPES, ...EVENT_TYPES);
 
 // types that require an emergency / helpline number
 const EMERGENCY_TYPES = new Set(["Hospital", "Clinic", "Ambulance"]);
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-type BizType = { id: string; label: string; Icon: React.ComponentType<{ className?: string }>; color: string };
+type BizType = { id: string; label: string; group: string; Icon: React.ComponentType<{ className?: string }>; color: string };
+
+// flat lookup used to derive group from a selected subtype id
+const ALL_BIZ_TYPES: BizType[] = [];
 
 function TypeGrid({
   types,
@@ -133,7 +141,7 @@ export default function RegisterPage() {
 
   // Business only
   const [businessName, setBusinessName] = useState("");
-  const [businessType, setBusinessType] = useState("");
+  const [bizSubType, setBizSubType] = useState("");   // e.g. "Diagnostics"
   const [emergencyPhone, setEmergencyPhone] = useState("");
   const [hoursOpen, setHoursOpen] = useState(DEFAULT_HOURS.open);
   const [hoursClose, setHoursClose] = useState(DEFAULT_HOURS.close);
@@ -183,7 +191,7 @@ export default function RegisterPage() {
     if (effectiveContactMethod === "email" && !email) { setError("Please enter your email."); return; }
     if (effectiveContactMethod === "phone" && phone.length < 10) { setError("Please enter a valid 10-digit phone number."); return; }
     if (userType === "business" && !businessName) { setError("Please enter your business name."); return; }
-    if (userType === "business" && !businessType) { setError("Please select your business type."); return; }
+    if (userType === "business" && !bizSubType) { setError("Please select your business type."); return; }
     if (userType === "business" && openDays.length === 0) { setError("Please select at least one open day."); return; }
 
     setLoading(true);
@@ -242,9 +250,11 @@ export default function RegisterPage() {
       phone: effectiveContactMethod === "phone" ? `+91${phone}` : undefined,
       password: password || undefined,
       businessName: userType === "business" ? businessName : undefined,
-      businessType: userType === "business" ? businessType : undefined,
-      businessCategory: userType === "business" ? businessType : undefined,
-      emergencyPhone: userType === "business" && EMERGENCY_TYPES.has(businessType) && emergencyPhone
+      businessType: userType === "business"
+        ? (ALL_BIZ_TYPES.find((t) => t.id === bizSubType)?.group ?? "") : undefined,
+      businessSubType: userType === "business" ? bizSubType : undefined,
+      businessCategory: userType === "business" ? bizSubType : undefined,
+      emergencyPhone: userType === "business" && EMERGENCY_TYPES.has(bizSubType) && emergencyPhone
         ? emergencyPhone : undefined,
       businessHours: userType === "business"
         ? { open: hoursOpen, close: hoursClose, days: openDays }
@@ -512,8 +522,8 @@ export default function RegisterPage() {
                 <label className="block text-xs font-semibold text-gray-500 mb-2">What type of business?</label>
                 <TypeGrid
                   types={LIFESTYLE_TYPES}
-                  selected={businessType}
-                  onSelect={(id) => { setBusinessType(id); setEmergencyPhone(""); }}
+                  selected={bizSubType}
+                  onSelect={(id) => { setBizSubType(id); setEmergencyPhone(""); }}
                 />
                 <div className="flex items-center gap-2 my-2">
                   <div className="flex-1 h-px bg-red-100" />
@@ -522,8 +532,8 @@ export default function RegisterPage() {
                 </div>
                 <TypeGrid
                   types={HEALTH_TYPES}
-                  selected={businessType}
-                  onSelect={(id) => { setBusinessType(id); setEmergencyPhone(""); }}
+                  selected={bizSubType}
+                  onSelect={(id) => { setBizSubType(id); setEmergencyPhone(""); }}
                   healthStyle
                 />
                 <div className="flex items-center gap-2 my-2">
@@ -533,13 +543,13 @@ export default function RegisterPage() {
                 </div>
                 <TypeGrid
                   types={EVENT_TYPES}
-                  selected={businessType}
-                  onSelect={(id) => { setBusinessType(id); setEmergencyPhone(""); }}
+                  selected={bizSubType}
+                  onSelect={(id) => { setBizSubType(id); setEmergencyPhone(""); }}
                 />
               </div>
 
               {/* Emergency number — hospitals & clinics only */}
-              {EMERGENCY_TYPES.has(businessType) && (
+              {EMERGENCY_TYPES.has(bizSubType) && (
                 <div className="border border-red-200 bg-red-50 rounded-xl p-3 space-y-2">
                   <label className="flex items-center gap-1.5 text-xs font-semibold text-red-700">
                     <PhoneCall className="w-3.5 h-3.5" /> Emergency / 24h helpline number

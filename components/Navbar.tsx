@@ -55,10 +55,11 @@ const NAV_ITEMS = [
     href: "/health",
     icon: HeartPulse,
     sub: [
-      { label: "Hospitals",            href: "/health#hospitals"   },
-      { label: "Ambulance Services",   href: "/health#ambulance"  },
-      { label: "Clinics",              href: "/health#clinics"    },
-      { label: "Pharmacies",           href: "/health#pharmacies" },
+      { label: "Hospitals",            href: "/health#hospitals"    },
+      { label: "Ambulance Services",   href: "/health#ambulance"   },
+      { label: "Clinics",              href: "/health#clinics"     },
+      { label: "Diagnostics",          href: "/health#diagnostics" },
+      { label: "Pharmacies",           href: "/health#pharmacies"  },
     ],
   },
   {

@@ -29,7 +29,8 @@ export interface User {
   location?: string;
   // Business fields
   businessName?: string;
-  businessType?: string;   // e.g. "Restaurant", "Movie Hall", "Shop", "Saloon", "Hospital"
+  businessType?: string;    // group: "Lifestyle" | "Health" | "Events"
+  businessSubType?: string; // specific: "Hospital" | "Diagnostics" | "Restaurant" etc.
   businessCategory?: string;
   businessHours?: BusinessHours;
   emergencyPhone?: string; // hospitals / clinics only
@@ -62,6 +63,7 @@ export interface RegisterData {
   // Business
   businessName?: string;
   businessType?: string;
+  businessSubType?: string;
   businessCategory?: string;
   businessHours?: BusinessHours;
   emergencyPhone?: string;
@@ -84,6 +86,7 @@ function makeMockUser(data: Partial<User> & { userType: UserType }): User {
     avatar: undefined,
     businessName: data.businessName,
     businessType: data.businessType,
+    businessSubType: data.businessSubType,
     businessCategory: data.businessCategory,
     businessHours: data.businessHours,
     emergencyPhone: data.emergencyPhone,
