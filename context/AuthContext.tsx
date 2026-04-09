@@ -12,6 +12,12 @@ import {
 
 export type UserType = "individual" | "business";
 
+export interface BusinessHours {
+  open: string;   // "09:00" 24-hour format
+  close: string;  // "22:00"
+  days: string[]; // e.g. ["Mon","Tue","Wed","Thu","Fri","Sat"]
+}
+
 export interface User {
   id: string;
   name: string;
@@ -23,7 +29,9 @@ export interface User {
   location?: string;
   // Business fields
   businessName?: string;
+  businessType?: string;   // e.g. "Restaurant", "Movie Hall", "Shop", "Saloon"
   businessCategory?: string;
+  businessHours?: BusinessHours;
   gstin?: string;
   createdAt: string;
 }
@@ -52,7 +60,9 @@ export interface RegisterData {
   password?: string;
   // Business
   businessName?: string;
+  businessType?: string;
   businessCategory?: string;
+  businessHours?: BusinessHours;
   gstin?: string;
 }
 
@@ -71,7 +81,9 @@ function makeMockUser(data: Partial<User> & { userType: UserType }): User {
     userType: data.userType,
     avatar: undefined,
     businessName: data.businessName,
+    businessType: data.businessType,
     businessCategory: data.businessCategory,
+    businessHours: data.businessHours,
     gstin: data.gstin,
     createdAt: new Date().toISOString(),
   };

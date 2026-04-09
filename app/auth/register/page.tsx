@@ -18,27 +18,37 @@ import {
   Briefcase,
   ShieldCheck,
   RefreshCw,
+  Utensils,
+  Film,
+  ShoppingBag,
+  Scissors,
+  Coffee,
+  Dumbbell,
+  Clock,
 } from "lucide-react";
-import { useAuth, UserType, RegisterData } from "@/context/AuthContext";
+import { useAuth, UserType, RegisterData, BusinessHours } from "@/context/AuthContext";
 
 type Step = "type" | "details" | "verify";
 
-const BUSINESS_CATEGORIES = [
-  "Real Estate Developer",
-  "Property Broker / Agent",
-  "Interior Design & Fit-Out",
-  "Retail / Fashion",
-  "Restaurant / F&B",
-  "Fitness & Wellness",
-  "IT / Corporate",
-  "Healthcare",
-  "Education",
-  "Financial Services",
-  "Legal Services",
-  "Other",
+const BUSINESS_TYPES = [
+  { id: "Restaurant",  label: "Restaurant",    Icon: Utensils,    color: "bg-orange-50 text-orange-600 border-orange-200" },
+  { id: "Movie Hall",  label: "Movie Hall",    Icon: Film,        color: "bg-purple-50 text-purple-600 border-purple-200" },
+  { id: "Shop",        label: "Shop / Retail", Icon: ShoppingBag, color: "bg-blue-50 text-blue-600 border-blue-200"       },
+  { id: "Saloon",      label: "Saloon",        Icon: Scissors,    color: "bg-pink-50 text-pink-600 border-pink-200"       },
+  { id: "Cafe",        label: "Cafe",          Icon: Coffee,      color: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+  { id: "Fitness",     label: "Fitness & Gym", Icon: Dumbbell,    color: "bg-green-50 text-green-600 border-green-200"    },
+  { id: "Other",       label: "Other",         Icon: Building2,   color: "bg-gray-50 text-gray-600 border-gray-200"       },
 ];
 
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
 const OTP_RESEND_SECONDS = 60;
+
+const DEFAULT_HOURS: BusinessHours = {
+  open: "09:00",
+  close: "21:00",
+  days: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+};
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -57,7 +67,10 @@ export default function RegisterPage() {
 
   // Business only
   const [businessName, setBusinessName] = useState("");
-  const [businessCategory, setBusinessCategory] = useState("");
+  const [businessType, setBusinessType] = useState("");
+  const [hoursOpen, setHoursOpen] = useState(DEFAULT_HOURS.open);
+  const [hoursClose, setHoursClose] = useState(DEFAULT_HOURS.close);
+  const [openDays, setOpenDays] = useState<string[]>(DEFAULT_HOURS.days);
   const [gstin, setGstin] = useState("");
 
   // OTP state
@@ -73,10 +86,7 @@ export default function RegisterPage() {
     if (resendTimer <= 0) return;
     timerRef.current = setInterval(() => {
       setResendTimer((t) => {
-        if (t <= 1) {
-          clearInterval(timerRef.current!);
-          return 0;
-        }
+        if (t <= 1) { clearInterval(timerRef.current!); return 0; }
         return t - 1;
       });
     }, 1000);
@@ -87,13 +97,18 @@ export default function RegisterPage() {
   const effectiveContactMethod: "email" | "phone" = userType === "business" ? "phone" : contactMethod;
   const contactDisplay = effectiveContactMethod === "email" ? email : `+91 ${phone}`;
 
+  function toggleDay(day: string) {
+    setOpenDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
+  }
+
   async function handleGoogle() {
     setLoading(true);
     await loginWithGoogle(userType);
     router.push("/dashboard");
   }
 
-  // Step 2 submit — send OTP for both user types
   async function handleDetailsSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -101,7 +116,8 @@ export default function RegisterPage() {
     if (effectiveContactMethod === "email" && !email) { setError("Please enter your email."); return; }
     if (effectiveContactMethod === "phone" && phone.length < 10) { setError("Please enter a valid 10-digit phone number."); return; }
     if (userType === "business" && !businessName) { setError("Please enter your business name."); return; }
-    if (userType === "business" && !businessCategory) { setError("Please select a business category."); return; }
+    if (userType === "business" && !businessType) { setError("Please select your business type."); return; }
+    if (userType === "business" && openDays.length === 0) { setError("Please select at least one open day."); return; }
 
     setLoading(true);
     try {
@@ -117,7 +133,6 @@ export default function RegisterPage() {
     }
   }
 
-  // Step 3 submit — verify OTP then register
   async function handleVerifySubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -160,12 +175,16 @@ export default function RegisterPage() {
       phone: effectiveContactMethod === "phone" ? `+91${phone}` : undefined,
       password: password || undefined,
       businessName: userType === "business" ? businessName : undefined,
-      businessCategory: userType === "business" ? businessCategory : undefined,
+      businessType: userType === "business" ? businessType : undefined,
+      businessCategory: userType === "business" ? businessType : undefined,
+      businessHours: userType === "business"
+        ? { open: hoursOpen, close: hoursClose, days: openDays }
+        : undefined,
       gstin: userType === "business" && gstin ? gstin : undefined,
     };
   }
 
-  // ── Logo header (shared) ───────────────────────────────────────────────────
+  // ── Logo header ────────────────────────────────────────────────────────────
   const Logo = () => (
     <Link href="/" className="flex items-center gap-2 mb-8">
       <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
@@ -177,70 +196,69 @@ export default function RegisterPage() {
     </Link>
   );
 
+  const ProgressBar = ({ current }: { current: Step }) => {
+    const steps: Step[] = ["type", "details", "verify"];
+    return (
+      <div className="flex items-center gap-2 mb-6">
+        {steps.map((s, idx) => (
+          <div key={s} className="flex items-center gap-2">
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+              s === current ? "bg-brand-600 text-white" : "bg-brand-100 text-brand-600"
+            }`}>
+              {idx + 1}
+            </div>
+            {idx < 2 && <div className="flex-1 h-px w-8 bg-gray-200" />}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   // ── Step 1: Choose type ────────────────────────────────────────────────────
   if (step === "type") {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-12">
         <Logo />
-
         <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-          <h1 className="text-2xl font-extrabold text-gray-900 mb-1">
-            Create your account
-          </h1>
+          <h1 className="text-2xl font-extrabold text-gray-900 mb-1">Create your account</h1>
           <p className="text-sm text-gray-500 mb-8">
             Already have an account?{" "}
-            <Link href="/auth/login" className="text-brand-600 font-semibold hover:underline">
-              Sign in
-            </Link>
+            <Link href="/auth/login" className="text-brand-600 font-semibold hover:underline">Sign in</Link>
           </p>
 
-          <p className="text-sm font-semibold text-gray-700 mb-4">
-            I am registering as a…
-          </p>
+          <p className="text-sm font-semibold text-gray-700 mb-4">I am registering as a…</p>
 
           <div className="grid grid-cols-2 gap-4 mb-8">
             <button
               onClick={() => setUserType("individual")}
               className={`flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all ${
-                userType === "individual"
-                  ? "border-brand-500 bg-brand-50"
-                  : "border-gray-200 hover:border-gray-300"
+                userType === "individual" ? "border-brand-500 bg-brand-50" : "border-gray-200 hover:border-gray-300"
               }`}
             >
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
-                userType === "individual" ? "bg-brand-100" : "bg-gray-100"
-              }`}>
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${userType === "individual" ? "bg-brand-100" : "bg-gray-100"}`}>
                 <User className={`w-6 h-6 ${userType === "individual" ? "text-brand-600" : "text-gray-400"}`} />
               </div>
               <div className="text-center">
                 <p className="font-bold text-sm text-gray-900">Individual</p>
                 <p className="text-xs text-gray-400 mt-0.5">Home owner / buyer / tenant</p>
               </div>
-              {userType === "individual" && (
-                <CheckCircle className="w-5 h-5 text-brand-600" />
-              )}
+              {userType === "individual" && <CheckCircle className="w-5 h-5 text-brand-600" />}
             </button>
 
             <button
               onClick={() => setUserType("business")}
               className={`flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all ${
-                userType === "business"
-                  ? "border-brand-500 bg-brand-50"
-                  : "border-gray-200 hover:border-gray-300"
+                userType === "business" ? "border-brand-500 bg-brand-50" : "border-gray-200 hover:border-gray-300"
               }`}
             >
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
-                userType === "business" ? "bg-brand-100" : "bg-gray-100"
-              }`}>
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${userType === "business" ? "bg-brand-100" : "bg-gray-100"}`}>
                 <Briefcase className={`w-6 h-6 ${userType === "business" ? "text-brand-600" : "text-gray-400"}`} />
               </div>
               <div className="text-center">
                 <p className="font-bold text-sm text-gray-900">Business</p>
-                <p className="text-xs text-gray-400 mt-0.5">Developer / brand / broker</p>
+                <p className="text-xs text-gray-400 mt-0.5">Restaurant / shop / salon&hellip;</p>
               </div>
-              {userType === "business" && (
-                <CheckCircle className="w-5 h-5 text-brand-600" />
-              )}
+              {userType === "business" && <CheckCircle className="w-5 h-5 text-brand-600" />}
             </button>
           </div>
 
@@ -255,7 +273,7 @@ export default function RegisterPage() {
               </ul>
             ) : (
               <ul className="space-y-1.5">
-                {["Post classifieds & listings", "Manage leads & enquiries", "Analytics dashboard", "Sponsored content & ads"].map((i) => (
+                {["Get listed in the business directory", "Show your hours & contact", "Post classifieds & offers", "Analytics dashboard"].map((i) => (
                   <li key={i} className="flex items-center gap-2 text-xs">
                     <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" /> {i}
                   </li>
@@ -264,10 +282,7 @@ export default function RegisterPage() {
             )}
           </div>
 
-          <button
-            onClick={() => setStep("details")}
-            className="btn-primary w-full justify-center"
-          >
+          <button onClick={() => setStep("details")} className="btn-primary w-full justify-center">
             Continue <ArrowRight className="w-4 h-4" />
           </button>
         </div>
@@ -275,57 +290,33 @@ export default function RegisterPage() {
     );
   }
 
-  // ── Step 3: OTP Verification (Individual only) ─────────────────────────────
+  // ── Step 3: OTP Verification ───────────────────────────────────────────────
   if (step === "verify") {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-12">
         <Logo />
-
         <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-          <button
-            onClick={() => { setStep("details"); setError(""); }}
-            className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mb-4"
-          >
+          <button onClick={() => { setStep("details"); setError(""); }} className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mb-4">
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
-
-          {/* Progress indicator */}
-          <div className="flex items-center gap-2 mb-6">
-            {["type", "details", "verify"].map((s, idx) => (
-              <div key={s} className="flex items-center gap-2">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                  s === "verify" ? "bg-brand-600 text-white" : "bg-brand-100 text-brand-600"
-                }`}>
-                  {idx + 1}
-                </div>
-                {idx < 2 && <div className="flex-1 h-px w-8 bg-brand-200" />}
-              </div>
-            ))}
-          </div>
+          <ProgressBar current="verify" />
 
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center">
               <ShieldCheck className="w-5 h-5 text-brand-600" />
             </div>
-            <div>
-              <h1 className="text-2xl font-extrabold text-gray-900">Verify your {effectiveContactMethod}</h1>
-            </div>
+            <h1 className="text-2xl font-extrabold text-gray-900">Verify your {effectiveContactMethod}</h1>
           </div>
           <p className="text-sm text-gray-500 mb-6">
             We sent a 6-digit OTP to{" "}
             <span className="font-semibold text-gray-700">{contactDisplay}</span>.
-            Enter it below to complete registration.
           </p>
 
-          {error && (
-            <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-4">{error}</p>
-          )}
+          {error && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-4">{error}</p>}
 
           <form onSubmit={handleVerifySubmit} className="space-y-5">
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">
-                One-time password
-              </label>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5">One-time password</label>
               <input
                 type="text"
                 inputMode="numeric"
@@ -338,12 +329,7 @@ export default function RegisterPage() {
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg text-xl text-center tracking-[0.5em] font-mono focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
-
-            <button
-              type="submit"
-              disabled={loading || otp.length < 6}
-              className="btn-primary w-full justify-center"
-            >
+            <button type="submit" disabled={loading || otp.length < 6} className="btn-primary w-full justify-center">
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
               {loading ? "Verifying…" : "Verify & Create Account"}
             </button>
@@ -351,27 +337,16 @@ export default function RegisterPage() {
 
           <div className="mt-4 flex items-center justify-center gap-2 text-sm">
             {resendTimer > 0 ? (
-              <p className="text-gray-400">
-                Resend OTP in{" "}
-                <span className="font-semibold text-gray-600">{resendTimer}s</span>
-              </p>
+              <p className="text-gray-400">Resend OTP in <span className="font-semibold text-gray-600">{resendTimer}s</span></p>
             ) : (
-              <button
-                onClick={handleResendOtp}
-                disabled={loading}
-                className="flex items-center gap-1.5 text-brand-600 hover:text-brand-700 font-semibold"
-              >
+              <button onClick={handleResendOtp} disabled={loading} className="flex items-center gap-1.5 text-brand-600 hover:text-brand-700 font-semibold">
                 <RefreshCw className="w-3.5 h-3.5" /> Resend OTP
               </button>
             )}
           </div>
-
           <p className="text-xs text-gray-400 text-center mt-4">
             Wrong contact?{" "}
-            <button
-              onClick={() => { setStep("details"); setError(""); }}
-              className="text-brand-600 font-semibold hover:underline"
-            >
+            <button onClick={() => { setStep("details"); setError(""); }} className="text-brand-600 font-semibold hover:underline">
               Go back and edit
             </button>
           </p>
@@ -384,28 +359,11 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-12">
       <Logo />
-
       <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-        <button
-          onClick={() => setStep("type")}
-          className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mb-4"
-        >
+        <button onClick={() => setStep("type")} className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mb-4">
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
-
-        {/* Progress indicator — always 3 steps now */}
-        <div className="flex items-center gap-2 mb-6">
-          {["type", "details", "verify"].map((s, idx) => (
-            <div key={s} className="flex items-center gap-2">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                s === "details" ? "bg-brand-600 text-white" : "bg-brand-100 text-brand-600"
-              }`}>
-                {idx + 1}
-              </div>
-              {idx < 2 && <div className="flex-1 h-px w-8 bg-gray-200" />}
-            </div>
-          ))}
-        </div>
+        <ProgressBar current="details" />
 
         <div className="flex items-center gap-2 mb-1">
           <h1 className="text-2xl font-extrabold text-gray-900">
@@ -416,8 +374,7 @@ export default function RegisterPage() {
           </span>
         </div>
         <p className="text-sm text-gray-500 mb-6">
-          We'll send an OTP to verify your{" "}
-          {userType === "business" ? "phone number" : "contact"}.
+          We&apos;ll send an OTP to verify your {userType === "business" ? "phone number" : "contact"}.
         </p>
 
         {/* Google shortcut */}
@@ -441,9 +398,7 @@ export default function RegisterPage() {
           <div className="flex-1 h-px bg-gray-100" />
         </div>
 
-        {error && (
-          <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-4">{error}</p>
-        )}
+        {error && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-4">{error}</p>}
 
         <form onSubmit={handleDetailsSubmit} className="space-y-4">
           {/* Name */}
@@ -464,9 +419,10 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* Business fields */}
+          {/* ── Business-only fields ── */}
           {userType === "business" && (
             <>
+              {/* Business name */}
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1.5">Business name</label>
                 <div className="relative">
@@ -475,26 +431,97 @@ export default function RegisterPage() {
                     type="text"
                     value={businessName}
                     onChange={(e) => setBusinessName(e.target.value)}
-                    placeholder="Your company / brand name"
+                    placeholder="Your business / brand name"
                     required
                     className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                   />
                 </div>
               </div>
+
+              {/* Business type — visual cards */}
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Business category</label>
-                <select
-                  value={businessCategory}
-                  onChange={(e) => setBusinessCategory(e.target.value)}
-                  required
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                >
-                  <option value="">Select category…</option>
-                  {BUSINESS_CATEGORIES.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
+                <label className="block text-xs font-semibold text-gray-500 mb-2">What type of business?</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {BUSINESS_TYPES.map(({ id, label, Icon, color }) => {
+                    const selected = businessType === id;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => setBusinessType(id)}
+                        className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all text-center ${
+                          selected
+                            ? "border-brand-500 bg-brand-50"
+                            : "border-gray-100 hover:border-gray-300 bg-white"
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${selected ? "bg-brand-100" : color}`}>
+                          <Icon className={`w-4 h-4 ${selected ? "text-brand-600" : ""}`} />
+                        </div>
+                        <span className={`text-xs font-semibold leading-tight ${selected ? "text-brand-700" : "text-gray-600"}`}>
+                          {label}
+                        </span>
+                        {selected && <CheckCircle className="w-3.5 h-3.5 text-brand-600" />}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
+
+              {/* Business hours */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5" /> Business hours
+                </label>
+                <div className="border border-gray-200 rounded-xl p-3 space-y-3">
+                  {/* Open / Close time */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">Opens at</label>
+                      <input
+                        type="time"
+                        value={hoursOpen}
+                        onChange={(e) => setHoursOpen(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">Closes at</label>
+                      <input
+                        type="time"
+                        value={hoursClose}
+                        onChange={(e) => setHoursClose(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      />
+                    </div>
+                  </div>
+                  {/* Days open */}
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1.5">Open on</label>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {DAYS.map((day) => {
+                        const active = openDays.includes(day);
+                        return (
+                          <button
+                            key={day}
+                            type="button"
+                            onClick={() => toggleDay(day)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${
+                              active
+                                ? "bg-brand-600 text-white border-brand-600"
+                                : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
+                            }`}
+                          >
+                            {day}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* GSTIN */}
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1.5">
                   GSTIN <span className="font-normal text-gray-400">(optional)</span>
@@ -517,7 +544,6 @@ export default function RegisterPage() {
               {userType === "individual" ? "Verify via" : "Phone number"}
             </label>
 
-            {/* Toggle only for individuals */}
             {userType === "individual" && (
               <div className="flex gap-2 mb-3">
                 {(["email", "phone"] as const).map((m) => (
@@ -566,7 +592,7 @@ export default function RegisterPage() {
             )}
           </div>
 
-          {/* Password — shown for both types */}
+          {/* Password */}
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1.5">
               Password <span className="font-normal text-gray-400">(optional — or use OTP to login)</span>
@@ -590,11 +616,7 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn-primary w-full justify-center"
-          >
+          <button type="submit" disabled={loading} className="btn-primary w-full justify-center">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
             {loading ? "Sending OTP…" : "Send OTP"}
           </button>

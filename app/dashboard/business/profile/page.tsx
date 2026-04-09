@@ -11,31 +11,58 @@ import {
   Loader2,
   Lock,
   FileText,
+  Clock,
+  Utensils,
+  Film,
+  ShoppingBag,
+  Scissors,
+  Coffee,
+  Dumbbell,
+  Building2,
 } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, BusinessHours } from "@/context/AuthContext";
 import Link from "next/link";
 
-const BUSINESS_CATEGORIES = [
-  "Real Estate Developer", "Property Broker / Agent",
-  "Interior Design & Fit-Out", "Retail / Fashion", "Restaurant / F&B",
-  "Fitness & Wellness", "IT / Corporate", "Healthcare",
-  "Education", "Financial Services", "Legal Services", "Other",
+const BUSINESS_TYPES = [
+  { id: "Restaurant",  label: "Restaurant",    Icon: Utensils,    color: "bg-orange-50 text-orange-600 border-orange-200" },
+  { id: "Movie Hall",  label: "Movie Hall",    Icon: Film,        color: "bg-purple-50 text-purple-600 border-purple-200" },
+  { id: "Shop",        label: "Shop / Retail", Icon: ShoppingBag, color: "bg-blue-50 text-blue-600 border-blue-200"       },
+  { id: "Saloon",      label: "Saloon",        Icon: Scissors,    color: "bg-pink-50 text-pink-600 border-pink-200"       },
+  { id: "Cafe",        label: "Cafe",          Icon: Coffee,      color: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+  { id: "Fitness",     label: "Fitness & Gym", Icon: Dumbbell,    color: "bg-green-50 text-green-600 border-green-200"    },
+  { id: "Other",       label: "Other",         Icon: Building2,   color: "bg-gray-50 text-gray-600 border-gray-200"       },
 ];
+
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+const DEFAULT_HOURS: BusinessHours = { open: "09:00", close: "21:00", days: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] };
 
 export default function BusinessProfile() {
   const { user } = useAuth();
 
   const [contactName, setContactName] = useState(user?.name ?? "");
   const [businessName, setBusinessName] = useState(user?.businessName ?? "");
-  const [category, setCategory] = useState(user?.businessCategory ?? "");
+  const [businessType, setBusinessType] = useState(user?.businessType ?? "");
   const [gstin, setGstin] = useState(user?.gstin ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
   const [phone, setPhone] = useState(user?.phone?.replace("+91", "") ?? "");
   const [website, setWebsite] = useState("");
   const [address, setAddress] = useState("Neopolis District");
   const [about, setAbout] = useState("");
+
+  const initHours = user?.businessHours ?? DEFAULT_HOURS;
+  const [hoursOpen, setHoursOpen] = useState(initHours.open);
+  const [hoursClose, setHoursClose] = useState(initHours.close);
+  const [openDays, setOpenDays] = useState<string[]>(initHours.days);
+
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  function toggleDay(day: string) {
+    setOpenDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -46,8 +73,8 @@ export default function BusinessProfile() {
     setTimeout(() => setSaved(false), 3000);
   }
 
-  const inputClass =
-    "w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500";
+  const selectedType = BUSINESS_TYPES.find((t) => t.id === businessType);
+  const inputClass = "w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500";
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -65,7 +92,15 @@ export default function BusinessProfile() {
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-bold text-gray-900">{businessName || user?.name}</p>
-          <p className="text-xs text-gray-400">{category || user?.businessCategory}</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            {selectedType ? (
+              <span className="flex items-center gap-1 text-xs text-gray-500">
+                <selectedType.Icon className="w-3.5 h-3.5" /> {selectedType.label}
+              </span>
+            ) : (
+              <span className="text-xs text-gray-400">No type selected</span>
+            )}
+          </div>
           <span className="tag-purple mt-1">Business Account</span>
         </div>
         <div className="flex flex-col gap-2">
@@ -78,6 +113,7 @@ export default function BusinessProfile() {
         {/* Business info */}
         <div className="card p-5 space-y-4">
           <h3 className="font-bold text-sm text-gray-900">Business Information</h3>
+
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1.5">Business / Brand name</label>
             <div className="relative">
@@ -85,13 +121,35 @@ export default function BusinessProfile() {
               <input type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value)} required className={`${inputClass} pl-10`} />
             </div>
           </div>
+
+          {/* Business type — visual cards */}
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5">Category</label>
-            <select value={category} onChange={(e) => setCategory(e.target.value)} className={inputClass}>
-              <option value="">Select…</option>
-              {BUSINESS_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-            </select>
+            <label className="block text-xs font-semibold text-gray-500 mb-2">Business type</label>
+            <div className="grid grid-cols-4 gap-2">
+              {BUSINESS_TYPES.map(({ id, label, Icon, color }) => {
+                const selected = businessType === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setBusinessType(id)}
+                    className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all text-center ${
+                      selected ? "border-brand-500 bg-brand-50" : "border-gray-100 hover:border-gray-300 bg-white"
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${selected ? "bg-brand-100" : color}`}>
+                      <Icon className={`w-4 h-4 ${selected ? "text-brand-600" : ""}`} />
+                    </div>
+                    <span className={`text-xs font-semibold leading-tight ${selected ? "text-brand-700" : "text-gray-600"}`}>
+                      {label}
+                    </span>
+                    {selected && <CheckCircle className="w-3.5 h-3.5 text-brand-600" />}
+                  </button>
+                );
+              })}
+            </div>
           </div>
+
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1.5">About your business</label>
             <textarea
@@ -102,6 +160,7 @@ export default function BusinessProfile() {
               className={inputClass}
             />
           </div>
+
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1.5">
               GSTIN <span className="font-normal text-gray-400">(optional)</span>
@@ -123,6 +182,61 @@ export default function BusinessProfile() {
               </p>
             )}
           </div>
+        </div>
+
+        {/* Business hours */}
+        <div className="card p-5 space-y-4">
+          <h3 className="font-bold text-sm text-gray-900 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-gray-400" /> Business Hours
+          </h3>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Opens at</label>
+              <input
+                type="time"
+                value={hoursOpen}
+                onChange={(e) => setHoursOpen(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Closes at</label>
+              <input
+                type="time"
+                value={hoursClose}
+                onChange={(e) => setHoursClose(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-2">Open on</label>
+            <div className="flex gap-2 flex-wrap">
+              {DAYS.map((day) => {
+                const active = openDays.includes(day);
+                return (
+                  <button
+                    key={day}
+                    type="button"
+                    onClick={() => toggleDay(day)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                      active
+                        ? "bg-brand-600 text-white border-brand-600"
+                        : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
+                    }`}
+                  >
+                    {day}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          {openDays.length > 0 && (
+            <p className="text-xs text-gray-400">
+              Showing as: <span className="font-semibold text-gray-600">{openDays.join(", ")}</span>{" "}
+              &middot; {hoursOpen} – {hoursClose}
+            </p>
+          )}
         </div>
 
         {/* Contact */}
