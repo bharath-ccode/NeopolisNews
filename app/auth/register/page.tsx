@@ -29,6 +29,7 @@ import {
   Pill,
   Stethoscope,
   PhoneCall,
+  Ambulance,
 } from "lucide-react";
 import { useAuth, UserType, RegisterData, BusinessHours } from "@/context/AuthContext";
 
@@ -45,13 +46,14 @@ const LIFESTYLE_TYPES = [
 ];
 
 const HEALTH_TYPES = [
-  { id: "Hospital",  label: "Hospital",  Icon: Hospital,     color: "bg-red-50 text-red-600"  },
-  { id: "Pharmacy",  label: "Pharmacy",  Icon: Pill,         color: "bg-teal-50 text-teal-600" },
-  { id: "Clinic",    label: "Clinic",    Icon: Stethoscope,  color: "bg-cyan-50 text-cyan-600" },
+  { id: "Hospital",   label: "Hospital",   Icon: Hospital,   color: "bg-red-50 text-red-600"    },
+  { id: "Pharmacy",   label: "Pharmacy",   Icon: Pill,       color: "bg-teal-50 text-teal-600"  },
+  { id: "Clinic",     label: "Clinic",     Icon: Stethoscope,color: "bg-cyan-50 text-cyan-600"  },
+  { id: "Ambulance",  label: "Ambulance",  Icon: Ambulance,  color: "bg-orange-50 text-orange-600" },
 ];
 
 // types that require an emergency / helpline number
-const EMERGENCY_TYPES = new Set(["Hospital", "Clinic"]);
+const EMERGENCY_TYPES = new Set(["Hospital", "Clinic", "Ambulance"]);
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 

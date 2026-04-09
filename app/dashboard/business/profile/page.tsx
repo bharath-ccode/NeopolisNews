@@ -23,6 +23,7 @@ import {
   Pill,
   Stethoscope,
   PhoneCall,
+  Ambulance,
 } from "lucide-react";
 import { useAuth, BusinessHours } from "@/context/AuthContext";
 import Link from "next/link";
@@ -40,13 +41,14 @@ const LIFESTYLE_TYPES: BizType[] = [
 ];
 
 const HEALTH_TYPES: BizType[] = [
-  { id: "Hospital",  label: "Hospital",  Icon: Hospital,    color: "bg-red-50 text-red-600"   },
-  { id: "Pharmacy",  label: "Pharmacy",  Icon: Pill,        color: "bg-teal-50 text-teal-600" },
-  { id: "Clinic",    label: "Clinic",    Icon: Stethoscope, color: "bg-cyan-50 text-cyan-600" },
+  { id: "Hospital",   label: "Hospital",   Icon: Hospital,   color: "bg-red-50 text-red-600"       },
+  { id: "Pharmacy",   label: "Pharmacy",   Icon: Pill,       color: "bg-teal-50 text-teal-600"     },
+  { id: "Clinic",     label: "Clinic",     Icon: Stethoscope,color: "bg-cyan-50 text-cyan-600"     },
+  { id: "Ambulance",  label: "Ambulance",  Icon: Ambulance,  color: "bg-orange-50 text-orange-600" },
 ];
 
 const ALL_TYPES: BizType[] = [...LIFESTYLE_TYPES, ...HEALTH_TYPES];
-const EMERGENCY_TYPES = new Set(["Hospital", "Clinic"]);
+const EMERGENCY_TYPES = new Set(["Hospital", "Clinic", "Ambulance"]);
 
 function TypeGrid({
   types,
