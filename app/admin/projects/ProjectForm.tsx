@@ -53,9 +53,13 @@ type Tab = "info" | "contacts" | "details";
 
 interface ProjectFormProps {
   initialData?: Project;
+  /** Pre-lock builder — hides the selector and forces this builder ID */
+  lockedBuilderId?: string;
+  /** Where to redirect after save (default: /admin/projects) */
+  redirectTo?: string;
 }
 
-export default function ProjectForm({ initialData }: ProjectFormProps) {
+export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }: ProjectFormProps) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("info");
   const [builders, setBuilders] = useState<Builder[]>([]);
@@ -64,7 +68,7 @@ export default function ProjectForm({ initialData }: ProjectFormProps) {
 
   // ── Form state ──
   const [projectName, setProjectName] = useState(initialData?.projectName ?? "");
-  const [builderId, setBuilderId] = useState(initialData?.builderId ?? "");
+  const [builderId, setBuilderId] = useState(lockedBuilderId ?? initialData?.builderId ?? "");
   const [totalLandArea, setTotalLandArea] = useState(
     initialData?.totalLandAreaAcres?.toString() ?? ""
   );
@@ -96,10 +100,11 @@ export default function ProjectForm({ initialData }: ProjectFormProps) {
       : [emptyTower(0)]
   );
 
-  // Load builders list
+  // Load builders list (not needed when locked)
   useEffect(() => {
+    if (lockedBuilderId) return;
     getBuilders().then(setBuilders).catch(() => {});
-  }, []);
+  }, [lockedBuilderId]);
 
   const isEdit = !!initialData;
 
@@ -205,7 +210,7 @@ export default function ProjectForm({ initialData }: ProjectFormProps) {
       } else {
         await createProject(input);
       }
-      router.push("/admin/projects");
+      router.push(redirectTo ?? "/admin/projects");
       router.refresh();
     } catch (err) {
       console.error(err);
@@ -278,31 +283,33 @@ export default function ProjectForm({ initialData }: ProjectFormProps) {
             />
           </div>
 
-          {/* Builder */}
-          <div>
-            <label className="label">Builder</label>
-            <select
-              className="input"
-              value={builderId}
-              onChange={(e) => setBuilderId(e.target.value)}
-            >
-              <option value="">— Select a builder —</option>
-              {builders.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.builderName}
-                </option>
-              ))}
-            </select>
-            {builders.length === 0 && (
-              <p className="text-xs text-amber-600 mt-1">
-                No builders found.{" "}
-                <a href="/admin/builders/create" target="_blank" className="underline">
-                  Add one first
-                </a>
-                .
-              </p>
-            )}
-          </div>
+          {/* Builder — hidden when locked to a specific builder */}
+          {!lockedBuilderId && (
+            <div>
+              <label className="label">Builder</label>
+              <select
+                className="input"
+                value={builderId}
+                onChange={(e) => setBuilderId(e.target.value)}
+              >
+                <option value="">— Select a builder —</option>
+                {builders.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.builderName}
+                  </option>
+                ))}
+              </select>
+              {builders.length === 0 && (
+                <p className="text-xs text-amber-600 mt-1">
+                  No builders found.{" "}
+                  <a href="/admin/builders/create" target="_blank" className="underline">
+                    Add one first
+                  </a>
+                  .
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Land area + units */}
           <div className="grid grid-cols-2 gap-4">

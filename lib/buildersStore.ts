@@ -90,6 +90,17 @@ export async function updateBuilder(id: string, input: BuilderInput): Promise<Bu
   return toBuilder(data);
 }
 
+export async function getBuilderByEmail(email: string): Promise<Builder | null> {
+  const sb = createClient();
+  const { data, error } = await sb
+    .from("builders")
+    .select("*")
+    .eq("email", email)
+    .single();
+  if (error || !data) return null;
+  return toBuilder(data);
+}
+
 export async function deleteBuilder(id: string): Promise<void> {
   const sb = createClient();
   const { error } = await sb.from("builders").delete().eq("id", id);

@@ -21,6 +21,8 @@ export interface Article {
   sponsored: boolean;
   status: ArticleStatus;
   imageUrl?: string;
+  projectId?: string | null;
+  builderId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -54,6 +56,8 @@ function toArticle(row: any): Article {
     sponsored: row.sponsored,
     status:    row.status,
     imageUrl:  row.image_url ?? undefined,
+    projectId: row.project_id ?? null,
+    builderId: row.builder_id ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -91,19 +95,21 @@ export async function createArticle(
   const { data, error } = await supabase
     .from("articles")
     .insert({
-      title:     payload.title,
-      excerpt:   payload.excerpt,
-      content:   payload.content,
-      category:  payload.category,
-      tag:       payload.tag,
-      tag_color: payload.tagColor,
-      author:    payload.author,
-      date:      payload.date,
-      read_time: payload.readTime,
-      views:     payload.views,
-      sponsored: payload.sponsored,
-      status:    payload.status,
-      image_url: payload.imageUrl ?? null,
+      title:      payload.title,
+      excerpt:    payload.excerpt,
+      content:    payload.content,
+      category:   payload.category,
+      tag:        payload.tag,
+      tag_color:  payload.tagColor,
+      author:     payload.author,
+      date:       payload.date,
+      read_time:  payload.readTime,
+      views:      payload.views,
+      sponsored:  payload.sponsored,
+      status:     payload.status,
+      image_url:  payload.imageUrl ?? null,
+      project_id: payload.projectId ?? null,
+      builder_id: payload.builderId ?? null,
     })
     .select()
     .single();
@@ -132,6 +138,8 @@ export async function updateArticle(
   if (payload.sponsored !== undefined) patch.sponsored  = payload.sponsored;
   if (payload.status    !== undefined) patch.status     = payload.status;
   if (payload.imageUrl  !== undefined) patch.image_url  = payload.imageUrl ?? null;
+  if (payload.projectId !== undefined) patch.project_id = payload.projectId ?? null;
+  if (payload.builderId !== undefined) patch.builder_id = payload.builderId ?? null;
 
   const { data, error } = await supabase
     .from("articles")
@@ -148,6 +156,40 @@ export async function deleteArticle(id: string): Promise<boolean> {
   const supabase = createClient();
   const { error } = await supabase.from("articles").delete().eq("id", id);
   return !error;
+}
+
+export async function getPublishedArticlesByCategory(category: ArticleCategory): Promise<Article[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("articles")
+    .select("*")
+    .eq("category", category)
+    .eq("status", "published")
+    .order("created_at", { ascending: false });
+  if (error) { console.error("getPublishedArticlesByCategory:", error.message); return []; }
+  return (data ?? []).map(toArticle);
+}
+
+export async function getPublishedArticles(): Promise<Article[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("articles")
+    .select("*")
+    .eq("status", "published")
+    .order("created_at", { ascending: false });
+  if (error) { console.error("getPublishedArticles:", error.message); return []; }
+  return (data ?? []).map(toArticle);
+}
+
+export async function getArticlesByBuilderId(builderId: string): Promise<Article[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("articles")
+    .select("*")
+    .eq("builder_id", builderId)
+    .order("created_at", { ascending: false });
+  if (error) { console.error("getArticlesByBuilderId:", error.message); return []; }
+  return (data ?? []).map(toArticle);
 }
 
 export async function getArticleStats() {

@@ -297,6 +297,17 @@ async function saveNestedData(sb: ReturnType<typeof createClient>, projectId: st
   }
 }
 
+export async function getProjectsByBuilderId(builderId: string): Promise<Project[]> {
+  const sb = createClient();
+  const { data, error } = await sb
+    .from("projects")
+    .select("*, builders(builder_name)")
+    .eq("builder_id", builderId)
+    .order("project_name");
+  if (error) throw error;
+  return (data ?? []).map(toProject);
+}
+
 export async function deleteProject(id: string): Promise<void> {
   const sb = createClient();
   const { error } = await sb.from("projects").delete().eq("id", id);
