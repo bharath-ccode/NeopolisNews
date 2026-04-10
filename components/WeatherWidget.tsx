@@ -19,9 +19,21 @@ const HOURLY_CODES    = [1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 1, 1, 1, 0
 const HOURLY_PRECIP   = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 const HOURLY_WIND     = [8, 7, 6, 6, 7, 9,11,13,15,17,19,20,20,19,18,17,16,15,13,11,10, 9, 8, 8];
 
+// Mock 3-day forecast offsets (tomorrow, +2, +3)
+const DAILY_MOCK = [
+  { maxTemp: 39, minTemp: 27, code: 1 },
+  { maxTemp: 38, minTemp: 27, code: 2 },
+  { maxTemp: 37, minTemp: 26, code: 2 },
+];
+
 function buildWeatherData(temps: number[], feels: number[], codes: number[], precip: number[], wind: number[], humidity: number) {
   const today = new Date().toISOString().split("T")[0];
   const nowH  = new Date().getHours();
+  const daily = DAILY_MOCK.map((d, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() + i + 1);
+    return { date: date.toISOString().split("T")[0], maxTemp: d.maxTemp, minTemp: d.minTemp, code: d.code };
+  });
   return {
     current: {
       temperature_2m:       temps[nowH],
@@ -38,7 +50,12 @@ function buildWeatherData(temps: number[], feels: number[], codes: number[], pre
       precipitation_probability: precip,
       wind_speed_10m:           wind,
     },
+    daily,
   };
+}
+
+function shortDay(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString("en-IN", { weekday: "short" });
 }
 
 function weatherInfo(code: number) {
@@ -68,7 +85,7 @@ function fmt12h(isoTime: string) {
 
 export default function WeatherWidget({ variant = "topbar" }: { variant?: "topbar" | "nav" }) {
   // Start with mock data immediately — no blank/loading state
-  const [weather, setWeather] = useState(() =>
+  const [weather, setWeather] = useState<ReturnType<typeof buildWeatherData>>(() =>
     buildWeatherData(HOURLY_TEMPS, HOURLY_FEELS, HOURLY_CODES, HOURLY_PRECIP, HOURLY_WIND, 38)
   );
   const [aqi, setAqi]         = useState<number | null>(null);
@@ -83,7 +100,8 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
       "?latitude=17.4126&longitude=78.3338" +
       "&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m" +
       "&hourly=temperature_2m,apparent_temperature,weather_code,precipitation_probability,wind_speed_10m" +
-      "&timezone=Asia%2FKolkata&forecast_days=1";
+      "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max" +
+      "&timezone=Asia%2FKolkata&forecast_days=4";
 
     const aqiUrl =
       "https://air-quality-api.open-meteo.com/v1/air-quality" +
@@ -93,7 +111,16 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
       .then((r) => r.json())
       .then((j) => {
         if (j?.current && j?.hourly) {
-          setWeather({ current: j.current, hourly: j.hourly });
+          // Build daily forecast (next 3 days, skip today at index 0)
+          const daily = j.daily?.time
+            ? (j.daily.time as string[]).slice(1, 4).map((date: string, i: number) => ({
+                date,
+                maxTemp: Math.round(j.daily.temperature_2m_max[i + 1]),
+                minTemp: Math.round(j.daily.temperature_2m_min[i + 1]),
+                code:    j.daily.weather_code[i + 1] as number,
+              }))
+            : weather.daily;
+          setWeather({ current: j.current, hourly: j.hourly, daily });
         }
       })
       .catch(() => {/* keep mock data */});
@@ -125,7 +152,7 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
     return () => document.removeEventListener("keydown", handler);
   }, [open]);
 
-  const { current, hourly } = weather;
+  const { current, hourly, daily } = weather;
   const { emoji, label }    = weatherInfo(current.weather_code);
   const temp                = Math.round(current.temperature_2m);
   const feelsLike           = Math.round(current.apparent_temperature);
@@ -232,6 +259,29 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
               </div>
             </div>
           </div>
+
+          {/* 3-day forecast */}
+          {daily.length > 0 && (
+            <div className="px-4 py-3 border-t border-gray-100">
+              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                Next 3 days
+              </p>
+              <div className="flex justify-between gap-1">
+                {daily.map((day) => {
+                  const { emoji: e, label: l } = weatherInfo(day.code);
+                  return (
+                    <div key={day.date} className="flex flex-col items-center gap-1 flex-1 bg-gray-50 rounded-xl py-2">
+                      <span className="text-[11px] font-semibold text-gray-500">{shortDay(day.date)}</span>
+                      <span className="text-xl">{e}</span>
+                      <span className="text-xs text-gray-400 text-center leading-tight">{l}</span>
+                      <span className="text-sm font-bold text-gray-800">{day.maxTemp}°</span>
+                      <span className="text-xs text-gray-400">{day.minTemp}°</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* AQI + Walking advice */}
           {aqiInfo && aqi !== null && (
