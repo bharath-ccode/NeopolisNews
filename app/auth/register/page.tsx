@@ -39,6 +39,8 @@ import { useAuth, UserType, RegisterData, BusinessHours } from "@/context/AuthCo
 
 type Step = "type" | "details" | "verify";
 
+type BizType = { id: string; label: string; group: string; Icon: React.ComponentType<{ className?: string }>; color: string };
+
 const LIFESTYLE_TYPES: BizType[] = [
   { id: "Restaurant",  label: "Restaurant",    group: "Lifestyle", Icon: Utensils,    color: "bg-orange-50 text-orange-600" },
   { id: "Movie Hall",  label: "Movie Hall",    group: "Lifestyle", Icon: Film,        color: "bg-purple-50 text-purple-600" },
@@ -63,18 +65,12 @@ const EVENT_TYPES: BizType[] = [
   { id: "Outdoor Space",     label: "Outdoor Space",     group: "Events", Icon: Trees,    color: "bg-lime-50 text-lime-600"    },
 ];
 
-// populate flat lookup after arrays are defined
-ALL_BIZ_TYPES.push(...LIFESTYLE_TYPES, ...HEALTH_TYPES, ...EVENT_TYPES);
+const ALL_BIZ_TYPES: BizType[] = [...LIFESTYLE_TYPES, ...HEALTH_TYPES, ...EVENT_TYPES];
 
 // types that require an emergency / helpline number
 const EMERGENCY_TYPES = new Set(["Hospital", "Clinic", "Ambulance"]);
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
-type BizType = { id: string; label: string; group: string; Icon: React.ComponentType<{ className?: string }>; color: string };
-
-// flat lookup used to derive group from a selected subtype id
-const ALL_BIZ_TYPES: BizType[] = [];
 
 function TypeGrid({
   types,
