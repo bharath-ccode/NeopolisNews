@@ -9,6 +9,7 @@ import {
   Image as ImageIcon,
   AlertCircle,
   Loader2,
+  Newspaper,
 } from "lucide-react";
 import clsx from "clsx";
 import {
@@ -50,6 +51,7 @@ export default function ArticleForm({ article }: Props) {
     article?.category ?? "construction"
   );
   const [author, setAuthor]     = useState(article?.author ?? "NeopolisNews Staff");
+  const [source, setSource]     = useState(article?.source ?? "");
   const [readTime, setReadTime] = useState(article?.readTime ?? "3 min");
   const [imageUrl, setImageUrl] = useState(article?.imageUrl ?? "");
   const [sponsored, setSponsored] = useState(article?.sponsored ?? false);
@@ -80,6 +82,7 @@ export default function ArticleForm({ article }: Props) {
         tag:      meta.tag,
         tagColor: meta.tagColor,
         author:   author.trim(),
+        source:   source.trim() || null,
         readTime: readTime.trim(),
         imageUrl: imageUrl.trim() || undefined,
         sponsored,
@@ -230,6 +233,21 @@ export default function ArticleForm({ article }: Props) {
                 />
               </div>
 
+              {/* Source */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  <Newspaper className="inline w-3.5 h-3.5 mr-1 text-gray-400" />
+                  News Source
+                </label>
+                <input
+                  type="text"
+                  value={source}
+                  onChange={(e) => setSource(e.target.value)}
+                  placeholder="e.g. Deccan Chronicle"
+                  className={inputCls}
+                />
+              </div>
+
               {/* Read time */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -245,7 +263,7 @@ export default function ArticleForm({ article }: Props) {
               </div>
 
               {/* Image URL */}
-              <div>
+              <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   <ImageIcon className="inline w-3.5 h-3.5 mr-1 text-gray-400" />
                   Image URL

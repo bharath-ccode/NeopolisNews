@@ -21,6 +21,7 @@ export interface Article {
   sponsored: boolean;
   status: ArticleStatus;
   imageUrl?: string;
+  source?: string | null;
   projectId?: string | null;
   builderId?: string | null;
   createdAt: string;
@@ -56,6 +57,7 @@ function toArticle(row: any): Article {
     sponsored: row.sponsored,
     status:    row.status,
     imageUrl:  row.image_url ?? undefined,
+    source:    row.source ?? null,
     projectId: row.project_id ?? null,
     builderId: row.builder_id ?? null,
     createdAt: row.created_at,
@@ -108,6 +110,7 @@ export async function createArticle(
       sponsored:  payload.sponsored,
       status:     payload.status,
       image_url:  payload.imageUrl ?? null,
+      source:     payload.source ?? null,
       project_id: payload.projectId ?? null,
       builder_id: payload.builderId ?? null,
     })
@@ -138,6 +141,7 @@ export async function updateArticle(
   if (payload.sponsored !== undefined) patch.sponsored  = payload.sponsored;
   if (payload.status    !== undefined) patch.status     = payload.status;
   if (payload.imageUrl  !== undefined) patch.image_url  = payload.imageUrl ?? null;
+  if (payload.source    !== undefined) patch.source     = payload.source ?? null;
   if (payload.projectId !== undefined) patch.project_id = payload.projectId ?? null;
   if (payload.builderId !== undefined) patch.builder_id = payload.builderId ?? null;
 

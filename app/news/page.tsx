@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import LeadForm from "@/components/LeadForm";
+import InfrastructureSection from "@/components/InfrastructureSection";
 import { getPublishedArticles, Article, ArticleCategory } from "@/lib/newsStore";
 
 export const metadata = {
@@ -32,6 +33,8 @@ const CATEGORY_CONFIG: {
   { id: "infrastructure", icon: TrendingUp,  label: "Infrastructure",       color: "bg-blue-50 text-blue-600",   anchor: "infrastructure" },
   { id: "community",      icon: Users,       label: "Community",            color: "bg-purple-50 text-purple-600",anchor: "community"      },
 ];
+
+const NON_INFRA_CATEGORIES: ArticleCategory[] = ["construction", "launches", "community"];
 
 const CONTENT_PACKAGES = [
   {
@@ -114,6 +117,8 @@ export default async function NewsPage() {
   // Group by category
   const byCategory = (cat: ArticleCategory) =>
     allArticles.filter((a) => a.category === cat);
+
+  const infraArticles = byCategory("infrastructure");
 
   // Featured = most recent published article overall
   const featured = allArticles[0] ?? null;
@@ -215,11 +220,13 @@ export default async function NewsPage() {
       {/* ── Sections per category ── */}
       <section className="bg-gray-50" id="articles">
         <SectionWrapper>
-          {CATEGORY_CONFIG.map((cat) => {
-            const articles = byCategory(cat.id);
+          {/* Non-infrastructure categories — standard card grid */}
+          {NON_INFRA_CATEGORIES.map((catId) => {
+            const cat = CATEGORY_CONFIG.find((c) => c.id === catId)!;
+            const articles = byCategory(catId);
             if (articles.length === 0) return null;
             return (
-              <div key={cat.id} id={cat.anchor} className="mb-12 last:mb-0">
+              <div key={catId} id={cat.anchor} className="mb-12 last:mb-0">
                 <div className="flex items-center gap-3 mb-6">
                   <div
                     className={`w-8 h-8 rounded-lg flex items-center justify-center ${cat.color}`}
@@ -239,6 +246,9 @@ export default async function NewsPage() {
               </div>
             );
           })}
+
+          {/* Infrastructure — tile grid with click-to-detail + pagination */}
+          <InfrastructureSection articles={infraArticles} />
 
           {allArticles.length === 0 && (
             <div className="text-center py-20">
