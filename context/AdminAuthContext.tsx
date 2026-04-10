@@ -15,9 +15,22 @@ import { createClient } from "@/lib/supabase/client";
 interface AdminAuthContextValue {
   admin: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<"ok" | "invalid_credentials" | "error">;
+  login: (email: string, password: string) => Promise<"ok" | "not_admin" | "invalid_credentials" | "error">;
   logout: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<"ok" | "wrong_current" | "error">;
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/** Returns true if this Supabase user is a builder (has a row in builders table). */
+async function isBuilder(email: string | undefined): Promise<boolean> {
+  if (!email) return false;
+  const { data } = await createClient()
+    .from("builders")
+    .select("id")
+    .eq("email", email)
+    .maybeSingle();
+  return !!data;
 }
 
 // ─── Context ─────────────────────────────────────────────────────────────────
@@ -31,26 +44,46 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const supabase = createClient();
 
-    // Get initial session
-    supabase.auth.getUser().then(({ data }) => {
-      setAdmin(data.user ?? null);
+    // Get initial session — reject if the user is a builder
+    supabase.auth.getUser().then(async ({ data }) => {
+      const user = data.user ?? null;
+      if (user && await isBuilder(user.email)) {
+        // Builder snuck in — clear admin state (don't sign them out; they may
+        // have a valid builder session running in the same tab)
+        setAdmin(null);
+      } else {
+        setAdmin(user);
+      }
       setLoading(false);
     });
 
-    // Listen for auth changes (login, logout, token refresh)
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAdmin(session?.user ?? null);
-    });
+    // Listen for auth changes
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        const user = session?.user ?? null;
+        if (user && await isBuilder(user.email)) {
+          setAdmin(null);
+        } else {
+          setAdmin(user);
+        }
+      }
+    );
 
     return () => listener.subscription.unsubscribe();
   }, []);
 
   const login = useCallback(
-    async (email: string, password: string): Promise<"ok" | "invalid_credentials" | "error"> => {
+    async (
+      email: string,
+      password: string
+    ): Promise<"ok" | "not_admin" | "invalid_credentials" | "error"> => {
       const supabase = createClient();
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
       if (error) {
-        console.error("Supabase login error:", error.message, error.status);
         const msg = error.message.toLowerCase();
         if (
           msg.includes("invalid") ||
@@ -59,26 +92,35 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
           msg.includes("credentials") ||
           error.status === 400 ||
           error.status === 401
-        ) return "invalid_credentials";
+        )
+          return "invalid_credentials";
         return "error";
       }
-      if (data.user) return "ok";
-      return "error";
+
+      if (!data.user) return "error";
+
+      // Reject if this account belongs to a builder
+      if (await isBuilder(data.user.email)) {
+        await supabase.auth.signOut();
+        return "not_admin";
+      }
+
+      return "ok";
     },
     []
   );
 
   const logout = useCallback(async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await createClient().auth.signOut();
     setAdmin(null);
   }, []);
 
   const changePassword = useCallback(
-    async (currentPassword: string, newPassword: string): Promise<"ok" | "wrong_current" | "error"> => {
+    async (
+      currentPassword: string,
+      newPassword: string
+    ): Promise<"ok" | "wrong_current" | "error"> => {
       const supabase = createClient();
-
-      // Re-authenticate with current password to verify it's correct
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user?.email) return "error";
 
@@ -88,7 +130,6 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       });
       if (verifyError) return "wrong_current";
 
-      // Update to new password
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword,
       });
@@ -100,7 +141,9 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <AdminAuthContext.Provider value={{ admin, loading, login, logout, changePassword }}>
+    <AdminAuthContext.Provider
+      value={{ admin, loading, login, logout, changePassword }}
+    >
       {children}
     </AdminAuthContext.Provider>
   );

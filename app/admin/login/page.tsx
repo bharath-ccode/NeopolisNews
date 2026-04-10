@@ -26,6 +26,8 @@ export default function AdminLoginPage() {
         router.refresh();
       } else if (result === "invalid_credentials") {
         setError("Invalid email or password. Please try again.");
+      } else if (result === "not_admin") {
+        setError("This account is registered as a builder. Use the Builder Portal to sign in.");
       } else {
         setError("Login failed. Check your credentials or that your admin account exists in Supabase.");
       }
