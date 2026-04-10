@@ -1,7 +1,16 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Wind, Droplets, Thermometer, X, ChevronDown } from "lucide-react";
+import { Wind, Droplets, Thermometer, X, ChevronDown, PersonStanding, Leaf } from "lucide-react";
+
+function getAqiInfo(aqi: number) {
+  if (aqi <= 50)  return { label: "Good",                          color: "bg-green-100",  textColor: "text-green-700",  advice: "Great day for a walk!" };
+  if (aqi <= 100) return { label: "Moderate",                      color: "bg-yellow-100", textColor: "text-yellow-700", advice: "Fine for most people outdoors." };
+  if (aqi <= 150) return { label: "Unhealthy for Sensitive Groups", color: "bg-orange-100", textColor: "text-orange-700", advice: "Sensitive groups should limit outdoor walks." };
+  if (aqi <= 200) return { label: "Unhealthy",                     color: "bg-red-100",    textColor: "text-red-700",    advice: "Limit prolonged outdoor activity." };
+  if (aqi <= 300) return { label: "Very Unhealthy",                color: "bg-purple-100", textColor: "text-purple-700", advice: "Avoid outdoor walks today." };
+  return           { label: "Hazardous",                           color: "bg-rose-100",   textColor: "text-rose-800",   advice: "Stay indoors — air is hazardous." };
+}
 
 // Kokapet, Hyderabad — typical April weather (used until live data loads)
 const HOURLY_TEMPS    = [27,26,26,25,25,26,28,30,33,35,37,38,38,38,37,36,35,34,33,32,31,30,29,28];
@@ -62,20 +71,25 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
   const [weather, setWeather] = useState(() =>
     buildWeatherData(HOURLY_TEMPS, HOURLY_FEELS, HOURLY_CODES, HOURLY_PRECIP, HOURLY_WIND, 38)
   );
+  const [aqi, setAqi]         = useState<number | null>(null);
   const [open, setOpen]       = useState(false);
   const panelRef              = useRef<HTMLDivElement>(null);
   const btnRef                = useRef<HTMLButtonElement>(null);
 
   // Try to fetch live data in background; silently fall back on error
   useEffect(() => {
-    const url =
+    const weatherUrl =
       "https://api.open-meteo.com/v1/forecast" +
       "?latitude=17.4126&longitude=78.3338" +
       "&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m" +
       "&hourly=temperature_2m,apparent_temperature,weather_code,precipitation_probability,wind_speed_10m" +
       "&timezone=Asia%2FKolkata&forecast_days=1";
 
-    fetch(url)
+    const aqiUrl =
+      "https://air-quality-api.open-meteo.com/v1/air-quality" +
+      "?latitude=17.4065&longitude=78.3772&current=us_aqi";
+
+    fetch(weatherUrl)
       .then((r) => r.json())
       .then((j) => {
         if (j?.current && j?.hourly) {
@@ -83,6 +97,11 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
         }
       })
       .catch(() => {/* keep mock data */});
+
+    fetch(aqiUrl)
+      .then((r) => r.json())
+      .then((j) => { if (j?.current?.us_aqi != null) setAqi(j.current.us_aqi); })
+      .catch(() => {/* silently fail */});
   }, []);
 
   // Close on outside click
@@ -111,6 +130,7 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
   const temp                = Math.round(current.temperature_2m);
   const feelsLike           = Math.round(current.apparent_temperature);
   const nowHour             = new Date().getHours();
+  const aqiInfo             = aqi !== null ? getAqiInfo(aqi) : null;
 
   return (
     <div className="relative">
@@ -212,6 +232,34 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
               </div>
             </div>
           </div>
+
+          {/* AQI + Walking advice */}
+          {aqiInfo && aqi !== null && (
+            <div className="px-4 py-3 border-t border-gray-100 space-y-2">
+              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+                Air Quality
+              </p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Leaf className="w-4 h-4 text-brand-400 shrink-0" />
+                  <div>
+                    <p className="text-xs text-gray-400">AQI (US)</p>
+                    <p className="text-sm font-bold text-gray-800">{aqi}</p>
+                  </div>
+                </div>
+                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${aqiInfo.color} ${aqiInfo.textColor}`}>
+                  {aqiInfo.label}
+                </span>
+              </div>
+              <div className="flex items-start gap-2 rounded-lg bg-gray-50 px-3 py-2">
+                <PersonStanding className="w-4 h-4 text-brand-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-semibold text-gray-600">Walking Advice</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{aqiInfo.advice}</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           <p className="text-center text-[10px] text-gray-300 pb-3">
             Kokapet, Hyderabad · Open-Meteo
