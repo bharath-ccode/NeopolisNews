@@ -229,14 +229,16 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
       {/* Top bar */}
-      <div className="bg-brand-950 text-brand-200 text-xs py-1.5 px-4 hidden md:flex items-center justify-between">
-        <span>
-          Neopolis — 100-acre mixed-use urban district &nbsp;·&nbsp; Live updates every week &nbsp;·&nbsp;
+      <div className="bg-brand-950 text-brand-200 text-xs py-1.5 px-4 flex items-center justify-between gap-4">
+        <WeatherWidget />
+        <span className="hidden md:block text-center flex-1">
+          Neopolis — 100-acre mixed-use urban district &nbsp;·&nbsp; Live updates
+          every week &nbsp;·&nbsp;
           <Link href="/advertise" className="underline hover:text-white">
             List your property or business →
           </Link>
         </span>
-        <WeatherWidget />
+        <span className="md:hidden text-brand-400 text-xs shrink-0">Neopolis</span>
       </div>
 
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

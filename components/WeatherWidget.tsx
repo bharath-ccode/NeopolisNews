@@ -211,18 +211,18 @@ export default function WeatherWidget() {
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-haspopup="true"
-        className="flex items-center gap-1.5 text-sm text-white font-bold cursor-pointer select-none transition-colors py-1 px-2.5 rounded-lg bg-brand-700 hover:bg-brand-600 border border-brand-500"
+        className="flex items-center gap-1.5 text-xs text-brand-200 hover:text-white cursor-pointer select-none transition-colors py-0.5 px-1 rounded hover:bg-brand-800"
       >
-        <WeatherIcon code={weather.weatherCode} className="w-4 h-4 text-brand-200" />
-        <span>{weather.temp}°C</span>
-        <span className="hidden sm:inline text-brand-200 font-medium">{weather.description}</span>
+        <WeatherIcon code={weather.weatherCode} className="w-3.5 h-3.5 text-brand-300" />
+        <span className="font-semibold">{weather.temp}°C</span>
+        <span className="hidden sm:inline text-brand-400">{weather.description}</span>
         {aqiInfo && (
-          <span className="hidden sm:inline text-brand-300 font-medium">
+          <span className="hidden sm:inline text-brand-400">
             · AQI {weather.aqi}
           </span>
         )}
         <ChevronDown
-          className={`w-3.5 h-3.5 text-brand-300 transition-transform duration-200 ${
+          className={`w-3 h-3 text-brand-400 transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
         />
@@ -230,7 +230,7 @@ export default function WeatherWidget() {
 
       {/* ── Expanded dropdown panel ── */}
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl border border-gray-100 shadow-xl z-50 overflow-hidden">
+        <div className="absolute left-0 top-full mt-2 w-72 bg-white rounded-xl border border-gray-100 shadow-xl z-50 overflow-hidden">
 
           {/* Header */}
           <div className="bg-gradient-to-br from-brand-700 to-brand-900 text-white px-4 py-3">
