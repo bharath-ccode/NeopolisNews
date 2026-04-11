@@ -13,12 +13,14 @@ import {
   Menu,
   X,
   ChevronDown,
+  ChevronRight,
   LayoutDashboard,
   LogOut,
   User,
   Briefcase,
   HeartPulse,
   CalendarDays,
+  Sparkles,
 } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "@/context/AuthContext";
@@ -55,11 +57,21 @@ const NAV_ITEMS = [
     href: "/health",
     icon: HeartPulse,
     sub: [
-      { label: "Hospitals",            href: "/health#hospitals"    },
-      { label: "Ambulance Services",   href: "/health#ambulance"   },
-      { label: "Clinics",              href: "/health#clinics"     },
-      { label: "Diagnostics",          href: "/health#diagnostics" },
-      { label: "Pharmacies",           href: "/health#pharmacies"  },
+      { label: "Hospitals",           href: "/health#hospitals"    },
+      { label: "Ambulance Services",  href: "/health#ambulance"    },
+      { label: "Clinics",             href: "/health#clinics"      },
+      { label: "Diagnostics",         href: "/health#diagnostics"  },
+      { label: "Pharmacies",          href: "/health#pharmacies"   },
+      {
+        label: "Wellness",
+        href: "/health/wellness",
+        icon: Sparkles,
+        children: [
+          { label: "Massage Spa", href: "/health/wellness?type=spa"    },
+          { label: "Gym",         href: "/health/wellness?type=gym"    },
+          { label: "Studio",      href: "/health/wellness?type=studio" },
+        ],
+      },
     ],
   },
   {
@@ -282,15 +294,41 @@ export default function Navbar() {
 
                   {item.sub && activeDropdown === item.href && (
                     <div className="absolute top-full left-0 mt-1 w-52 bg-white rounded-xl border border-gray-100 shadow-lg py-1 z-50">
-                      {item.sub.map((s) => (
-                        <Link
-                          key={s.href}
-                          href={s.href}
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700"
-                        >
-                          {s.label}
-                        </Link>
-                      ))}
+                      {item.sub.map((s) =>
+                        "children" in s && s.children ? (
+                          <div key={s.href} className="relative group/nested">
+                            <Link
+                              href={s.href}
+                              className="flex items-center justify-between gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700"
+                            >
+                              <span className="flex items-center gap-2">
+                                {"icon" in s && s.icon && <s.icon className="w-3.5 h-3.5 text-purple-500" />}
+                                {s.label}
+                              </span>
+                              <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+                            </Link>
+                            <div className="absolute left-full top-0 w-44 bg-white rounded-xl border border-gray-100 shadow-lg py-1 hidden group-hover/nested:block">
+                              {s.children.map((c) => (
+                                <Link
+                                  key={c.href}
+                                  href={c.href}
+                                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700"
+                                >
+                                  {c.label}
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <Link
+                            key={s.href}
+                            href={s.href}
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700"
+                          >
+                            {s.label}
+                          </Link>
+                        )
+                      )}
                     </div>
                   )}
                 </div>

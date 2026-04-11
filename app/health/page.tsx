@@ -10,6 +10,7 @@ import {
   CheckCircle,
   ArrowRight,
   MapPin,
+  Sparkles,
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import LeadForm from "@/components/LeadForm";
@@ -164,25 +165,28 @@ export default function HealthPage() {
       {/* ── Quick category links ── */}
       <section className="bg-white border-b border-gray-100">
         <SectionWrapper tight>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {[
-              { href: "#hospitals",  Icon: Hospital,    label: "Hospitals",           color: "bg-red-50 text-red-600"    },
-              { href: "#ambulance",  Icon: Ambulance,   label: "Ambulance",           color: "bg-orange-50 text-orange-600" },
-              { href: "#clinics",    Icon: Stethoscope, label: "Clinics",             color: "bg-cyan-50 text-cyan-600"  },
-              { href: "#pharmacies", Icon: Pill,        label: "Pharmacies",          color: "bg-teal-50 text-teal-600"  },
-            ].map(({ href, Icon, label, color }) => (
-              <a
-                key={href}
-                href={href}
-                className="flex items-center gap-3 p-4 rounded-xl border border-gray-100 hover:border-red-200 hover:shadow-sm transition-all group"
-              >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
-                  <Icon className="w-5 h-5" />
-                </div>
-                <span className="text-sm font-semibold text-gray-700">{label}</span>
-                <ArrowRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-red-400 transition-colors" />
-              </a>
-            ))}
+              { href: "#hospitals",       Icon: Hospital,    label: "Hospitals",    color: "bg-red-50 text-red-600",       isLink: false },
+              { href: "#ambulance",       Icon: Ambulance,   label: "Ambulance",    color: "bg-orange-50 text-orange-600", isLink: false },
+              { href: "#clinics",         Icon: Stethoscope, label: "Clinics",      color: "bg-cyan-50 text-cyan-600",     isLink: false },
+              { href: "#pharmacies",      Icon: Pill,        label: "Pharmacies",   color: "bg-teal-50 text-teal-600",     isLink: false },
+              { href: "/health/wellness", Icon: Sparkles,    label: "Wellness",     color: "bg-purple-50 text-purple-600", isLink: true  },
+            ].map(({ href, Icon, label, color, isLink }) => {
+              const cls = "flex items-center gap-3 p-4 rounded-xl border border-gray-100 hover:border-purple-200 hover:shadow-sm transition-all group";
+              const inner = (
+                <>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <span className="text-sm font-semibold text-gray-700">{label}</span>
+                  <ArrowRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-purple-400 transition-colors" />
+                </>
+              );
+              return isLink
+                ? <Link key={href} href={href} className={cls}>{inner}</Link>
+                : <a key={href} href={href} className={cls}>{inner}</a>;
+            })}
           </div>
         </SectionWrapper>
       </section>
