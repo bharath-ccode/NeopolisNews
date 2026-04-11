@@ -67,9 +67,10 @@ const NAV_ITEMS = [
         href: "/health/wellness",
         icon: Sparkles,
         children: [
-          { label: "Massage Spa", href: "/health/wellness?type=spa"    },
-          { label: "Gym",         href: "/health/wellness?type=gym"    },
-          { label: "Studio",      href: "/health/wellness?type=studio" },
+          { label: "Massage Spa", href: "/health/wellness?type=spa"     },
+          { label: "Gym",         href: "/health/wellness?type=gym"     },
+          { label: "Studio",      href: "/health/wellness?type=studio"  },
+          { label: "Trainers",    href: "/health/wellness?type=trainer" },
         ],
       },
     ],
