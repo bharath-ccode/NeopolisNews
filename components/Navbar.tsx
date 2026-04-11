@@ -111,10 +111,11 @@ const NAV_ITEMS = [
     href: "/services",
     icon: Wrench,
     sub: [
-      { label: "Move-In Concierge",     href: "/services#concierge"  },
-      { label: "Interiors & Fit-Out",   href: "/services#interiors"  },
-      { label: "Facility Management",   href: "/services#facility"   },
-      { label: "Utilities Setup",       href: "/services#utilities"  },
+      { label: "Moving",   href: "/services/local?type=moving"   },
+      { label: "Party",    href: "/services/local?type=party"    },
+      { label: "Home",     href: "/services/local?type=home"     },
+      { label: "Delivery", href: "/services/local?type=delivery" },
+      { label: "Driving",  href: "/services/local?type=driving"  },
     ],
   },
   {
