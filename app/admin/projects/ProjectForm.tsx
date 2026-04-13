@@ -23,6 +23,8 @@ import {
   updateProject,
   type Project,
   type ProjectInput,
+  type ProjectType,
+  type ProjectTier,
   type ContactPhone,
   type Tower,
   type FloorPlan,
@@ -78,6 +80,18 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
   const [coreNeopolis, setCoreNeopolis] = useState(initialData?.coreNeopolis ?? false);
   const [projectLogoUrl, setProjectLogoUrl] = useState<string | null>(
     initialData?.projectLogoUrl ?? null
+  );
+  const [projectType, setProjectType] = useState<ProjectType | "">(
+    initialData?.projectType ?? ""
+  );
+  const [tier, setTier] = useState<ProjectTier | "">(
+    initialData?.tier ?? ""
+  );
+  const [maxFloors, setMaxFloors] = useState(
+    initialData?.projectDetail?.maxFloors?.toString() ?? ""
+  );
+  const [amenitiesSqft, setAmenitiesSqft] = useState(
+    initialData?.projectDetail?.amenitiesSqft?.toString() ?? ""
   );
 
   // Contact
@@ -185,6 +199,8 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
       totalUnits: totalUnits ? parseInt(totalUnits, 10) : null,
       coreNeopolis,
       projectLogoUrl,
+      projectType: projectType || null,
+      tier: tier || null,
       contact: {
         email: contactEmail || null,
         website: contactWebsite || null,
@@ -196,6 +212,8 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
       },
       projectDetail: {
         numTowers: towers.length,
+        maxFloors: maxFloors ? parseInt(maxFloors, 10) : null,
+        amenitiesSqft: amenitiesSqft ? parseInt(amenitiesSqft, 10) : null,
         towers: towers.map((t, i) => ({
           ...t,
           sortOrder: i,
@@ -311,6 +329,39 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
             </div>
           )}
 
+          {/* Project Type + Tier */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="label">Project Type</label>
+              <select
+                className="input"
+                value={projectType}
+                onChange={(e) => setProjectType(e.target.value as ProjectType | "")}
+              >
+                <option value="">— Select type —</option>
+                <option value="apartments">Apartments</option>
+                <option value="independent_homes">Independent Homes</option>
+                <option value="residential">Residential (Mixed)</option>
+                <option value="mixed_use">Mixed Use</option>
+                <option value="commercial">Commercial</option>
+              </select>
+            </div>
+            <div>
+              <label className="label">Tier</label>
+              <select
+                className="input"
+                value={tier}
+                onChange={(e) => setTier(e.target.value as ProjectTier | "")}
+              >
+                <option value="">— Select tier —</option>
+                <option value="affordable">Affordable</option>
+                <option value="premium">Premium</option>
+                <option value="luxury">Luxury</option>
+                <option value="uber_luxury">Uber Luxury</option>
+              </select>
+            </div>
+          </div>
+
           {/* Land area + units */}
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -320,7 +371,7 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
                 type="number"
                 step="0.01"
                 min="0"
-                placeholder="e.g. 100"
+                placeholder="e.g. 7.7"
                 value={totalLandArea}
                 onChange={(e) => setTotalLandArea(e.target.value)}
               />
@@ -331,9 +382,35 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
                 className="input"
                 type="number"
                 min="0"
-                placeholder="e.g. 2500"
+                placeholder="e.g. 655"
                 value={totalUnits}
                 onChange={(e) => setTotalUnits(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Max floors + Amenities sq ft */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="label">Max Floors</label>
+              <input
+                className="input"
+                type="number"
+                min="0"
+                placeholder="e.g. 55"
+                value={maxFloors}
+                onChange={(e) => setMaxFloors(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="label">Amenities Area (sq ft)</label>
+              <input
+                className="input"
+                type="number"
+                min="0"
+                placeholder="e.g. 180000"
+                value={amenitiesSqft}
+                onChange={(e) => setAmenitiesSqft(e.target.value)}
               />
             </div>
           </div>

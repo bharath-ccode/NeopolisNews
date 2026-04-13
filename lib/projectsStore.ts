@@ -40,8 +40,13 @@ export interface Tower {
 export interface ProjectDetail {
   id?: string;
   numTowers: number;
+  maxFloors: number | null;
+  amenitiesSqft: number | null;
   towers: Tower[];
 }
+
+export type ProjectType = "apartments" | "independent_homes" | "residential" | "mixed_use" | "commercial";
+export type ProjectTier = "affordable" | "premium" | "luxury" | "uber_luxury";
 
 export interface Project {
   id: string;
@@ -52,6 +57,8 @@ export interface Project {
   totalUnits: number | null;
   coreNeopolis: boolean;
   projectLogoUrl: string | null;
+  projectType: ProjectType | null;
+  tier: ProjectTier | null;
   createdAt: string;
   updatedAt: string;
   contact?: Contact;
@@ -65,6 +72,8 @@ export interface ProjectInput {
   totalUnits: number | null;
   coreNeopolis: boolean;
   projectLogoUrl: string | null;
+  projectType: ProjectType | null;
+  tier: ProjectTier | null;
   contact: Contact;
   projectDetail: ProjectDetail;
 }
@@ -102,6 +111,8 @@ function toProject(row: any): Project {
     ? {
         id: detailRow.id,
         numTowers: detailRow.num_towers,
+        maxFloors: detailRow.max_floors ?? null,
+        amenitiesSqft: detailRow.amenities_sqft ?? null,
         towers: (detailRow.towers ?? [])
           .sort((a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order)
           .map((t: { id: string; tower_name: string; num_floors: number; sort_order: number; floor_plans: { id: string; image_url: string; floor_label: string; sort_order: number }[] }) => ({
@@ -130,6 +141,8 @@ function toProject(row: any): Project {
     totalUnits: row.total_units,
     coreNeopolis: row.core_neopolis ?? false,
     projectLogoUrl: row.project_logo_url,
+    projectType: row.project_type ?? null,
+    tier: row.tier ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     contact,
@@ -158,7 +171,7 @@ export async function getProjectById(id: string): Promise<Project | null> {
       contacts(id, email, website, project_owner, facebook_url, instagram_url, youtube_url,
         contact_phones(id, phone_number, role, sort_order)
       ),
-      project_details(id, num_towers,
+      project_details(id, num_towers, max_floors, amenities_sqft,
         towers(id, tower_name, num_floors, sort_order,
           floor_plans(id, image_url, floor_label, sort_order)
         )
@@ -185,6 +198,8 @@ export async function createProject(input: ProjectInput): Promise<Project> {
       total_units: input.totalUnits,
       core_neopolis: input.coreNeopolis,
       project_logo_url: input.projectLogoUrl,
+      project_type: input.projectType,
+      tier: input.tier,
     })
     .select()
     .single();
@@ -208,6 +223,8 @@ export async function updateProject(id: string, input: ProjectInput): Promise<Pr
       total_units: input.totalUnits,
       core_neopolis: input.coreNeopolis,
       project_logo_url: input.projectLogoUrl,
+      project_type: input.projectType,
+      tier: input.tier,
     })
     .eq("id", id);
   if (projErr) throw projErr;
@@ -259,6 +276,8 @@ async function saveNestedData(sb: ReturnType<typeof createClient>, projectId: st
       {
         project_id: projectId,
         num_towers: input.projectDetail.towers.length,
+        max_floors: input.projectDetail.maxFloors,
+        amenities_sqft: input.projectDetail.amenitiesSqft,
       },
       { onConflict: "project_id" }
     )
