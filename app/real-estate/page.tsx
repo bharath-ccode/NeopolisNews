@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Building2,
@@ -8,30 +11,11 @@ import {
   Star,
   ChevronRight,
   Tag,
+  Loader2,
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import LeadForm from "@/components/LeadForm";
-import { createClient } from "@/lib/supabase/server";
-import type { ProjectType, ProjectTier } from "@/lib/projectsStore";
-
-export const dynamic = "force-dynamic";
-
-export const metadata = {
-  title: "Real Estate – NeopolisNews",
-  description:
-    "Project pages, price trends, unit plans and live availability for every project in the Neopolis urban district.",
-};
-
-// ─── Server data fetch ───────────────────────────────────────────────────────
-
-async function getProjects() {
-  const sb = createClient();
-  const { data } = await sb
-    .from("projects")
-    .select("id, project_name, builder_id, total_land_area_acres, total_units, core_neopolis, project_logo_url, project_type, tier, price_range_min, price_range_max, builders(builder_name)")
-    .order("project_name");
-  return data ?? [];
-}
+import { getProjects, type Project, type ProjectType, type ProjectTier } from "@/lib/projectsStore";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -57,8 +41,6 @@ const TIER_COLORS: Record<ProjectTier, string> = {
   uber_luxury: "bg-rose-100 text-rose-800 text-xs font-semibold px-2 py-0.5 rounded-full",
 };
 
-// ─── Static price trend data (placeholder until we have DB price history) ────
-
 const PRICE_TRENDS = [
   { quarter: "Q1 2024", residential: 7200, office: 82, retail: 110 },
   { quarter: "Q2 2024", residential: 7600, office: 85, retail: 118 },
@@ -72,8 +54,16 @@ const PRICE_TRENDS = [
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default async function RealEstatePage() {
-  const projects = await getProjects();
+export default function RealEstatePage() {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading]   = useState(true);
+
+  useEffect(() => {
+    getProjects()
+      .then(setProjects)
+      .finally(() => setLoading(false));
+  }, []);
+
   const maxPrice = Math.max(...PRICE_TRENDS.map((d) => d.residential));
 
   return (
@@ -109,12 +99,17 @@ export default async function RealEstatePage() {
           <div>
             <h2 className="section-heading">All Projects</h2>
             <p className="text-gray-500 text-sm mt-1">
-              {projects.length} project{projects.length !== 1 ? "s" : ""} · Updated regularly
+              {loading ? "Loading…" : `${projects.length} project${projects.length !== 1 ? "s" : ""} · Updated regularly`}
             </p>
           </div>
         </div>
 
-        {projects.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-20 text-gray-400">
+            <Loader2 className="w-6 h-6 animate-spin mr-2" />
+            <span className="text-sm">Loading projects…</span>
+          </div>
+        ) : projects.length === 0 ? (
           <div className="card p-16 text-center">
             <Building2 className="w-12 h-12 text-gray-200 mx-auto mb-3" />
             <p className="font-medium text-gray-500">No projects listed yet</p>
@@ -122,28 +117,23 @@ export default async function RealEstatePage() {
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {projects.map((p: any) => {
-              const tier      = p.tier as ProjectTier | null;
-              const type      = p.project_type as ProjectType | null;
-              const builder   = p.builders?.builder_name ?? null;
-              const hasPrice  = p.price_range_min || p.price_range_max;
-
+            {projects.map((p) => {
+              const hasPrice = p.priceRangeMin || p.priceRangeMax;
               return (
-                <div key={p.id} className={`card overflow-hidden ${p.core_neopolis ? "ring-2 ring-brand-500" : ""}`}>
+                <div key={p.id} className={`card overflow-hidden ${p.coreNeopolis ? "ring-2 ring-brand-500" : ""}`}>
                   {/* Image / logo area */}
                   <div className="h-36 bg-gradient-to-br from-brand-50 to-brand-100 flex items-center justify-center relative overflow-hidden">
-                    {p.project_logo_url ? (
+                    {p.projectLogoUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={p.project_logo_url}
-                        alt={p.project_name}
+                        src={p.projectLogoUrl}
+                        alt={p.projectName}
                         className="h-20 w-auto object-contain"
                       />
                     ) : (
                       <Building2 className="w-12 h-12 text-brand-300" />
                     )}
-                    {p.core_neopolis && (
+                    {p.coreNeopolis && (
                       <span className="absolute top-2 left-2 flex items-center gap-1 text-xs font-semibold bg-brand-600 text-white px-2 py-0.5 rounded-full">
                         <CheckCircle className="w-3 h-3" /> Core Neopolis
                       </span>
@@ -151,33 +141,33 @@ export default async function RealEstatePage() {
                   </div>
 
                   <div className="p-4">
-                    {/* Name + badges */}
+                    {/* Name + tier badge */}
                     <div className="mb-2">
                       <div className="flex items-start justify-between gap-2 mb-1">
                         <h3 className="font-bold text-gray-900 text-sm leading-snug">
-                          {p.project_name}
+                          {p.projectName}
                         </h3>
-                        {tier && (
-                          <span className={TIER_COLORS[tier] ?? "tag-blue"}>
-                            {TIER_LABELS[tier]}
+                        {p.tier && (
+                          <span className={TIER_COLORS[p.tier]}>
+                            {TIER_LABELS[p.tier]}
                           </span>
                         )}
                       </div>
-                      {builder && (
-                        <p className="text-xs text-gray-400">by {builder}</p>
+                      {p.builderName && (
+                        <p className="text-xs text-gray-400">by {p.builderName}</p>
                       )}
                     </div>
 
                     {/* Stats */}
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-500 my-3">
-                      {type && (
-                        <span>Type: <strong className="text-gray-700">{TYPE_LABELS[type]}</strong></span>
+                      {p.projectType && (
+                        <span>Type: <strong className="text-gray-700">{TYPE_LABELS[p.projectType]}</strong></span>
                       )}
-                      {p.total_units && (
-                        <span>Units: <strong className="text-gray-700">{p.total_units.toLocaleString("en-IN")}</strong></span>
+                      {p.totalUnits && (
+                        <span>Units: <strong className="text-gray-700">{p.totalUnits.toLocaleString("en-IN")}</strong></span>
                       )}
-                      {p.total_land_area_acres && (
-                        <span>Land: <strong className="text-gray-700">{p.total_land_area_acres} acres</strong></span>
+                      {p.totalLandAreaAcres && (
+                        <span>Land: <strong className="text-gray-700">{p.totalLandAreaAcres} acres</strong></span>
                       )}
                     </div>
 
@@ -186,11 +176,11 @@ export default async function RealEstatePage() {
                       <div className="flex items-center gap-1 mb-3">
                         <Tag className="w-3.5 h-3.5 text-brand-500" />
                         <span className="text-sm font-extrabold text-brand-700">
-                          {p.price_range_min && p.price_range_max
-                            ? `₹${p.price_range_min.toLocaleString("en-IN")} – ₹${p.price_range_max.toLocaleString("en-IN")} /sft`
-                            : p.price_range_min
-                            ? `From ₹${p.price_range_min.toLocaleString("en-IN")} /sft`
-                            : `Up to ₹${p.price_range_max.toLocaleString("en-IN")} /sft`}
+                          {p.priceRangeMin && p.priceRangeMax
+                            ? `₹${p.priceRangeMin.toLocaleString("en-IN")} – ₹${p.priceRangeMax.toLocaleString("en-IN")} /sft`
+                            : p.priceRangeMin
+                            ? `From ₹${p.priceRangeMin.toLocaleString("en-IN")} /sft`
+                            : `Up to ₹${p.priceRangeMax!.toLocaleString("en-IN")} /sft`}
                         </span>
                       </div>
                     )}
@@ -229,9 +219,7 @@ export default async function RealEstatePage() {
                 ₹{PRICE_TRENDS[PRICE_TRENDS.length - 1].residential.toLocaleString()}
               </p>
               <p className="text-xs text-gray-500 mt-0.5">per sq ft (Q4 2025)</p>
-              <p className="text-xs text-green-600 font-semibold mt-2">
-                +44% appreciation since Q1 2024
-              </p>
+              <p className="text-xs text-green-600 font-semibold mt-2">+44% appreciation since Q1 2024</p>
             </div>
             <div className="card p-5">
               <div className="flex items-center gap-2 mb-3">
@@ -242,9 +230,7 @@ export default async function RealEstatePage() {
                 ₹{PRICE_TRENDS[PRICE_TRENDS.length - 1].office}
               </p>
               <p className="text-xs text-gray-500 mt-0.5">per sq ft / month (Q4 2025)</p>
-              <p className="text-xs text-green-600 font-semibold mt-2">
-                +32% appreciation since Q1 2024
-              </p>
+              <p className="text-xs text-green-600 font-semibold mt-2">+32% appreciation since Q1 2024</p>
             </div>
             <div className="card p-5">
               <div className="flex items-center gap-2 mb-3">
@@ -255,13 +241,10 @@ export default async function RealEstatePage() {
                 ₹{PRICE_TRENDS[PRICE_TRENDS.length - 1].retail}
               </p>
               <p className="text-xs text-gray-500 mt-0.5">per sq ft / month (Q4 2025)</p>
-              <p className="text-xs text-green-600 font-semibold mt-2">
-                +45% appreciation since Q1 2024
-              </p>
+              <p className="text-xs text-green-600 font-semibold mt-2">+45% appreciation since Q1 2024</p>
             </div>
           </div>
 
-          {/* Bar chart */}
           <div className="card p-5">
             <h3 className="font-bold text-gray-900 mb-4 text-sm">
               Residential Rate (₹/sq ft) — Quarterly
@@ -288,9 +271,7 @@ export default async function RealEstatePage() {
         <SectionWrapper>
           <div className="grid lg:grid-cols-2 gap-10 items-center">
             <div>
-              <h2 className="text-2xl md:text-3xl font-bold mb-3">
-                Are You a Developer?
-              </h2>
+              <h2 className="text-2xl md:text-3xl font-bold mb-3">Are You a Developer?</h2>
               <p className="text-brand-300 mb-5">
                 Get your project in front of buyers and investors.
                 Dedicated project pages, availability announcements, unit plans
