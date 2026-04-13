@@ -22,26 +22,39 @@ export interface Contact {
   phones: ContactPhone[];
 }
 
-export interface FloorPlan {
-  id?: string;
-  imageUrl: string;
-  floorLabel: string | null;
-  sortOrder: number;
-}
-
 export interface Tower {
   id?: string;
   towerName: string;
   numFloors: number;
   sortOrder: number;
-  floorPlans: FloorPlan[];
+}
+
+export type UnitFacing =
+  | "North" | "South" | "East" | "West"
+  | "North-East" | "North-West" | "South-East" | "South-West";
+
+export interface UnitPlan {
+  id?: string;
+  planName: string;
+  bhk: number;
+  maidRoom: boolean;
+  homeOffice: boolean;
+  sizeSqft: number;
+  facing: UnitFacing | null;
+  planUrl: string | null;
+  sortOrder: number;
 }
 
 export interface ProjectDetail {
   id?: string;
   numTowers: number;
+  maxFloors: number | null;
+  amenitiesSqft: number | null;
   towers: Tower[];
 }
+
+export type ProjectType = "apartments" | "independent_homes" | "residential" | "mixed_use" | "commercial";
+export type ProjectTier = "affordable" | "premium" | "luxury" | "uber_luxury";
 
 export interface Project {
   id: string;
@@ -52,10 +65,16 @@ export interface Project {
   totalUnits: number | null;
   coreNeopolis: boolean;
   projectLogoUrl: string | null;
+  projectPlanUrl: string | null;
+  projectType: ProjectType | null;
+  tier: ProjectTier | null;
+  priceRangeMin: number | null;
+  priceRangeMax: number | null;
   createdAt: string;
   updatedAt: string;
   contact?: Contact;
   projectDetail?: ProjectDetail;
+  unitPlans?: UnitPlan[];
 }
 
 export interface ProjectInput {
@@ -65,8 +84,14 @@ export interface ProjectInput {
   totalUnits: number | null;
   coreNeopolis: boolean;
   projectLogoUrl: string | null;
+  projectPlanUrl: string | null;
+  projectType: ProjectType | null;
+  tier: ProjectTier | null;
+  priceRangeMin: number | null;
+  priceRangeMax: number | null;
   contact: Contact;
   projectDetail: ProjectDetail;
+  unitPlans: UnitPlan[];
 }
 
 // ─── Mapping ─────────────────────────────────────────────────────────────────
@@ -74,9 +99,7 @@ export interface ProjectInput {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function toProject(row: any): Project {
   const contactRow = Array.isArray(row.contacts) ? row.contacts[0] : row.contacts;
-  const detailRow = Array.isArray(row.project_details)
-    ? row.project_details[0]
-    : row.project_details;
+  const detailRow  = Array.isArray(row.project_details) ? row.project_details[0] : row.project_details;
 
   const contact: Contact | undefined = contactRow
     ? {
@@ -102,24 +125,36 @@ function toProject(row: any): Project {
     ? {
         id: detailRow.id,
         numTowers: detailRow.num_towers,
+        maxFloors: detailRow.max_floors ?? null,
+        amenitiesSqft: detailRow.amenities_sqft ?? null,
         towers: (detailRow.towers ?? [])
           .sort((a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order)
-          .map((t: { id: string; tower_name: string; num_floors: number; sort_order: number; floor_plans: { id: string; image_url: string; floor_label: string; sort_order: number }[] }) => ({
+          .map((t: { id: string; tower_name: string; num_floors: number; sort_order: number }) => ({
             id: t.id,
             towerName: t.tower_name,
             numFloors: t.num_floors,
             sortOrder: t.sort_order,
-            floorPlans: (t.floor_plans ?? [])
-              .sort((a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order)
-              .map((fp: { id: string; image_url: string; floor_label: string; sort_order: number }) => ({
-                id: fp.id,
-                imageUrl: fp.image_url,
-                floorLabel: fp.floor_label,
-                sortOrder: fp.sort_order,
-              })),
           })),
       }
     : undefined;
+
+  const unitPlans: UnitPlan[] = (row.unit_plans ?? [])
+    .sort((a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order)
+    .map((u: {
+      id: string; plan_name: string; bhk: number; maid_room: boolean;
+      home_office: boolean; size_sqft: number; facing: string | null;
+      plan_url: string | null; sort_order: number;
+    }) => ({
+      id: u.id,
+      planName: u.plan_name,
+      bhk: u.bhk,
+      maidRoom: u.maid_room,
+      homeOffice: u.home_office,
+      sizeSqft: u.size_sqft,
+      facing: (u.facing as UnitFacing) ?? null,
+      planUrl: u.plan_url ?? null,
+      sortOrder: u.sort_order,
+    }));
 
   return {
     id: row.id,
@@ -130,10 +165,16 @@ function toProject(row: any): Project {
     totalUnits: row.total_units,
     coreNeopolis: row.core_neopolis ?? false,
     projectLogoUrl: row.project_logo_url,
+    projectPlanUrl: row.project_plan_url ?? null,
+    projectType: row.project_type ?? null,
+    tier: row.tier ?? null,
+    priceRangeMin: row.price_range_min ?? null,
+    priceRangeMax: row.price_range_max ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     contact,
     projectDetail,
+    unitPlans,
   };
 }
 
@@ -158,11 +199,10 @@ export async function getProjectById(id: string): Promise<Project | null> {
       contacts(id, email, website, project_owner, facebook_url, instagram_url, youtube_url,
         contact_phones(id, phone_number, role, sort_order)
       ),
-      project_details(id, num_towers,
-        towers(id, tower_name, num_floors, sort_order,
-          floor_plans(id, image_url, floor_label, sort_order)
-        )
-      )`
+      project_details(id, num_towers, max_floors, amenities_sqft,
+        towers(id, tower_name, num_floors, sort_order)
+      ),
+      unit_plans(id, plan_name, bhk, maid_room, home_office, size_sqft, facing, plan_url, sort_order)`
     )
     .eq("id", id)
     .single();
@@ -175,62 +215,68 @@ export async function getProjectById(id: string): Promise<Project | null> {
 export async function createProject(input: ProjectInput): Promise<Project> {
   const sb = createClient();
 
-  // 1. Insert project
   const { data: proj, error: projErr } = await sb
     .from("projects")
     .insert({
-      project_name: input.projectName,
-      builder_id: input.builderId || null,
+      project_name:          input.projectName,
+      builder_id:            input.builderId || null,
       total_land_area_acres: input.totalLandAreaAcres,
-      total_units: input.totalUnits,
-      core_neopolis: input.coreNeopolis,
-      project_logo_url: input.projectLogoUrl,
+      total_units:           input.totalUnits,
+      core_neopolis:         input.coreNeopolis,
+      project_logo_url:      input.projectLogoUrl,
+      project_plan_url:      input.projectPlanUrl,
+      project_type:          input.projectType,
+      tier:                  input.tier,
+      price_range_min:       input.priceRangeMin,
+      price_range_max:       input.priceRangeMax,
     })
     .select()
     .single();
   if (projErr) throw projErr;
 
   await saveNestedData(sb, proj.id, input);
-
   return (await getProjectById(proj.id))!;
 }
 
 export async function updateProject(id: string, input: ProjectInput): Promise<Project> {
   const sb = createClient();
 
-  // 1. Update project
   const { error: projErr } = await sb
     .from("projects")
     .update({
-      project_name: input.projectName,
-      builder_id: input.builderId || null,
+      project_name:          input.projectName,
+      builder_id:            input.builderId || null,
       total_land_area_acres: input.totalLandAreaAcres,
-      total_units: input.totalUnits,
-      core_neopolis: input.coreNeopolis,
-      project_logo_url: input.projectLogoUrl,
+      total_units:           input.totalUnits,
+      core_neopolis:         input.coreNeopolis,
+      project_logo_url:      input.projectLogoUrl,
+      project_plan_url:      input.projectPlanUrl,
+      project_type:          input.projectType,
+      tier:                  input.tier,
+      price_range_min:       input.priceRangeMin,
+      price_range_max:       input.priceRangeMax,
     })
     .eq("id", id);
   if (projErr) throw projErr;
 
   await saveNestedData(sb, id, input);
-
   return (await getProjectById(id))!;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function saveNestedData(sb: ReturnType<typeof createClient>, projectId: string, input: ProjectInput) {
-  // 2. Upsert contact
+  // 1. Upsert contact
   const { data: contact, error: contactErr } = await sb
     .from("contacts")
     .upsert(
       {
-        project_id: projectId,
-        email: input.contact.email,
-        website: input.contact.website,
+        project_id:    projectId,
+        email:         input.contact.email,
+        website:       input.contact.website,
         project_owner: input.contact.projectOwner,
-        facebook_url: input.contact.facebookUrl,
+        facebook_url:  input.contact.facebookUrl,
         instagram_url: input.contact.instagramUrl,
-        youtube_url: input.contact.youtubeUrl,
+        youtube_url:   input.contact.youtubeUrl,
       },
       { onConflict: "project_id" }
     )
@@ -238,27 +284,29 @@ async function saveNestedData(sb: ReturnType<typeof createClient>, projectId: st
     .single();
   if (contactErr) throw contactErr;
 
-  // 3. Delete + reinsert contact phones
+  // 2. Delete + reinsert contact phones
   await sb.from("contact_phones").delete().eq("contact_id", contact.id);
   if (input.contact.phones.length > 0) {
     const { error: phoneErr } = await sb.from("contact_phones").insert(
       input.contact.phones.map((p, i) => ({
-        contact_id: contact.id,
+        contact_id:   contact.id,
         phone_number: p.phoneNumber,
-        role: p.role,
-        sort_order: i,
+        role:         p.role,
+        sort_order:   i,
       }))
     );
     if (phoneErr) throw phoneErr;
   }
 
-  // 4. Upsert project_details
+  // 3. Upsert project_details
   const { data: detail, error: detailErr } = await sb
     .from("project_details")
     .upsert(
       {
-        project_id: projectId,
-        num_towers: input.projectDetail.towers.length,
+        project_id:     projectId,
+        num_towers:     input.projectDetail.towers.length,
+        max_floors:     input.projectDetail.maxFloors,
+        amenities_sqft: input.projectDetail.amenitiesSqft,
       },
       { onConflict: "project_id" }
     )
@@ -266,34 +314,36 @@ async function saveNestedData(sb: ReturnType<typeof createClient>, projectId: st
     .single();
   if (detailErr) throw detailErr;
 
-  // 5. Delete all towers (cascades to floor_plans) then reinsert
+  // 4. Delete + reinsert towers
   await sb.from("towers").delete().eq("project_detail_id", detail.id);
-
   for (let i = 0; i < input.projectDetail.towers.length; i++) {
     const t = input.projectDetail.towers[i];
-    const { data: tower, error: towerErr } = await sb
-      .from("towers")
-      .insert({
-        project_detail_id: detail.id,
-        tower_name: t.towerName,
-        num_floors: t.numFloors,
-        sort_order: i,
-      })
-      .select()
-      .single();
+    const { error: towerErr } = await sb.from("towers").insert({
+      project_detail_id: detail.id,
+      tower_name:        t.towerName,
+      num_floors:        t.numFloors,
+      sort_order:        i,
+    });
     if (towerErr) throw towerErr;
+  }
 
-    if (t.floorPlans.length > 0) {
-      const { error: fpErr } = await sb.from("floor_plans").insert(
-        t.floorPlans.map((fp, j) => ({
-          tower_id: tower.id,
-          image_url: fp.imageUrl,
-          floor_label: fp.floorLabel,
-          sort_order: j,
-        }))
-      );
-      if (fpErr) throw fpErr;
-    }
+  // 5. Delete + reinsert unit plans
+  await sb.from("unit_plans").delete().eq("project_id", projectId);
+  if (input.unitPlans.length > 0) {
+    const { error: upErr } = await sb.from("unit_plans").insert(
+      input.unitPlans.map((u, i) => ({
+        project_id:  projectId,
+        plan_name:   u.planName,
+        bhk:         u.bhk,
+        maid_room:   u.maidRoom,
+        home_office: u.homeOffice,
+        size_sqft:   u.sizeSqft,
+        facing:      u.facing,
+        plan_url:    u.planUrl,
+        sort_order:  i,
+      }))
+    );
+    if (upErr) throw upErr;
   }
 }
 
