@@ -171,14 +171,14 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
         className={
           variant === "nav"
             ? "flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors"
-            : "flex items-center gap-1.5 text-xs text-brand-200 hover:text-white transition-colors"
+            : "flex items-center gap-2 text-sm text-white hover:text-white transition-colors"
         }
       >
-        <span>{emoji}</span>
-        <span className="font-semibold">{temp}°C</span>
-        <span className={variant === "nav" ? "text-gray-400" : "opacity-70"}>{label}</span>
-        {variant === "topbar" && <span className="opacity-50">· Kokapet</span>}
-        <ChevronDown className={`w-3 h-3 opacity-50 transition-transform ${open ? "rotate-180" : ""}`} />
+        <span className="text-base leading-none">{emoji}</span>
+        <span className="text-base font-black tracking-tight">{temp}°C</span>
+        <span className={variant === "nav" ? "text-gray-400" : "text-brand-300 font-medium"}>{label}</span>
+        {variant === "topbar" && <span className="text-brand-400 text-xs">· Kokapet</span>}
+        <ChevronDown className={`w-3.5 h-3.5 text-brand-300 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
       {/* ── Detail panel ───────────────────────────────────────────────── */}
