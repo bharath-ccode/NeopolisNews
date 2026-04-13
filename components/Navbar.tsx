@@ -242,7 +242,7 @@ export default function Navbar() {
       {/* Top bar */}
       <div className="bg-brand-950 text-brand-200 text-xs py-1.5 px-4 flex items-center justify-between gap-4">
         <span className="hidden md:block text-center flex-1">
-          Neopolis — 100-acre mixed-use urban district &nbsp;·&nbsp; Live updates
+          India&apos;s Finest Urban District &nbsp;·&nbsp; Live updates
           every week &nbsp;·&nbsp;
           <Link href="/advertise" className="underline hover:text-white">
             List your property or business →

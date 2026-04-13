@@ -4,9 +4,9 @@ import { AuthProvider } from "@/context/AuthContext";
 import ConditionalShell from "@/components/ConditionalShell";
 
 export const metadata: Metadata = {
-  title: "NeopolisNews – Urban District Digital Platform",
+  title: "NeopolisNews – India's Finest Urban District",
   description:
-    "Your single source of truth for Neopolis – real estate, rentals, retail, news, and services for India's next urban micro-city.",
+    "Your single source of truth for Neopolis – real estate, rentals, retail, news, and services for India's finest urban district.",
   keywords: [
     "Neopolis",
     "urban district",
@@ -16,9 +16,9 @@ export const metadata: Metadata = {
     "commercial property",
   ],
   openGraph: {
-    title: "NeopolisNews – Urban District Digital Platform",
+    title: "NeopolisNews – India's Finest Urban District",
     description:
-      "Real estate intelligence, rentals, retail directory, local news & services for the Neopolis urban district.",
+      "Real estate intelligence, rentals, retail directory, local news & services for India's finest urban district.",
     type: "website",
   },
 };

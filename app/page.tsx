@@ -159,12 +159,12 @@ export default function HomePage() {
                 India&apos;s next urban micro-city
               </span>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-5">
-                The Digital Hub for{" "}
-                <span className="text-brand-400">Neopolis</span>
+                India&apos;s Finest{" "}
+                <span className="text-brand-400">Urban District</span>
               </h1>
               <p className="text-lg text-brand-200 mb-8 leading-relaxed max-w-xl">
                 Real estate intelligence, rentals, retail discovery, local news,
-                and resident services — all for one 100-acre urban district.
+                and resident services — all for Neopolis.
                 The only platform you need.
               </p>
               <div className="flex flex-wrap gap-3">
