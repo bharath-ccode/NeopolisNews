@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -317,7 +317,7 @@ function TrainerCard({ t }: { t: Trainer }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function WellnessPage() {
+function WellnessContent() {
   const searchParams = useSearchParams();
   const typeParam = searchParams.get("type") as WellnessType | null;
   const VALID_TYPES: WellnessType[] = ["spa", "gym", "studio", "trainer"];
@@ -486,5 +486,13 @@ export default function WellnessPage() {
         </SectionWrapper>
       </section>
     </>
+  );
+}
+
+export default function WellnessPage() {
+  return (
+    <Suspense>
+      <WellnessContent />
+    </Suspense>
   );
 }

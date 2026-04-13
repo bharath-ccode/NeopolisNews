@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -165,7 +165,7 @@ function ProviderCard({ p }: { p: Provider }) {
   );
 }
 
-export default function LocalServicesPage() {
+function LocalServicesContent() {
   const searchParams = useSearchParams();
   const VALID: ServiceType[] = ["moving","party","home","delivery","driving"];
   const typeParam = searchParams.get("type") as ServiceType | null;
@@ -333,5 +333,13 @@ export default function LocalServicesPage() {
         </SectionWrapper>
       </section>
     </>
+  );
+}
+
+export default function LocalServicesPage() {
+  return (
+    <Suspense>
+      <LocalServicesContent />
+    </Suspense>
   );
 }
