@@ -9,34 +9,10 @@ export interface Project {
 
 export const PROJECTS: Project[] = [
   {
-    id: "apex-tower",
-    name: "Neopolis Apex Tower",
+    id: "msn-one",
+    name: "MSN One",
     type: "Luxury Residential",
-    towers: ["Apex Tower – Tower A", "Apex Tower – Tower B", "Apex Tower – Tower C"],
-  },
-  {
-    id: "neopolis-heights",
-    name: "Neopolis Heights",
-    type: "Premium Residential",
-    towers: ["Neopolis Heights – Tower A", "Neopolis Heights – Tower B"],
-  },
-  {
-    id: "sky-residences",
-    name: "Sky Residences by Neopolis",
-    type: "Ultra-Luxury Residential",
-    towers: ["Sky Residences – Tower 1", "Sky Residences – Tower 2"],
-  },
-  {
-    id: "business-park",
-    name: "Neopolis Business Park",
-    type: "Grade A Office",
-    towers: ["Business Park – Block A", "Business Park – Block B"],
-  },
-  {
-    id: "grand-mall",
-    name: "Neopolis Grand Mall",
-    type: "Retail & Entertainment",
-    towers: ["Grand Mall – Zone A", "Grand Mall – Zone B"],
+    towers: ["MSN One – Tower A", "MSN One – Tower B"],
   },
 ];
 
