@@ -8,6 +8,7 @@ import {
   Edit2,
   Trash2,
   HardHat,
+  Tag,
 } from "lucide-react";
 import { useBuilderAuth } from "@/context/BuilderAuthContext";
 import { getProjectsByBuilderId, deleteProject, Project } from "@/lib/projectsStore";
@@ -108,6 +109,13 @@ export default function BuilderProjectsPage() {
 
               {/* Actions */}
               <div className="flex items-center gap-2 shrink-0">
+                <Link
+                  href={`/builder/projects/${p.id}/availability`}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
+                >
+                  <Tag className="w-3.5 h-3.5" />
+                  Availability
+                </Link>
                 <Link
                   href={`/builder/projects/${p.id}/update`}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-orange-50 text-orange-700 hover:bg-orange-100 transition-colors"
