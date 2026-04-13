@@ -14,6 +14,8 @@ import LeadForm from "@/components/LeadForm";
 import { createClient } from "@/lib/supabase/server";
 import type { ProjectType, ProjectTier } from "@/lib/projectsStore";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Real Estate – NeopolisNews",
   description:
