@@ -269,7 +269,7 @@ export default function Navbar() {
 
           {/* Desktop nav */}
           <div className="hidden lg:flex items-center gap-1">
-            {NAV_ITEMS.map((item) => {
+            {NAV_ITEMS.filter((item) => !item.highlight).map((item) => {
               const active = pathname.startsWith(item.href);
               return (
                 <div
@@ -344,6 +344,13 @@ export default function Navbar() {
             <div className="hidden md:flex items-center border-r border-gray-200 pr-3 mr-1">
               <WeatherWidget variant="nav" />
             </div>
+            <Link
+              href="/advertise"
+              className="hidden lg:flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-accent-500 text-white hover:bg-accent-600 transition-colors"
+            >
+              <Megaphone className="w-4 h-4" />
+              Advertise
+            </Link>
             <div className="hidden lg:flex">
               <UserMenu />
             </div>
