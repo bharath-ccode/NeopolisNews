@@ -244,7 +244,6 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
       {/* Top bar */}
       <div className="bg-brand-950 text-brand-200 text-xs py-1.5 px-4 flex items-center justify-between gap-4">
-        <WeatherWidget />
         <span className="hidden md:block text-center flex-1">
           Neopolis — 100-acre mixed-use urban district &nbsp;·&nbsp; Live updates
           every week &nbsp;·&nbsp;
@@ -253,6 +252,7 @@ export default function Navbar() {
           </Link>
         </span>
         <span className="md:hidden text-brand-400 text-xs shrink-0">Neopolis</span>
+        <WeatherWidget />
       </div>
 
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -340,10 +340,9 @@ export default function Navbar() {
 
           {/* Auth + Mobile toggle */}
           <div className="flex items-center gap-3">
-            {/* Weather — always visible in main nav */}
-            <div className="hidden md:flex items-center border-r border-gray-200 pr-3 mr-1">
+            {/* <div className="hidden md:flex items-center border-r border-gray-200 pr-3 mr-1">
               <WeatherWidget variant="nav" />
-            </div>
+            </div> */}
             <Link
               href="/advertise"
               className="hidden lg:flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-accent-500 text-white hover:bg-accent-600 transition-colors"
