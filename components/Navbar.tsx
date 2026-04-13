@@ -35,10 +35,8 @@ const NAV_ITEMS = [
     icon: Building2,
     sub: [
       { label: "Project Pages",         href: "/real-estate#projects"     },
-      { label: "Resale & Rentals",      href: "/real-estate/classifieds"  },
       { label: "Price Trends",          href: "/real-estate#prices"       },
       { label: "Construction Updates",  href: "/real-estate#construction" },
-      { label: "Floor Plans",           href: "/real-estate#floorplans"   },
     ],
   },
   {
@@ -100,10 +98,9 @@ const NAV_ITEMS = [
     href: "/news",
     icon: Newspaper,
     sub: [
-      { label: "Construction Updates", href: "/news#construction" },
-      { label: "New Launches",         href: "/news#launches"     },
-      { label: "Infrastructure",       href: "/news#infrastructure"},
-      { label: "Community",            href: "/news#community"    },
+      { label: "New Launches",         href: "/news#launches"      },
+      { label: "Infrastructure",       href: "/news#infrastructure" },
+      { label: "Community",            href: "/news#community"     },
     ],
   },
   {
