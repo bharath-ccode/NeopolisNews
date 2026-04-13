@@ -3,130 +3,59 @@ import {
   Building2,
   ArrowRight,
   TrendingUp,
-  Camera,
   BarChart3,
   CheckCircle,
   Star,
   ChevronRight,
+  Tag,
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import LeadForm from "@/components/LeadForm";
+import { createClient } from "@/lib/supabase/server";
+import type { ProjectType, ProjectTier } from "@/lib/projectsStore";
 
 export const metadata = {
-  title: "Real Estate Intelligence Hub – NeopolisNews",
+  title: "Real Estate – NeopolisNews",
   description:
-    "Project pages, price trends, construction progress, floor plans and live inventory for every tower in the Neopolis urban district.",
+    "Project pages, price trends, unit plans and live availability for every project in the Neopolis urban district.",
 };
 
-// ─── Static data ────────────────────────────────────────────────────────────
+// ─── Server data fetch ───────────────────────────────────────────────────────
 
-const PROJECTS = [
-  {
-    id: "apex-tower",
-    name: "Neopolis Apex Tower",
-    developer: "Apex Realty Pvt Ltd",
-    type: "Luxury Residential",
-    phase: "Phase 1",
-    floors: 42,
-    units: 320,
-    carpet: "850 – 2,200 sq ft",
-    price: "₹1.2 Cr – ₹3.8 Cr",
-    status: "Under Construction",
-    statusColor: "tag-orange",
-    completion: "December 2026",
-    progress: 62,
-    highlight: true,
-    verified: true,
-    sponsored: true,
-    amenities: ["Club House", "Rooftop Pool", "EV Parking", "Co-Working"],
-    available: 84,
-    sold: 236,
-  },
-  {
-    id: "neopolis-heights",
-    name: "Neopolis Heights",
-    developer: "Greenfield Developers",
-    type: "Premium Residential",
-    phase: "Phase 2",
-    floors: 35,
-    units: 480,
-    carpet: "650 – 1,800 sq ft",
-    price: "₹85 L – ₹2.5 Cr",
-    status: "New Launch",
-    statusColor: "tag-green",
-    completion: "March 2028",
-    progress: 18,
-    highlight: false,
-    verified: true,
-    sponsored: false,
-    amenities: ["Swimming Pool", "Gymnasium", "Kids Zone", "24/7 Security"],
-    available: 420,
-    sold: 60,
-  },
-  {
-    id: "business-park",
-    name: "Neopolis Business Park",
-    developer: "CityEdge Properties",
-    type: "Grade A Office",
-    phase: "Phase 1",
-    floors: 28,
-    units: 0,
-    carpet: "500 – 50,000 sq ft",
-    price: "₹80 – ₹120/sq ft/mo",
-    status: "Completed",
-    statusColor: "tag-blue",
-    completion: "Operational",
-    progress: 100,
-    highlight: false,
-    verified: true,
-    sponsored: false,
-    amenities: ["LEED Gold", "Cafeteria", "Conference Rooms", "Basement Parking"],
-    available: 12,
-    sold: 0,
-  },
-  {
-    id: "grand-mall",
-    name: "Neopolis Grand Mall",
-    developer: "Retail Spaces Ltd",
-    type: "Retail & Entertainment",
-    phase: "Phase 2",
-    floors: 5,
-    units: 250,
-    carpet: "200 – 8,000 sq ft",
-    price: "₹120 – ₹200/sq ft/mo",
-    status: "Pre-Launch",
-    statusColor: "tag-purple",
-    completion: "June 2027",
-    progress: 28,
-    highlight: false,
-    verified: true,
-    sponsored: true,
-    amenities: ["8 Screen PVR", "Food Court", "Kids Entertainment", "Valet"],
-    available: 200,
-    sold: 50,
-  },
-  {
-    id: "sky-residences",
-    name: "Sky Residences by Neopolis",
-    developer: "SkyLine Corp",
-    type: "Ultra-Luxury",
-    phase: "Phase 3",
-    floors: 55,
-    units: 120,
-    carpet: "2,000 – 5,500 sq ft",
-    price: "₹4.5 Cr – ₹18 Cr",
-    status: "Pre-Launch",
-    statusColor: "tag-purple",
-    completion: "December 2028",
-    progress: 8,
-    highlight: false,
-    verified: false,
-    sponsored: false,
-    amenities: ["Private Pool", "Concierge", "Sky Lounge", "Smart Home"],
-    available: 112,
-    sold: 8,
-  },
-];
+async function getProjects() {
+  const sb = createClient();
+  const { data } = await sb
+    .from("projects")
+    .select("id, project_name, builder_id, total_land_area_acres, total_units, core_neopolis, project_logo_url, project_type, tier, price_range_min, price_range_max, builders(builder_name)")
+    .order("project_name");
+  return data ?? [];
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const TYPE_LABELS: Record<ProjectType, string> = {
+  apartments:        "Apartments",
+  independent_homes: "Independent Homes",
+  residential:       "Residential",
+  mixed_use:         "Mixed Use",
+  commercial:        "Commercial",
+};
+
+const TIER_LABELS: Record<ProjectTier, string> = {
+  affordable:  "Affordable",
+  premium:     "Premium",
+  luxury:      "Luxury",
+  uber_luxury: "Uber Luxury",
+};
+
+const TIER_COLORS: Record<ProjectTier, string> = {
+  affordable:  "tag-blue",
+  premium:     "tag-purple",
+  luxury:      "bg-amber-100 text-amber-800 text-xs font-semibold px-2 py-0.5 rounded-full",
+  uber_luxury: "bg-rose-100 text-rose-800 text-xs font-semibold px-2 py-0.5 rounded-full",
+};
+
+// ─── Static price trend data (placeholder until we have DB price history) ────
 
 const PRICE_TRENDS = [
   { quarter: "Q1 2024", residential: 7200, office: 82, retail: 110 },
@@ -139,33 +68,10 @@ const PRICE_TRENDS = [
   { quarter: "Q4 2025", residential: 10400, office: 108, retail: 160 },
 ];
 
-const CONSTRUCTION_UPDATES = [
-  {
-    project: "Apex Tower",
-    date: "March 20, 2026",
-    milestone: "18th floor slab cast",
-    note: "On schedule for Dec 2026 possession.",
-    media: "8 new photos, 1 drone video",
-  },
-  {
-    project: "Grand Mall",
-    date: "March 15, 2026",
-    milestone: "Foundation work complete",
-    note: "Steel frame erection begins next week.",
-    media: "12 new photos",
-  },
-  {
-    project: "Neopolis Heights",
-    date: "March 5, 2026",
-    milestone: "Excavation & piling done",
-    note: "Raft foundation pouring scheduled.",
-    media: "6 new photos, 2 drone videos",
-  },
-];
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
-// ─── Page ────────────────────────────────────────────────────────────────────
-
-export default function RealEstatePage() {
+export default async function RealEstatePage() {
+  const projects = await getProjects();
   const maxPrice = Math.max(...PRICE_TRENDS.map((d) => d.residential));
 
   return (
@@ -180,9 +86,8 @@ export default function RealEstatePage() {
               <span className="text-brand-400">Live.</span>
             </h1>
             <p className="text-brand-200 text-lg mb-6">
-              Tower-wise project pages, monthly construction photos, drone
-              videos, price history, inventory status, and floor plans —
-              all for the Neopolis district.
+              Project pages, unit plans, price history, and live availability
+              status — all for the Neopolis district.
             </p>
             <div className="flex flex-wrap gap-3">
               <a href="#projects" className="btn-primary">
@@ -202,119 +107,104 @@ export default function RealEstatePage() {
           <div>
             <h2 className="section-heading">All Projects</h2>
             <p className="text-gray-500 text-sm mt-1">
-              {PROJECTS.length} active projects · Updated weekly
+              {projects.length} project{projects.length !== 1 ? "s" : ""} · Updated regularly
             </p>
           </div>
-          {/* Filters placeholder */}
-          <div className="flex gap-2">
-            {["All", "Residential", "Office", "Retail"].map((f) => (
-              <button
-                key={f}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
-                  f === "All"
-                    ? "bg-brand-600 border-brand-600 text-white"
-                    : "border-gray-200 text-gray-600 hover:border-brand-400 hover:text-brand-600"
-                }`}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {PROJECTS.map((p) => (
-            <div
-              key={p.id}
-              className={`card overflow-hidden relative ${
-                p.highlight ? "ring-2 ring-brand-500" : ""
-              }`}
-            >
-              {p.sponsored && (
-                <span className="absolute top-3 left-3 z-10 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full">
-                  Sponsored
-                </span>
-              )}
-              {/* Image placeholder */}
-              <div className="h-40 bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center relative">
-                <Building2 className="w-12 h-12 text-brand-400" />
-                <span className="absolute bottom-2 right-2 flex items-center gap-1 bg-black/50 text-white text-xs px-2 py-1 rounded">
-                  <Camera className="w-3 h-3" /> Photos
-                </span>
-              </div>
+        {projects.length === 0 ? (
+          <div className="card p-16 text-center">
+            <Building2 className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+            <p className="font-medium text-gray-500">No projects listed yet</p>
+            <p className="text-sm text-gray-400 mt-1">Check back soon — projects are being added.</p>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            {projects.map((p: any) => {
+              const tier      = p.tier as ProjectTier | null;
+              const type      = p.project_type as ProjectType | null;
+              const builder   = p.builders?.builder_name ?? null;
+              const hasPrice  = p.price_range_min || p.price_range_max;
 
-              <div className="p-4">
-                <div className="flex items-start justify-between mb-1">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <h3 className="font-bold text-gray-900 text-sm truncate">
-                        {p.name}
-                      </h3>
-                      {p.verified && (
-                        <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+              return (
+                <div key={p.id} className={`card overflow-hidden ${p.core_neopolis ? "ring-2 ring-brand-500" : ""}`}>
+                  {/* Image / logo area */}
+                  <div className="h-36 bg-gradient-to-br from-brand-50 to-brand-100 flex items-center justify-center relative overflow-hidden">
+                    {p.project_logo_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={p.project_logo_url}
+                        alt={p.project_name}
+                        className="h-20 w-auto object-contain"
+                      />
+                    ) : (
+                      <Building2 className="w-12 h-12 text-brand-300" />
+                    )}
+                    {p.core_neopolis && (
+                      <span className="absolute top-2 left-2 flex items-center gap-1 text-xs font-semibold bg-brand-600 text-white px-2 py-0.5 rounded-full">
+                        <CheckCircle className="w-3 h-3" /> Core Neopolis
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="p-4">
+                    {/* Name + badges */}
+                    <div className="mb-2">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <h3 className="font-bold text-gray-900 text-sm leading-snug">
+                          {p.project_name}
+                        </h3>
+                        {tier && (
+                          <span className={TIER_COLORS[tier] ?? "tag-blue"}>
+                            {TIER_LABELS[tier]}
+                          </span>
+                        )}
+                      </div>
+                      {builder && (
+                        <p className="text-xs text-gray-400">by {builder}</p>
                       )}
                     </div>
-                    <p className="text-xs text-gray-400">{p.developer}</p>
-                  </div>
-                  <span className={p.statusColor}>{p.status}</span>
-                </div>
 
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-500 my-3">
-                  <span>Type: <strong className="text-gray-700">{p.type}</strong></span>
-                  <span>Phase: <strong className="text-gray-700">{p.phase}</strong></span>
-                  <span>Floors: <strong className="text-gray-700">{p.floors}G</strong></span>
-                  <span>Size: <strong className="text-gray-700">{p.carpet}</strong></span>
-                </div>
+                    {/* Stats */}
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-500 my-3">
+                      {type && (
+                        <span>Type: <strong className="text-gray-700">{TYPE_LABELS[type]}</strong></span>
+                      )}
+                      {p.total_units && (
+                        <span>Units: <strong className="text-gray-700">{p.total_units.toLocaleString("en-IN")}</strong></span>
+                      )}
+                      {p.total_land_area_acres && (
+                        <span>Land: <strong className="text-gray-700">{p.total_land_area_acres} acres</strong></span>
+                      )}
+                    </div>
 
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-base font-extrabold text-brand-700">
-                    {p.price}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {p.available} available
-                  </span>
-                </div>
+                    {/* Price */}
+                    {hasPrice && (
+                      <div className="flex items-center gap-1 mb-3">
+                        <Tag className="w-3.5 h-3.5 text-brand-500" />
+                        <span className="text-sm font-extrabold text-brand-700">
+                          {p.price_range_min && p.price_range_max
+                            ? `₹${p.price_range_min.toLocaleString("en-IN")} – ₹${p.price_range_max.toLocaleString("en-IN")} /sft`
+                            : p.price_range_min
+                            ? `From ₹${p.price_range_min.toLocaleString("en-IN")} /sft`
+                            : `Up to ₹${p.price_range_max.toLocaleString("en-IN")} /sft`}
+                        </span>
+                      </div>
+                    )}
 
-                {/* Progress */}
-                <div className="mb-3">
-                  <div className="flex justify-between text-xs text-gray-400 mb-1">
-                    <span>Construction</span>
-                    <span>{p.progress}%</span>
-                  </div>
-                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-brand-500 rounded-full"
-                      style={{ width: `${p.progress}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-1 mb-3">
-                  {p.amenities.slice(0, 3).map((a) => (
-                    <span
-                      key={a}
-                      className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded"
+                    <Link
+                      href={`/real-estate/${p.id}`}
+                      className="flex items-center justify-center gap-1 w-full border border-brand-200 text-brand-600 hover:bg-brand-50 text-sm font-semibold py-2 rounded-lg transition-colors"
                     >
-                      {a}
-                    </span>
-                  ))}
-                  {p.amenities.length > 3 && (
-                    <span className="text-xs text-gray-400">
-                      +{p.amenities.length - 3} more
-                    </span>
-                  )}
+                      View Details <ChevronRight className="w-4 h-4" />
+                    </Link>
+                  </div>
                 </div>
-
-                <Link
-                  href={`/real-estate/${p.id}`}
-                  className="flex items-center justify-center gap-1 w-full border border-brand-200 text-brand-600 hover:bg-brand-50 text-sm font-semibold py-2 rounded-lg transition-colors"
-                >
-                  View Full Details <ChevronRight className="w-4 h-4" />
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </SectionWrapper>
 
       {/* ── Price Trends ── */}
@@ -323,7 +213,7 @@ export default function RealEstatePage() {
           <div className="mb-8">
             <h2 className="section-heading">Price Trends</h2>
             <p className="text-gray-500 text-sm mt-1">
-              Residential sq ft rates, office & retail lease rates — quarterly data
+              Residential sq ft rates, office &amp; retail lease rates — quarterly data
             </p>
           </div>
 
@@ -369,22 +259,17 @@ export default function RealEstatePage() {
             </div>
           </div>
 
-          {/* Simple chart bars */}
+          {/* Bar chart */}
           <div className="card p-5">
             <h3 className="font-bold text-gray-900 mb-4 text-sm">
               Residential Rate (₹/sq ft) — Quarterly
             </h3>
             <div className="flex items-end gap-2 h-28">
               {PRICE_TRENDS.map((d) => (
-                <div
-                  key={d.quarter}
-                  className="flex-1 flex flex-col items-center gap-1"
-                >
+                <div key={d.quarter} className="flex-1 flex flex-col items-center gap-1">
                   <div
                     className="w-full bg-brand-500 rounded-t"
-                    style={{
-                      height: `${(d.residential / maxPrice) * 100}px`,
-                    }}
+                    style={{ height: `${(d.residential / maxPrice) * 100}px` }}
                   />
                   <span className="text-xs text-gray-400 rotate-45 origin-left translate-x-2 hidden sm:block">
                     {d.quarter.replace(" 20", " '")}
@@ -396,33 +281,6 @@ export default function RealEstatePage() {
         </SectionWrapper>
       </section>
 
-      {/* ── Construction Updates ── */}
-      <SectionWrapper id="construction">
-        <h2 className="section-heading mb-8">Construction Updates</h2>
-        <div className="space-y-4">
-          {CONSTRUCTION_UPDATES.map((u) => (
-            <div key={u.project} className="card p-5 flex gap-4">
-              <div className="w-10 h-10 rounded-lg bg-brand-50 flex items-center justify-center shrink-0">
-                <Camera className="w-5 h-5 text-brand-500" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-2 mb-1">
-                  <span className="font-bold text-gray-900 text-sm">
-                    {u.project}
-                  </span>
-                  <span className="text-xs text-gray-400">{u.date}</span>
-                </div>
-                <p className="text-sm font-semibold text-brand-700 mb-1">
-                  {u.milestone}
-                </p>
-                <p className="text-sm text-gray-500">{u.note}</p>
-                <p className="text-xs text-blue-600 mt-1">{u.media}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </SectionWrapper>
-
       {/* ── Developer CTA ── */}
       <section className="bg-brand-950 text-white">
         <SectionWrapper>
@@ -432,18 +290,17 @@ export default function RealEstatePage() {
                 Are You a Developer?
               </h2>
               <p className="text-brand-300 mb-5">
-                Get your project in front of 12,000+ buyers and investors.
-                Sponsored pages, price transparency, and verified badges
-                build trust and drive qualified leads.
+                Get your project in front of buyers and investors.
+                Dedicated project pages, availability announcements, unit plans
+                and verified badges build trust and drive qualified leads.
               </p>
               <ul className="space-y-2 text-sm text-brand-200">
                 {[
-                  "Dedicated project page with drone video support",
-                  "Monthly construction update publishing",
+                  "Dedicated project page with unit plans",
+                  "Live availability announcements",
+                  "Construction update publishing",
                   "Verified Developer badge",
                   "Priority listing in search results",
-                  "Lead capture and CRM integration",
-                  "Plans from ₹3 Lakhs/year",
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-green-400 shrink-0" />
