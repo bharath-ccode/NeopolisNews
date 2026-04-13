@@ -82,7 +82,7 @@ export default function BuilderConstructionUpdatePage() {
         sponsored: false,
         status,
         views:    0,
-        projectId: project.id,
+        projectId: project!.id,
         builderId: builder!.id,
       });
       router.push("/builder/projects");
