@@ -11,13 +11,13 @@ import { getBuilders, type Builder } from "@/lib/buildersStore";
 import {
   createProject, updateProject,
   type Project, type ProjectInput, type ProjectType, type ProjectTier,
-  type UnitFacing, type UnitPlan, type ContactPhone, type Tower,
+  type UnitFacing, type UnitPlan, type ContactPhone, type Tower, type TowerFloorPlan,
 } from "@/lib/projectsStore";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const emptyPhone    = (): ContactPhone => ({ phoneNumber: "", role: "sales", sortOrder: 0 });
-const emptyTower    = (i: number): Tower => ({ towerName: `Tower ${i + 1}`, numFloors: 1, sortOrder: i });
+const emptyTower    = (i: number): Tower => ({ towerName: `Tower ${i + 1}`, numFloors: 1, sortOrder: i, floorPlans: [] });
 const emptyUnitPlan = (i: number): UnitPlan => ({
   planName: "", bhk: 3, maidRoom: false, homeOffice: false,
   sizeSqft: 0, facing: null, planUrl: null, sortOrder: i,
@@ -79,10 +79,17 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
     initialData?.contact?.phones?.length ? initialData.contact.phones : [emptyPhone()]
   );
 
-  // Towers
-  const [towers, setTowers] = useState<Tower[]>(
-    initialData?.projectDetail?.towers?.length ? initialData.projectDetail.towers : [emptyTower(0)]
-  );
+  // Towers — convert unitPlanId → unitPlanIndex using the initial unit plans list
+  const [towers, setTowers] = useState<Tower[]>(() => {
+    if (!initialData?.projectDetail?.towers?.length) return [emptyTower(0)];
+    return initialData.projectDetail.towers.map(t => ({
+      ...t,
+      floorPlans: (t.floorPlans ?? []).map(fp => ({
+        ...fp,
+        unitPlanIndex: initialData.unitPlans?.findIndex(u => u.id === fp.unitPlanId) ?? -1,
+      })).filter(fp => (fp.unitPlanIndex ?? -1) >= 0),
+    }));
+  });
 
   // Unit Plans
   const [unitPlans, setUnitPlans] = useState<UnitPlan[]>(
@@ -108,6 +115,37 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
   const updateTower = (i: number, field: keyof Tower, value: string | number) =>
     setTowers(t => t.map((tw, idx) => idx === i ? { ...tw, [field]: value } : tw));
 
+  const toggleTowerFloorPlan = (tIdx: number, planIdx: number, checked: boolean) => {
+    setTowers(ts => ts.map((tw, i) => {
+      if (i !== tIdx) return tw;
+      if (checked) {
+        const newFp: TowerFloorPlan = {
+          unitPlanId: unitPlans[planIdx]?.id ?? "",
+          unitPlanIndex: planIdx,
+          floorFrom: null, floorTo: null, unitsPerFloor: 1, sortOrder: tw.floorPlans.length,
+        };
+        return { ...tw, floorPlans: [...tw.floorPlans, newFp] };
+      }
+      return { ...tw, floorPlans: tw.floorPlans.filter(fp => fp.unitPlanIndex !== planIdx) };
+    }));
+  };
+
+  const updateTowerFloorPlan = (
+    tIdx: number, planIdx: number,
+    field: "floorFrom" | "floorTo" | "unitsPerFloor",
+    value: number | null,
+  ) => {
+    setTowers(ts => ts.map((tw, i) => {
+      if (i !== tIdx) return tw;
+      return {
+        ...tw,
+        floorPlans: tw.floorPlans.map(fp =>
+          fp.unitPlanIndex === planIdx ? { ...fp, [field]: value } : fp
+        ),
+      };
+    }));
+  };
+
   // ── Unit plan helpers ──
   const addUnitPlan    = () => setUnitPlans(u => [...u, emptyUnitPlan(u.length)]);
   const removeUnitPlan = (i: number) => setUnitPlans(u => u.filter((_, idx) => idx !== i));
@@ -120,6 +158,18 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
     if (!projectName.trim()) { setError("Project name is required."); setTab("info"); return; }
     setError(null);
     setSaving(true);
+
+    // Build filtered unit plans (valid only) and an index remap
+    const filteredUnitPlans = unitPlans
+      .filter(u => u.planName.trim() && u.sizeSqft > 0)
+      .map((u, i) => ({ ...u, sortOrder: i }));
+    // Map original unitPlans index → filtered array index
+    const indexRemap = new Map<number, number>();
+    let fi = 0;
+    for (let oi = 0; oi < unitPlans.length; oi++) {
+      const u = unitPlans[oi];
+      if (u.planName.trim() && u.sizeSqft > 0) indexRemap.set(oi, fi++);
+    }
 
     const input: ProjectInput = {
       projectName:           projectName.trim(),
@@ -146,11 +196,16 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
         numTowers:     towers.length,
         maxFloors:     maxFloors     ? parseInt(maxFloors, 10)     : null,
         amenitiesSqft: amenitiesSqft ? parseInt(amenitiesSqft, 10) : null,
-        towers:        towers.map((t, i) => ({ ...t, sortOrder: i })),
+        towers: towers.map((t, i) => ({
+          ...t,
+          sortOrder: i,
+          // Remap floor plan indices to match the filtered unitPlans array order
+          floorPlans: t.floorPlans
+            .filter(fp => fp.unitPlanIndex !== undefined && indexRemap.has(fp.unitPlanIndex))
+            .map(fp => ({ ...fp, unitPlanIndex: indexRemap.get(fp.unitPlanIndex!)! })),
+        })),
       },
-      unitPlans: unitPlans
-        .filter(u => u.planName.trim() && u.sizeSqft > 0)
-        .map((u, i) => ({ ...u, sortOrder: i })),
+      unitPlans: filteredUnitPlans,
     };
 
     try {
@@ -390,33 +445,103 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
               <PlusCircle className="w-3.5 h-3.5" /> Add Tower
             </button>
           </div>
-          {towers.map((tower, tIdx) => (
-            <div key={tIdx} className="border border-gray-100 rounded-xl p-4">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="font-semibold text-sm text-gray-700 flex-1">
-                  {tower.towerName || `Tower ${tIdx + 1}`}
-                </span>
-                {towers.length > 1 && (
-                  <button type="button" onClick={() => removeTower(tIdx)}
-                    className="p-1 text-red-400 hover:bg-red-50 rounded-lg transition-colors">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="label">Tower Name</label>
-                  <input className="input" placeholder="e.g. Tower A" value={tower.towerName}
-                    onChange={e => updateTower(tIdx, "towerName", e.target.value)} />
+          {towers.map((tower, tIdx) => {
+            const validPlans = unitPlans.filter(u => u.planName.trim() && u.sizeSqft > 0);
+            return (
+              <div key={tIdx} className="border border-gray-100 rounded-xl p-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="font-semibold text-sm text-gray-700 flex-1">
+                    {tower.towerName || `Tower ${tIdx + 1}`}
+                  </span>
+                  {towers.length > 1 && (
+                    <button type="button" onClick={() => removeTower(tIdx)}
+                      className="p-1 text-red-400 hover:bg-red-50 rounded-lg transition-colors">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
-                <div>
-                  <label className="label">Number of Floors</label>
-                  <input className="input" type="number" min="1" value={tower.numFloors}
-                    onChange={e => updateTower(tIdx, "numFloors", parseInt(e.target.value, 10) || 1)} />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="label">Tower Name</label>
+                    <input className="input" placeholder="e.g. Tower A" value={tower.towerName}
+                      onChange={e => updateTower(tIdx, "towerName", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="label">Number of Floors</label>
+                    <input className="input" type="number" min="1" value={tower.numFloors}
+                      onChange={e => updateTower(tIdx, "numFloors", parseInt(e.target.value, 10) || 1)} />
+                  </div>
+                </div>
+
+                {/* Floor Plan Assignment */}
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                    Floor Plans in This Tower
+                  </p>
+                  {validPlans.length === 0 ? (
+                    <p className="text-xs text-gray-400 italic">
+                      Add unit plans in the &ldquo;Unit Plans&rdquo; tab first.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {unitPlans.map((plan, planIdx) => {
+                        if (!plan.planName.trim() || plan.sizeSqft <= 0) return null;
+                        const fp = tower.floorPlans.find(f => f.unitPlanIndex === planIdx);
+                        const isChecked = !!fp;
+                        return (
+                          <div key={planIdx} className="rounded-lg border border-gray-100 bg-gray-50/80 p-3">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={e => toggleTowerFloorPlan(tIdx, planIdx, e.target.checked)}
+                                className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                              />
+                              <span className="text-sm font-medium text-gray-700">
+                                {plan.planName}
+                                <span className="ml-1.5 text-xs text-gray-400 font-normal">
+                                  {plan.bhk} BHK · {plan.sizeSqft.toLocaleString()} sft
+                                  {plan.facing ? ` · ${plan.facing}` : ""}
+                                </span>
+                              </span>
+                            </label>
+                            {isChecked && fp && (
+                              <div className="grid grid-cols-3 gap-2 mt-2.5 pl-6">
+                                <div>
+                                  <label className="label text-xs mb-1">Floor From</label>
+                                  <input className="input py-1.5 text-sm" type="number" min="1"
+                                    placeholder="e.g. 3"
+                                    value={fp.floorFrom ?? ""}
+                                    onChange={e => updateTowerFloorPlan(tIdx, planIdx, "floorFrom",
+                                      e.target.value ? parseInt(e.target.value, 10) : null)} />
+                                </div>
+                                <div>
+                                  <label className="label text-xs mb-1">Floor To</label>
+                                  <input className="input py-1.5 text-sm" type="number" min="1"
+                                    placeholder="e.g. 45"
+                                    value={fp.floorTo ?? ""}
+                                    onChange={e => updateTowerFloorPlan(tIdx, planIdx, "floorTo",
+                                      e.target.value ? parseInt(e.target.value, 10) : null)} />
+                                </div>
+                                <div>
+                                  <label className="label text-xs mb-1">Units / Floor</label>
+                                  <input className="input py-1.5 text-sm" type="number" min="1"
+                                    placeholder="1"
+                                    value={fp.unitsPerFloor}
+                                    onChange={e => updateTowerFloorPlan(tIdx, planIdx, "unitsPerFloor",
+                                      parseInt(e.target.value, 10) || 1)} />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

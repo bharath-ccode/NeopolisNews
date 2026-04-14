@@ -195,20 +195,55 @@ export default function ProjectDetailPage() {
         </section>
       )}
 
-      {/* ── Towers ── */}
+      {/* ── Towers & Floor Plans ── */}
       {towers.length > 0 && (
         <SectionWrapper tight>
-          <h2 className="text-lg font-extrabold text-gray-900 mb-4">Towers</h2>
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
+          <h2 className="text-lg font-extrabold text-gray-900 mb-4">Towers &amp; Floor Plans</h2>
+          <div className="grid sm:grid-cols-2 gap-4">
             {towers.map(t => (
-              <div key={t.id} className="card p-4 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-brand-50 flex items-center justify-center shrink-0">
-                  <Building2 className="w-5 h-5 text-brand-500" />
+              <div key={t.id} className="card p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-9 h-9 rounded-lg bg-brand-50 flex items-center justify-center shrink-0">
+                    <Building2 className="w-5 h-5 text-brand-500" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-gray-900 text-sm">{t.towerName}</p>
+                    <p className="text-xs text-gray-400">{t.numFloors} floors</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-bold text-gray-900 text-sm">{t.towerName}</p>
-                  <p className="text-xs text-gray-400">{t.numFloors} floors</p>
-                </div>
+                {t.floorPlans && t.floorPlans.length > 0 && (
+                  <div className="border-t border-gray-100 pt-3 space-y-2.5">
+                    {t.floorPlans.map((fp, i) => {
+                      const plan = unitPlans.find(u => u.id === fp.unitPlanId);
+                      if (!plan) return null;
+                      return (
+                        <div key={i} className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center font-black text-brand-700 text-base shrink-0">
+                              {plan.bhk}
+                            </span>
+                            <div className="min-w-0">
+                              <p className="font-semibold text-gray-800 text-sm truncate">{plan.planName}</p>
+                              <p className="text-xs text-gray-400">
+                                {plan.sizeSqft.toLocaleString()} sft{plan.facing ? ` · ${plan.facing}` : ""}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right text-xs text-gray-500 shrink-0">
+                            {(fp.floorFrom || fp.floorTo) && (
+                              <p className="font-medium">
+                                Fl {fp.floorFrom ?? "–"}{fp.floorTo && fp.floorTo !== fp.floorFrom ? `–${fp.floorTo}` : ""}
+                              </p>
+                            )}
+                            {fp.unitsPerFloor > 1 && (
+                              <p>{fp.unitsPerFloor} units/floor</p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             ))}
           </div>
