@@ -22,11 +22,23 @@ export interface Contact {
   phones: ContactPhone[];
 }
 
+export interface TowerFloorPlan {
+  id?: string;
+  projectId?: string;
+  unitPlanId: string;
+  unitPlanIndex?: number;   // index into unitPlans array — used in form state / save
+  floorFrom: number | null;
+  floorTo: number | null;
+  unitsPerFloor: number;
+  sortOrder: number;
+}
+
 export interface Tower {
   id?: string;
   towerName: string;
   numFloors: number;
   sortOrder: number;
+  floorPlans: TowerFloorPlan[];
 }
 
 export type UnitFacing =
@@ -129,11 +141,25 @@ function toProject(row: any): Project {
         amenitiesSqft: detailRow.amenities_sqft ?? null,
         towers: (detailRow.towers ?? [])
           .sort((a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order)
-          .map((t: { id: string; tower_name: string; num_floors: number; sort_order: number }) => ({
+          .map((t: {
+            id: string; tower_name: string; num_floors: number; sort_order: number;
+            tower_unit_plans?: { id: string; project_id: string; unit_plan_id: string; floor_from: number | null; floor_to: number | null; units_per_floor: number; sort_order: number }[];
+          }) => ({
             id: t.id,
             towerName: t.tower_name,
             numFloors: t.num_floors,
             sortOrder: t.sort_order,
+            floorPlans: (t.tower_unit_plans ?? [])
+              .sort((a, b) => a.sort_order - b.sort_order)
+              .map(fp => ({
+                id: fp.id,
+                projectId: fp.project_id,
+                unitPlanId: fp.unit_plan_id,
+                floorFrom: fp.floor_from,
+                floorTo: fp.floor_to,
+                unitsPerFloor: fp.units_per_floor ?? 1,
+                sortOrder: fp.sort_order,
+              })),
           })),
       }
     : undefined;
@@ -200,7 +226,9 @@ export async function getProjectById(id: string): Promise<Project | null> {
         contact_phones(id, phone_number, role, sort_order)
       ),
       project_details(id, num_towers, max_floors, amenities_sqft,
-        towers(id, tower_name, num_floors, sort_order)
+        towers(id, tower_name, num_floors, sort_order,
+          tower_unit_plans(id, project_id, unit_plan_id, floor_from, floor_to, units_per_floor, sort_order)
+        )
       ),
       unit_plans(id, plan_name, bhk, maid_room, home_office, size_sqft, facing, plan_url, sort_order)`
     )
@@ -314,36 +342,64 @@ async function saveNestedData(sb: ReturnType<typeof createClient>, projectId: st
     .single();
   if (detailErr) throw detailErr;
 
-  // 4. Delete + reinsert towers
+  // 4. Save unit plans (preserve existing IDs so tower_unit_plans FKs remain valid)
+  const unitPlanIds: string[] = [];
+  const { data: existingUps } = await sb.from("unit_plans").select("id").eq("project_id", projectId);
+  const existingUpIdSet = new Set((existingUps ?? []).map((u: { id: string }) => u.id));
+  const keepUpIds = new Set(input.unitPlans.filter(u => u.id).map(u => u.id!));
+  const toDeleteUpIds = [...existingUpIdSet].filter(id => !keepUpIds.has(id));
+  if (toDeleteUpIds.length > 0) {
+    await sb.from("unit_plans").delete().in("id", toDeleteUpIds);
+  }
+  for (let i = 0; i < input.unitPlans.length; i++) {
+    const u = input.unitPlans[i];
+    const row = {
+      plan_name: u.planName, bhk: u.bhk, maid_room: u.maidRoom,
+      home_office: u.homeOffice, size_sqft: u.sizeSqft,
+      facing: u.facing, plan_url: u.planUrl, sort_order: i,
+    };
+    if (u.id) {
+      const { error: upErr } = await sb.from("unit_plans").update(row).eq("id", u.id);
+      if (upErr) throw upErr;
+      unitPlanIds.push(u.id);
+    } else {
+      const { data: newUp, error: upErr } = await sb.from("unit_plans")
+        .insert({ project_id: projectId, ...row }).select("id").single();
+      if (upErr) throw upErr;
+      unitPlanIds.push(newUp.id);
+    }
+  }
+
+  // 5. Delete + reinsert towers (ON DELETE CASCADE removes tower_unit_plans)
   await sb.from("towers").delete().eq("project_detail_id", detail.id);
   for (let i = 0; i < input.projectDetail.towers.length; i++) {
     const t = input.projectDetail.towers[i];
-    const { error: towerErr } = await sb.from("towers").insert({
+    const { data: newTower, error: towerErr } = await sb.from("towers").insert({
       project_detail_id: detail.id,
       tower_name:        t.towerName,
       num_floors:        t.numFloors,
       sort_order:        i,
-    });
+    }).select("id").single();
     if (towerErr) throw towerErr;
-  }
 
-  // 5. Delete + reinsert unit plans
-  await sb.from("unit_plans").delete().eq("project_id", projectId);
-  if (input.unitPlans.length > 0) {
-    const { error: upErr } = await sb.from("unit_plans").insert(
-      input.unitPlans.map((u, i) => ({
-        project_id:  projectId,
-        plan_name:   u.planName,
-        bhk:         u.bhk,
-        maid_room:   u.maidRoom,
-        home_office: u.homeOffice,
-        size_sqft:   u.sizeSqft,
-        facing:      u.facing,
-        plan_url:    u.planUrl,
-        sort_order:  i,
-      }))
+    // Insert tower_unit_plans for this tower
+    const validFps = (t.floorPlans ?? []).filter(fp =>
+      fp.unitPlanIndex !== undefined && fp.unitPlanIndex >= 0 && unitPlanIds[fp.unitPlanIndex]
     );
-    if (upErr) throw upErr;
+    if (validFps.length > 0) {
+      const { error: fpErr } = await sb.from("tower_unit_plans").insert(
+        validFps.map((fp, j) => ({
+          project_id:      projectId,
+          tower_id:        newTower.id,
+          unit_plan_id:    unitPlanIds[fp.unitPlanIndex!],
+          floor_from:      fp.floorFrom,
+          floor_to:        fp.floorTo,
+          units_per_floor: fp.unitsPerFloor,
+          sort_order:      j,
+        }))
+      );
+      if (fpErr) throw fpErr;
+    }
   }
 }
 
