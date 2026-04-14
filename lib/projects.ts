@@ -229,7 +229,7 @@ export const PROJECTS: Project[] = [
     price: "₹80 – ₹120/sq ft/mo",
     status: "Completed",
     statusColor: "tag-blue",
-    completion: "Operational",
+    completion: "February 2023",
     progress: 100,
     highlight: false,
     verified: true,

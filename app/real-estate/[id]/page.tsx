@@ -315,7 +315,10 @@ export default async function ProjectDetailPage({
               { label: "Floors", value: `${project.floors}G` },
               { label: "Total Units", value: project.units || "N/A" },
               { label: "Carpet Area", value: project.carpet },
-              { label: "Possession", value: project.completion },
+              {
+                label: project.progress === 100 ? "Completed" : "Expected Completion",
+                value: project.completion,
+              },
             ].map((s) => (
               <div
                 key={s.label}

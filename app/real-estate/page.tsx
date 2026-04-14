@@ -183,6 +183,10 @@ export default function RealEstatePage() {
                   <span>Phase: <strong className="text-gray-700">{p.phase}</strong></span>
                   <span>Floors: <strong className="text-gray-700">{p.floors}G</strong></span>
                   <span>Size: <strong className="text-gray-700">{p.carpet}</strong></span>
+                  <span className="col-span-2">
+                    {p.progress === 100 ? "Completed" : "Expected Completion"}:{" "}
+                    <strong className="text-gray-700">{p.completion}</strong>
+                  </span>
                 </div>
 
                 <div className="flex items-center justify-between mb-3">
