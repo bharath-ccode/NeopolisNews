@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Shield,
   Clock,
+  HardHat,
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import LeadForm from "@/components/LeadForm";
@@ -23,21 +24,27 @@ export const metadata = {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function legalBadge(p: Project) {
-  const hasDpa = !!p.legalStatus.developmentPlanApproval;
+// Full project lifecycle in order:
+// Legal Pending → Legal Partial → Legal Complete → Under Construction → OC Received
+function projectStageBadge(p: Project) {
+  const hasDpa  = !!p.legalStatus.developmentPlanApproval;
   const hasRera = !!p.legalStatus.reraRegistration;
-  const hasOc = !!p.occupationCertificate;
+  const hasOc   = !!p.occupationCertificate;
+  const constructionStarted = p.constructionMilestones.length > 0 || p.progress > 0;
 
   if (hasOc) {
-    return { label: "OC Received", color: "text-green-700 bg-green-50 border-green-200" };
+    return { label: "OC Received", Icon: Shield, color: "text-green-700 bg-green-50 border-green-200" };
+  }
+  if (hasDpa && hasRera && constructionStarted) {
+    return { label: "Under Construction", Icon: HardHat, color: "text-blue-700 bg-blue-50 border-blue-200" };
   }
   if (hasDpa && hasRera) {
-    return { label: "Legal Complete", color: "text-green-700 bg-green-50 border-green-200" };
+    return { label: "Legal Complete", Icon: Shield, color: "text-green-700 bg-green-50 border-green-200" };
   }
   if (hasDpa || hasRera) {
-    return { label: "Legal Partial", color: "text-yellow-700 bg-yellow-50 border-yellow-200" };
+    return { label: "Legal Partial", Icon: Clock, color: "text-yellow-700 bg-yellow-50 border-yellow-200" };
   }
-  return { label: "Legal Pending", color: "text-gray-500 bg-gray-50 border-gray-200" };
+  return { label: "Legal Pending", Icon: Clock, color: "text-gray-500 bg-gray-50 border-gray-200" };
 }
 
 const PRICE_TRENDS = [
@@ -187,16 +194,13 @@ export default function RealEstatePage() {
                   </span>
                 </div>
 
-                {/* Legal Status badge */}
+                {/* Project stage badge */}
                 {(() => {
-                  const badge = legalBadge(p);
-                  const Icon = badge.label.startsWith("Legal Complete") || badge.label === "OC Received"
-                    ? Shield
-                    : Clock;
+                  const { label, Icon, color } = projectStageBadge(p);
                   return (
-                    <div className={`flex items-center gap-1.5 text-xs font-semibold border px-2.5 py-1 rounded-full w-fit mb-3 ${badge.color}`}>
+                    <div className={`flex items-center gap-1.5 text-xs font-semibold border px-2.5 py-1 rounded-full w-fit mb-3 ${color}`}>
                       <Icon className="w-3.5 h-3.5" />
-                      {badge.label}
+                      {label}
                     </div>
                   );
                 })()}
