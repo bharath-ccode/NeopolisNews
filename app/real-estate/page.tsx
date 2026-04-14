@@ -8,9 +8,12 @@ import {
   CheckCircle,
   Star,
   ChevronRight,
+  Shield,
+  Clock,
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import LeadForm from "@/components/LeadForm";
+import { PROJECTS, type Project } from "@/lib/projects";
 
 export const metadata = {
   title: "Real Estate Intelligence Hub – NeopolisNews",
@@ -18,115 +21,24 @@ export const metadata = {
     "Project pages, price trends, construction progress, floor plans and live inventory for every tower in the Neopolis urban district.",
 };
 
-// ─── Static data ────────────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const PROJECTS = [
-  {
-    id: "apex-tower",
-    name: "Neopolis Apex Tower",
-    developer: "Apex Realty Pvt Ltd",
-    type: "Luxury Residential",
-    phase: "Phase 1",
-    floors: 42,
-    units: 320,
-    carpet: "850 – 2,200 sq ft",
-    price: "₹1.2 Cr – ₹3.8 Cr",
-    status: "Under Construction",
-    statusColor: "tag-orange",
-    completion: "December 2026",
-    progress: 62,
-    highlight: true,
-    verified: true,
-    sponsored: true,
-    amenities: ["Club House", "Rooftop Pool", "EV Parking", "Co-Working"],
-    available: 84,
-    sold: 236,
-  },
-  {
-    id: "neopolis-heights",
-    name: "Neopolis Heights",
-    developer: "Greenfield Developers",
-    type: "Premium Residential",
-    phase: "Phase 2",
-    floors: 35,
-    units: 480,
-    carpet: "650 – 1,800 sq ft",
-    price: "₹85 L – ₹2.5 Cr",
-    status: "New Launch",
-    statusColor: "tag-green",
-    completion: "March 2028",
-    progress: 18,
-    highlight: false,
-    verified: true,
-    sponsored: false,
-    amenities: ["Swimming Pool", "Gymnasium", "Kids Zone", "24/7 Security"],
-    available: 420,
-    sold: 60,
-  },
-  {
-    id: "business-park",
-    name: "Neopolis Business Park",
-    developer: "CityEdge Properties",
-    type: "Grade A Office",
-    phase: "Phase 1",
-    floors: 28,
-    units: 0,
-    carpet: "500 – 50,000 sq ft",
-    price: "₹80 – ₹120/sq ft/mo",
-    status: "Completed",
-    statusColor: "tag-blue",
-    completion: "Operational",
-    progress: 100,
-    highlight: false,
-    verified: true,
-    sponsored: false,
-    amenities: ["LEED Gold", "Cafeteria", "Conference Rooms", "Basement Parking"],
-    available: 12,
-    sold: 0,
-  },
-  {
-    id: "grand-mall",
-    name: "Neopolis Grand Mall",
-    developer: "Retail Spaces Ltd",
-    type: "Retail & Entertainment",
-    phase: "Phase 2",
-    floors: 5,
-    units: 250,
-    carpet: "200 – 8,000 sq ft",
-    price: "₹120 – ₹200/sq ft/mo",
-    status: "Pre-Launch",
-    statusColor: "tag-purple",
-    completion: "June 2027",
-    progress: 28,
-    highlight: false,
-    verified: true,
-    sponsored: true,
-    amenities: ["8 Screen PVR", "Food Court", "Kids Entertainment", "Valet"],
-    available: 200,
-    sold: 50,
-  },
-  {
-    id: "sky-residences",
-    name: "Sky Residences by Neopolis",
-    developer: "SkyLine Corp",
-    type: "Ultra-Luxury",
-    phase: "Phase 3",
-    floors: 55,
-    units: 120,
-    carpet: "2,000 – 5,500 sq ft",
-    price: "₹4.5 Cr – ₹18 Cr",
-    status: "Pre-Launch",
-    statusColor: "tag-purple",
-    completion: "December 2028",
-    progress: 8,
-    highlight: false,
-    verified: false,
-    sponsored: false,
-    amenities: ["Private Pool", "Concierge", "Sky Lounge", "Smart Home"],
-    available: 112,
-    sold: 8,
-  },
-];
+function legalBadge(p: Project) {
+  const hasDpa = !!p.legalStatus.developmentPlanApproval;
+  const hasRera = !!p.legalStatus.reraRegistration;
+  const hasOc = !!p.occupationCertificate;
+
+  if (hasOc) {
+    return { label: "OC Received", color: "text-green-700 bg-green-50 border-green-200" };
+  }
+  if (hasDpa && hasRera) {
+    return { label: "Legal Complete", color: "text-green-700 bg-green-50 border-green-200" };
+  }
+  if (hasDpa || hasRera) {
+    return { label: "Legal Partial", color: "text-yellow-700 bg-yellow-50 border-yellow-200" };
+  }
+  return { label: "Legal Pending", color: "text-gray-500 bg-gray-50 border-gray-200" };
+}
 
 const PRICE_TRENDS = [
   { quarter: "Q1 2024", residential: 7200, office: 82, retail: 110 },
@@ -274,6 +186,20 @@ export default function RealEstatePage() {
                     {p.available} available
                   </span>
                 </div>
+
+                {/* Legal Status badge */}
+                {(() => {
+                  const badge = legalBadge(p);
+                  const Icon = badge.label.startsWith("Legal Complete") || badge.label === "OC Received"
+                    ? Shield
+                    : Clock;
+                  return (
+                    <div className={`flex items-center gap-1.5 text-xs font-semibold border px-2.5 py-1 rounded-full w-fit mb-3 ${badge.color}`}>
+                      <Icon className="w-3.5 h-3.5" />
+                      {badge.label}
+                    </div>
+                  );
+                })()}
 
                 {/* Progress */}
                 <div className="mb-3">
