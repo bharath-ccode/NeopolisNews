@@ -119,6 +119,18 @@ export const TAXONOMY: Record<string, Record<string, string[]>> = {
       "Kitchenware",
       "Bed & Bath",
     ],
+    "Gifts & Collectibles": [
+      "Gift Shop",
+      "Collectibles & Figurines",
+      "Souvenirs & Memorabilia",
+      "Handcrafted & Artisanal",
+      "Stationery & Journals",
+      "Toys & Puzzles",
+      "Seasonal & Festival Gifts",
+      "Corporate Gifts",
+      "Antiques & Vintage",
+      "Art Prints & Posters",
+    ],
     "Grocery & Supermarket": [
       "Supermarket",
       "Organic Store",
