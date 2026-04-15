@@ -115,6 +115,13 @@ export const TAXONOMY: Record<string, Record<string, string[]>> = {
       "Martial Arts",
       "Functional Training",
     ],
+    "Old Age Care": [
+      "At Home",
+      "At Facilities",
+    ],
+    "Rehabilitation": [
+      "Orthopaedic",
+    ],
     "Spa & Relaxation": [
       "Ayurvedic Spa",
       "Thai Massage",
