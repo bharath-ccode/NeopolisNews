@@ -202,6 +202,34 @@ export const TAXONOMY: Record<string, Record<string, string[]>> = {
     ],
   },
 
+  "Education": {
+    "Schools": [
+      "IB (International Baccalaureate)",
+      "CBSE",
+      "Cambridge (IGCSE / A-Levels)",
+      "ICSE",
+      "State Board",
+      "Montessori",
+    ],
+    "Day Care": [
+      "Infant & Toddler Care",
+      "Full-Day Care",
+      "Half-Day Care",
+      "After-School Care",
+      "Weekend Care",
+      "Nursery",
+    ],
+    "Coaching & Tuition": [
+      "Academic Tuition",
+      "Competitive Exam Prep",
+      "Language Classes",
+      "Skill Development",
+      "Music Academy",
+      "Art Classes",
+      "Sports Coaching",
+    ],
+  },
+
   "Real Estate": {
     "Developer": ["Residential", "Commercial", "Mixed-Use", "Township"],
     "Broker / Agent": [
