@@ -347,7 +347,7 @@ async function saveNestedData(sb: ReturnType<typeof createClient>, projectId: st
   const { data: existingUps } = await sb.from("unit_plans").select("id").eq("project_id", projectId);
   const existingUpIdSet = new Set((existingUps ?? []).map((u: { id: string }) => u.id));
   const keepUpIds = new Set(input.unitPlans.filter(u => u.id).map(u => u.id!));
-  const toDeleteUpIds = Array.from(existingUpIdSet).filter(id => !keepUpIds.has(id));
+  const toDeleteUpIds = [...existingUpIdSet].filter(id => !keepUpIds.has(id));
   if (toDeleteUpIds.length > 0) {
     await sb.from("unit_plans").delete().in("id", toDeleteUpIds);
   }

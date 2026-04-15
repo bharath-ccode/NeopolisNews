@@ -13,13 +13,20 @@ import {
   Menu,
   X,
   ChevronDown,
+  ChevronRight,
   LayoutDashboard,
   LogOut,
   User,
   Briefcase,
+  HeartPulse,
+  CalendarDays,
+  Sparkles,
 } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "@/context/AuthContext";
+import WeatherWidget from "@/components/WeatherWidget";
+
+// ─── Nav items ────────────────────────────────────────────────────────────────
 
 const NAV_ITEMS = [
   {
@@ -27,10 +34,11 @@ const NAV_ITEMS = [
     href: "/real-estate",
     icon: Building2,
     sub: [
-      { label: "Project Pages", href: "/real-estate#projects" },
-      { label: "Price Trends", href: "/real-estate#prices" },
-      { label: "Construction Updates", href: "/real-estate#construction" },
-      { label: "Floor Plans", href: "/real-estate#floorplans" },
+      { label: "Project Pages",         href: "/real-estate#projects"     },
+      { label: "Resale & Rentals",      href: "/real-estate/classifieds"  },
+      { label: "Price Trends",          href: "/real-estate#prices"       },
+      { label: "Construction Updates",  href: "/real-estate#construction" },
+      { label: "Floor Plans",           href: "/real-estate#floorplans"   },
     ],
   },
   {
@@ -39,9 +47,41 @@ const NAV_ITEMS = [
     icon: Home,
     sub: [
       { label: "Residential Rentals", href: "/rentals#residential" },
-      { label: "Office Leasing", href: "/rentals#office" },
-      { label: "Retail Shops", href: "/rentals#retail" },
-      { label: "Resale Listings", href: "/rentals#resale" },
+      { label: "Office Leasing",      href: "/rentals#office"      },
+      { label: "Retail Shops",        href: "/rentals#retail"      },
+      { label: "Resale Listings",     href: "/rentals#resale"      },
+    ],
+  },
+  {
+    label: "Health",
+    href: "/health",
+    icon: HeartPulse,
+    sub: [
+      { label: "Hospitals",           href: "/health#hospitals"    },
+      { label: "Ambulance Services",  href: "/health#ambulance"    },
+      { label: "Clinics",             href: "/health#clinics"      },
+      { label: "Diagnostics",         href: "/health#diagnostics"  },
+      { label: "Pharmacies",          href: "/health#pharmacies"   },
+      {
+        label: "Wellness",
+        href: "/health/wellness",
+        icon: Sparkles,
+        children: [
+          { label: "Massage Spa", href: "/health/wellness?type=spa"     },
+          { label: "Gym",         href: "/health/wellness?type=gym"     },
+          { label: "Studio",      href: "/health/wellness?type=studio"  },
+          { label: "Trainers",    href: "/health/wellness?type=trainer" },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Events",
+    href: "/events",
+    icon: CalendarDays,
+    sub: [
+      { label: "Event Spaces",    href: "/events/spaces" },
+      { label: "Upcoming Events", href: "/events"        },
     ],
   },
   {
@@ -49,10 +89,10 @@ const NAV_ITEMS = [
     href: "/directory",
     icon: ShoppingBag,
     sub: [
-      { label: "Mall & Retail", href: "/directory#mall" },
-      { label: "Restaurants & Cafes", href: "/directory#food" },
-      { label: "Entertainment", href: "/directory#entertainment" },
-      { label: "Fitness & Wellness", href: "/directory#fitness" },
+      { label: "Mall & Retail",       href: "/directory#mall"          },
+      { label: "Restaurants & Cafes", href: "/directory#food"          },
+      { label: "Entertainment",       href: "/directory#entertainment" },
+      { label: "Fitness & Wellness",  href: "/directory#fitness"       },
     ],
   },
   {
@@ -61,9 +101,9 @@ const NAV_ITEMS = [
     icon: Newspaper,
     sub: [
       { label: "Construction Updates", href: "/news#construction" },
-      { label: "New Launches", href: "/news#launches" },
-      { label: "Infrastructure", href: "/news#infrastructure" },
-      { label: "Community", href: "/news#community" },
+      { label: "New Launches",         href: "/news#launches"     },
+      { label: "Infrastructure",       href: "/news#infrastructure"},
+      { label: "Community",            href: "/news#community"    },
     ],
   },
   {
@@ -71,10 +111,11 @@ const NAV_ITEMS = [
     href: "/services",
     icon: Wrench,
     sub: [
-      { label: "Move-In Concierge", href: "/services#concierge" },
-      { label: "Interiors & Fit-Out", href: "/services#interiors" },
-      { label: "Facility Management", href: "/services#facility" },
-      { label: "Utilities Setup", href: "/services#utilities" },
+      { label: "Moving",   href: "/services/local?type=moving"   },
+      { label: "Party",    href: "/services/local?type=party"    },
+      { label: "Home",     href: "/services/local?type=home"     },
+      { label: "Delivery", href: "/services/local?type=delivery" },
+      { label: "Driving",  href: "/services/local?type=driving"  },
     ],
   },
   {
@@ -84,6 +125,8 @@ const NAV_ITEMS = [
     highlight: true,
   },
 ];
+
+// ─── User menu ────────────────────────────────────────────────────────────────
 
 function UserMenu() {
   const { user, logout } = useAuth();
@@ -102,11 +145,14 @@ function UserMenu() {
   if (!user) {
     return (
       <div className="flex items-center gap-2">
-        <Link href="/auth/login" className="text-sm font-semibold text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+        <Link
+          href="/auth/login"
+          className="text-sm font-semibold text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors whitespace-nowrap"
+        >
           Sign in
         </Link>
         <Link href="/auth/register" className="btn-primary text-sm py-2">
-          Register Free
+          Register
         </Link>
       </div>
     );
@@ -114,7 +160,8 @@ function UserMenu() {
 
   const dashboardHref =
     user.userType === "individual" ? "/dashboard/individual" : "/dashboard/business";
-  const displayName = user.userType === "business" ? user.businessName ?? user.name : user.name;
+  const displayName =
+    user.userType === "business" ? user.businessName ?? user.name : user.name;
 
   return (
     <div className="relative" ref={ref}>
@@ -156,7 +203,11 @@ function UserMenu() {
             onClick={() => setOpen(false)}
             className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700"
           >
-            {user.userType === "individual" ? <Home className="w-4 h-4" /> : <ShoppingBag className="w-4 h-4" />}
+            {user.userType === "individual" ? (
+              <Home className="w-4 h-4" />
+            ) : (
+              <ShoppingBag className="w-4 h-4" />
+            )}
             {user.userType === "individual" ? "Post Listing" : "Post Classified"}
           </Link>
           <div className="border-t border-gray-50 mt-1" />
@@ -172,20 +223,36 @@ function UserMenu() {
   );
 }
 
+// ─── Navbar ───────────────────────────────────────────────────────────────────
+
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pathname = usePathname();
+
+  function handleMouseEnter(href: string) {
+    if (leaveTimer.current) clearTimeout(leaveTimer.current);
+    setActiveDropdown(href);
+  }
+
+  function handleMouseLeave() {
+    leaveTimer.current = setTimeout(() => setActiveDropdown(null), 150);
+  }
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
       {/* Top bar */}
-      <div className="bg-brand-950 text-brand-200 text-xs py-1.5 px-4 text-center hidden md:block">
-        Neopolis — 100-acre mixed-use urban district &nbsp;·&nbsp; Live updates
-        every week &nbsp;·&nbsp;
-        <Link href="/advertise" className="underline hover:text-white">
-          List your property or business →
-        </Link>
+      <div className="bg-brand-950 text-brand-200 text-xs py-1.5 px-4 flex items-center justify-between gap-4">
+        <span className="hidden md:block text-center flex-1">
+          Neopolis — 100-acre mixed-use urban district &nbsp;·&nbsp; Live updates
+          every week &nbsp;·&nbsp;
+          <Link href="/advertise" className="underline hover:text-white">
+            List your property or business →
+          </Link>
+        </span>
+        <span className="md:hidden text-brand-400 text-xs shrink-0">Neopolis</span>
+        <WeatherWidget />
       </div>
 
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -202,14 +269,14 @@ export default function Navbar() {
 
           {/* Desktop nav */}
           <div className="hidden lg:flex items-center gap-1">
-            {NAV_ITEMS.map((item) => {
+            {NAV_ITEMS.filter((item) => !item.highlight).map((item) => {
               const active = pathname.startsWith(item.href);
               return (
                 <div
                   key={item.href}
                   className="relative"
-                  onMouseEnter={() => setActiveDropdown(item.href)}
-                  onMouseLeave={() => setActiveDropdown(null)}
+                  onMouseEnter={() => handleMouseEnter(item.href)}
+                  onMouseLeave={handleMouseLeave}
                 >
                   <Link
                     href={item.href}
@@ -224,22 +291,46 @@ export default function Navbar() {
                   >
                     <item.icon className="w-4 h-4" />
                     {item.label}
-                    {item.sub && (
-                      <ChevronDown className="w-3.5 h-3.5 opacity-60" />
-                    )}
+                    {item.sub && <ChevronDown className="w-3.5 h-3.5 opacity-60" />}
                   </Link>
 
                   {item.sub && activeDropdown === item.href && (
                     <div className="absolute top-full left-0 mt-1 w-52 bg-white rounded-xl border border-gray-100 shadow-lg py-1 z-50">
-                      {item.sub.map((s) => (
-                        <Link
-                          key={s.href}
-                          href={s.href}
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700"
-                        >
-                          {s.label}
-                        </Link>
-                      ))}
+                      {item.sub.map((s) =>
+                        "children" in s && s.children ? (
+                          <div key={s.href} className="relative group/nested">
+                            <Link
+                              href={s.href}
+                              className="flex items-center justify-between gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700"
+                            >
+                              <span className="flex items-center gap-2">
+                                {"icon" in s && s.icon && <s.icon className="w-3.5 h-3.5 text-purple-500" />}
+                                {s.label}
+                              </span>
+                              <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+                            </Link>
+                            <div className="absolute left-full top-0 w-44 bg-white rounded-xl border border-gray-100 shadow-lg py-1 hidden group-hover/nested:block">
+                              {s.children.map((c) => (
+                                <Link
+                                  key={c.href}
+                                  href={c.href}
+                                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700"
+                                >
+                                  {c.label}
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <Link
+                            key={s.href}
+                            href={s.href}
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700"
+                          >
+                            {s.label}
+                          </Link>
+                        )
+                      )}
                     </div>
                   )}
                 </div>
@@ -249,6 +340,16 @@ export default function Navbar() {
 
           {/* Auth + Mobile toggle */}
           <div className="flex items-center gap-3">
+            {/* <div className="hidden md:flex items-center border-r border-gray-200 pr-3 mr-1">
+              <WeatherWidget variant="nav" />
+            </div> */}
+            <Link
+              href="/advertise"
+              className="hidden lg:flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-accent-500 text-white hover:bg-accent-600 transition-colors"
+            >
+              <Megaphone className="w-4 h-4" />
+              Advertise
+            </Link>
             <div className="hidden lg:flex">
               <UserMenu />
             </div>
@@ -257,11 +358,7 @@ export default function Navbar() {
               onClick={() => setMobileOpen(!mobileOpen)}
               aria-label="Toggle menu"
             >
-              {mobileOpen ? (
-                <X className="w-5 h-5" />
-              ) : (
-                <Menu className="w-5 h-5" />
-              )}
+              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
