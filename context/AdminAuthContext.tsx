@@ -42,35 +42,61 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const supabase = createClient();
+    let mounted = true;
 
-    // Get initial session — reject if the user is a builder
-    supabase.auth.getUser().then(async ({ data }) => {
-      const user = data.user ?? null;
-      if (user && await isBuilder(user.email)) {
-        setAdmin(null);
-      } else {
-        setAdmin(user);
-      }
-    }).catch(() => {
-      setAdmin(null);
-    }).finally(() => {
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        const user = session?.user ?? null;
+    async function init() {
+      try {
+        const supabase = createClient();
+        const { data } = await supabase.auth.getUser();
+        if (!mounted) return;
+        const user = data.user ?? null;
         if (user && await isBuilder(user.email)) {
           setAdmin(null);
         } else {
           setAdmin(user);
         }
+      } catch {
+        if (mounted) setAdmin(null);
+      } finally {
+        if (mounted) setLoading(false);
       }
-    );
+    }
 
-    return () => listener.subscription.unsubscribe();
+    // Hard timeout: never spin forever even if Supabase hangs
+    const timeout = setTimeout(() => {
+      if (mounted) setLoading(false);
+    }, 5000);
+
+    init().then(() => clearTimeout(timeout));
+
+    // Listen for auth changes
+    let unsubscribe: (() => void) | null = null;
+    try {
+      const supabase = createClient();
+      const { data: listener } = supabase.auth.onAuthStateChange(
+        async (_event, session) => {
+          const user = session?.user ?? null;
+          try {
+            if (user && await isBuilder(user.email)) {
+              setAdmin(null);
+            } else {
+              setAdmin(user);
+            }
+          } catch {
+            setAdmin(null);
+          }
+        }
+      );
+      unsubscribe = () => listener.subscription.unsubscribe();
+    } catch {
+      // Auth listener failed — not critical, init() already ran
+    }
+
+    return () => {
+      mounted = false;
+      clearTimeout(timeout);
+      unsubscribe?.();
+    };
   }, []);
 
   const login = useCallback(
