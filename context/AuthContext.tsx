@@ -12,6 +12,12 @@ import {
 
 export type UserType = "individual" | "business";
 
+export interface BusinessHours {
+  open: string;   // "09:00" 24-hour format
+  close: string;  // "22:00"
+  days: string[]; // e.g. ["Mon","Tue","Wed","Thu","Fri","Sat"]
+}
+
 export interface User {
   id: string;
   name: string;
@@ -23,7 +29,11 @@ export interface User {
   location?: string;
   // Business fields
   businessName?: string;
+  businessType?: string;    // group: "Lifestyle" | "Health" | "Events"
+  businessSubType?: string; // specific: "Hospital" | "Diagnostics" | "Restaurant" etc.
   businessCategory?: string;
+  businessHours?: BusinessHours;
+  emergencyPhone?: string; // hospitals / clinics only
   gstin?: string;
   createdAt: string;
 }
@@ -39,6 +49,7 @@ interface AuthContextValue {
   ) => Promise<void>;
   loginWithOtp: (contact: string, otp: string, userType: UserType) => Promise<void>;
   sendOtp: (contact: string) => Promise<void>;
+  verifyOtp: (contact: string, otp: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
 }
@@ -51,7 +62,11 @@ export interface RegisterData {
   password?: string;
   // Business
   businessName?: string;
+  businessType?: string;
+  businessSubType?: string;
   businessCategory?: string;
+  businessHours?: BusinessHours;
+  emergencyPhone?: string;
   gstin?: string;
 }
 
@@ -70,7 +85,11 @@ function makeMockUser(data: Partial<User> & { userType: UserType }): User {
     userType: data.userType,
     avatar: undefined,
     businessName: data.businessName,
+    businessType: data.businessType,
+    businessSubType: data.businessSubType,
     businessCategory: data.businessCategory,
+    businessHours: data.businessHours,
+    emergencyPhone: data.emergencyPhone,
     gstin: data.gstin,
     createdAt: new Date().toISOString(),
   };
@@ -134,6 +153,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  const verifyOtp = useCallback(async (_contact: string, _otp: string) => {
+    // In production: POST /api/auth/otp/verify { contact, otp }
+    // Throws with an error message if OTP is invalid
+    await new Promise((r) => setTimeout(r, 600));
+  }, []);
+
   const register = useCallback(async (data: RegisterData) => {
     // In production: POST /api/auth/register
     const u = makeMockUser(data);
@@ -154,6 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loginWithEmail,
         loginWithOtp,
         sendOtp,
+        verifyOtp,
         register,
         logout,
       }}
