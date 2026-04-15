@@ -1,0 +1,202 @@
+// ─── Business taxonomy: Industry → Type → Subtypes ──────────────────────────
+//
+// Type  = the primary offering category (Coffeehouse, Restaurant, Saloon …)
+// Subtype = what you can specifically do/get there (Pickleball Arena, Hair Saloon …)
+//
+// A business picks ONE industry, ONE OR MORE types, and any subtypes per type.
+
+export const TAXONOMY: Record<string, Record<string, string[]>> = {
+  "Food & Beverages": {
+    "Coffeehouse": [
+      "Specialty Coffee",
+      "Cold Brew",
+      "Tea Lounge",
+      "Juice Bar",
+      "Pickleball Arena",
+      "Workspace / Co-Working",
+      "Live Music",
+      "Rooftop Seating",
+      "Board Games",
+    ],
+    "Restaurant": [
+      "North Indian",
+      "South Indian",
+      "Chinese",
+      "Continental",
+      "Pizza & Pasta",
+      "Biryani",
+      "Seafood",
+      "Coastal",
+      "Thai",
+      "Lebanese",
+      "Multi-Cuisine",
+    ],
+    "Bakery & Desserts": [
+      "Artisan Bakery",
+      "Patisserie",
+      "Cake Shop",
+      "Ice Cream Parlour",
+      "Chocolatier",
+    ],
+    "Bar & Lounge": [
+      "Cocktail Bar",
+      "Sports Bar",
+      "Rooftop Lounge",
+      "Microbrewery",
+      "Gastropub",
+      "Wine Bar",
+    ],
+    "Sports Arena": [
+      "Pickleball Courts",
+      "Badminton Courts",
+      "Cricket Nets",
+      "Table Tennis",
+      "Football / Futsal Turf",
+      "Squash Courts",
+      "Basketball Court",
+      "Swimming Pool",
+      "Bowling Alley",
+    ],
+    "Quick Service": [
+      "Burgers",
+      "Sandwiches & Wraps",
+      "Indian Fast Food",
+      "Healthy Bowls",
+      "Cloud Kitchen",
+    ],
+  },
+
+  "Health & Wellness": {
+    "Saloon": [
+      "Hair Saloon",
+      "Nails Spa",
+      "Barber Shop",
+      "Bridal Studio",
+      "Unisex Saloon",
+      "Skin & Facial",
+      "Waxing & Threading",
+    ],
+    "Gym & Fitness": [
+      "CrossFit",
+      "Yoga",
+      "Pilates",
+      "General Gym",
+      "Dance & Zumba",
+      "Martial Arts",
+      "Functional Training",
+    ],
+    "Spa & Relaxation": [
+      "Ayurvedic Spa",
+      "Thai Massage",
+      "Beauty Spa",
+      "Aromatherapy",
+      "Reflexology",
+      "Deep Tissue Massage",
+    ],
+  },
+
+  "Retail": {
+    "Fashion": [
+      "Men's Wear",
+      "Women's Wear",
+      "Kids' Wear",
+      "Accessories",
+      "Footwear",
+      "Ethnic Wear",
+      "Sportswear",
+    ],
+    "Electronics": [
+      "Mobiles & Accessories",
+      "Laptops & Computers",
+      "Home Appliances",
+      "Gadgets",
+      "Camera & Audio",
+    ],
+    "Home & Living": [
+      "Furniture",
+      "Lighting",
+      "Art & Decor",
+      "Kitchenware",
+      "Bed & Bath",
+    ],
+    "Grocery & Supermarket": [
+      "Supermarket",
+      "Organic Store",
+      "Specialty Foods",
+      "Dairy & Bakery",
+    ],
+  },
+
+  "Services": {
+    "Education & Coaching": [
+      "Preschool",
+      "Tuition Centre",
+      "Skill Development",
+      "Language Classes",
+      "Music Academy",
+      "Art Classes",
+    ],
+    "Healthcare": [
+      "General Practice",
+      "Dental Clinic",
+      "Physiotherapy",
+      "Ophthalmology",
+      "Dermatology",
+      "Paediatrics",
+    ],
+    "Financial Services": [
+      "Banking",
+      "Insurance",
+      "Investment Advisory",
+      "CA / Tax Filing",
+      "Loans & Mortgage",
+    ],
+    "Legal Services": [
+      "Civil Law",
+      "Criminal Law",
+      "Corporate Law",
+      "Real Estate Law",
+      "Family Law",
+    ],
+  },
+
+  "Real Estate": {
+    "Developer": ["Residential", "Commercial", "Mixed-Use", "Township"],
+    "Broker / Agent": [
+      "Residential Sales",
+      "Commercial Leasing",
+      "Rental Specialist",
+    ],
+    "Interior Design": [
+      "Residential",
+      "Commercial",
+      "Hospitality",
+      "Retail Fitout",
+    ],
+  },
+};
+
+export function getIndustries(): string[] {
+  return Object.keys(TAXONOMY);
+}
+
+export function getTypes(industry: string): string[] {
+  return Object.keys(TAXONOMY[industry] ?? {});
+}
+
+export function getSubtypes(industry: string, type: string): string[] {
+  return TAXONOMY[industry]?.[type] ?? [];
+}
+
+/** All subtypes for a set of types within an industry, keyed by type name */
+export function getSubtypesByTypes(
+  industry: string,
+  types: string[]
+): Record<string, string[]> {
+  const result: Record<string, string[]> = {};
+  for (const t of types) {
+    const subs = getSubtypes(industry, t);
+    if (subs.length > 0) result[t] = subs;
+  }
+  return result;
+}
