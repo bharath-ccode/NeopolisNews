@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHmac } from "crypto";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 const TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 function sign(data: string): string {
@@ -25,6 +23,7 @@ export async function POST(req: NextRequest) {
   const payload = `${businessId}|${otp}|${expiresAt}`;
   const token = `${payload}|${sign(payload)}`;
 
+  const resend = new Resend(process.env.RESEND_API_KEY);
   const { error } = await resend.emails.send({
     from: "no-reply@neopolis.news",
     to: email,
