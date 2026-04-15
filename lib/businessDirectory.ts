@@ -132,6 +132,8 @@ export const TAXONOMY: Record<string, Record<string, string[]>> = {
       "Bicycling Studio",
       "Gym",
       "Massage Spa",
+      "Aromatherapy",
+      "Reflexology",
     ],
     "Old Age Care": [
       "At Home",
