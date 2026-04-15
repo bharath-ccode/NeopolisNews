@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createHmac } from "crypto";
 import { Resend } from "resend";
-import { setOtp } from "@/lib/otpStore";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+const TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+function sign(data: string): string {
+  const secret = process.env.OTP_SECRET;
+  if (!secret) throw new Error("OTP_SECRET env var is not set.");
+  return createHmac("sha256", secret).update(data).digest("hex");
+}
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
@@ -13,7 +21,9 @@ export async function POST(req: NextRequest) {
   }
 
   const otp = String(Math.floor(100000 + Math.random() * 900000));
-  setOtp(businessId, otp);
+  const expiresAt = Date.now() + TTL_MS;
+  const payload = `${businessId}|${otp}|${expiresAt}`;
+  const token = `${payload}|${sign(payload)}`;
 
   const { error } = await resend.emails.send({
     from: "no-reply@neopolis.news",
@@ -62,5 +72,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Failed to send email. Please try again." }, { status: 502 });
   }
 
-  return NextResponse.json({ ok: true });
+  const res = NextResponse.json({ ok: true });
+  res.cookies.set("otp_pending", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 600, // 10 minutes
+    path: "/",
+  });
+  return res;
 }
