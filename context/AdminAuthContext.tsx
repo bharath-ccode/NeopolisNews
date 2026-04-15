@@ -48,12 +48,13 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getUser().then(async ({ data }) => {
       const user = data.user ?? null;
       if (user && await isBuilder(user.email)) {
-        // Builder snuck in — clear admin state (don't sign them out; they may
-        // have a valid builder session running in the same tab)
         setAdmin(null);
       } else {
         setAdmin(user);
       }
+    }).catch(() => {
+      setAdmin(null);
+    }).finally(() => {
       setLoading(false);
     });
 

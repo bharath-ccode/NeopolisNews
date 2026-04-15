@@ -52,6 +52,10 @@ export function BuilderAuthProvider({
     supabase.auth.getUser().then(async ({ data }) => {
       setSupaUser(data.user ?? null);
       await resolveBuilder(data.user ?? null);
+    }).catch(() => {
+      setSupaUser(null);
+      setBuilder(null);
+    }).finally(() => {
       setLoading(false);
     });
 
