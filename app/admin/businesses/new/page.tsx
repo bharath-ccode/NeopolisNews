@@ -115,7 +115,7 @@ export default function AdminNewBusinessPage() {
 
   // Step 2
   const [address, setAddress] = useState("");
-  const [phone, setPhone] = useState("");
+  const [ownerPhone, setOwnerPhone] = useState("");
   const [email, setEmail] = useState("");
 
   // Done
@@ -165,7 +165,7 @@ export default function AdminNewBusinessPage() {
 
   function validateStep2() {
     if (!address.trim()) return "Please enter the address.";
-    if (phone.length < 10) return "Please enter a valid 10-digit phone number.";
+    if (ownerPhone.length < 10) return "Please enter a valid 10-digit owner / manager number.";
     return "";
   }
 
@@ -186,7 +186,7 @@ export default function AdminNewBusinessPage() {
       types: selectedTypes,
       subtypes: selectedSubtypes,
       address: address.trim(),
-      phone: `+91${phone}`,
+      ownerPhone: `+91${ownerPhone}`,
       email: email.trim() || undefined,
     });
     setCreated(record);
@@ -208,7 +208,7 @@ export default function AdminNewBusinessPage() {
   function reset() {
     setStep(1); setError("");
     setName(""); setIndustry(""); setSelectedTypes([]); setSelectedSubtypes([]);
-    setAddress(""); setPhone(""); setEmail(""); setCreated(null);
+    setAddress(""); setOwnerPhone(""); setEmail(""); setCreated(null);
   }
 
   // ── Layout ────────────────────────────────────────────────────────────────
@@ -378,8 +378,9 @@ export default function AdminNewBusinessPage() {
               Contact Details
             </h1>
             <p className="text-sm text-gray-500 mb-6">
-              The owner will claim this listing via OTP on the registered phone
-              number.
+              The owner / manager number is used only for OTP verification —
+              it is never shown to customers. The customer-facing number is
+              collected from the owner during onboarding.
             </p>
 
             {error && (
@@ -404,13 +405,13 @@ export default function AdminNewBusinessPage() {
                 />
               </div>
 
-              {/* Phone */}
+              {/* Owner / Manager phone */}
               <div>
                 <label className={LABEL}>
                   <Phone className="w-3.5 h-3.5 inline mr-1" />
-                  Phone Number{" "}
+                  Owner / Manager Number{" "}
                   <span className="font-normal text-gray-400">
-                    — owner claims via OTP on this number
+                    — for OTP claim only, not visible to customers
                   </span>
                 </label>
                 <div className="flex">
@@ -419,9 +420,9 @@ export default function AdminNewBusinessPage() {
                   </span>
                   <input
                     type="tel"
-                    value={phone}
+                    value={ownerPhone}
                     onChange={(e) =>
-                      setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))
+                      setOwnerPhone(e.target.value.replace(/\D/g, "").slice(0, 10))
                     }
                     placeholder="9900000000"
                     className="flex-1 px-3 py-2.5 border border-gray-200 rounded-r-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
@@ -482,7 +483,7 @@ export default function AdminNewBusinessPage() {
             <p className="text-sm text-gray-500 mb-6">
               Share the invite link with{" "}
               <strong>{created.name}</strong>. They can claim it using{" "}
-              <strong>{created.phone}</strong> via OTP.
+              <strong>{created.ownerPhone}</strong> via OTP.
             </p>
 
             {/* Invite link */}
@@ -542,8 +543,8 @@ export default function AdminNewBusinessPage() {
                 </div>
               )}
               <div className="flex justify-between">
-                <span className="text-gray-500">Phone</span>
-                <span className="font-semibold text-gray-800">{created.phone}</span>
+                <span className="text-gray-500">Owner / Manager No.</span>
+                <span className="font-semibold text-gray-800">{created.ownerPhone}</span>
               </div>
               {created.email && (
                 <div className="flex justify-between">

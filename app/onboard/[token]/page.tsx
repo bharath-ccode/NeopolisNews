@@ -134,6 +134,7 @@ export default function OnboardPage() {
   const [verifyError, setVerifyError] = useState("");
 
   // Complete step
+  const [contactPhone, setContactPhone] = useState("");
   const [description, setDescription] = useState("");
   const [timings, setTimings] = useState<DayTiming[]>(DEFAULT_TIMINGS.map((t) => ({ ...t })));
   const [email, setEmail] = useState("");
@@ -153,6 +154,7 @@ export default function OnboardPage() {
       setAlreadyActive(true);
     }
     // Pre-fill existing values if returning to complete
+    if (record.contactPhone) setContactPhone(record.contactPhone.replace(/^\+91/, ""));
     if (record.email) setEmail(record.email);
     if (record.description) setDescription(record.description);
     if (record.timings) setTimings(record.timings);
@@ -170,7 +172,7 @@ export default function OnboardPage() {
 
     // Normalise: compare last 10 digits
     const entered = phone.replace(/\D/g, "").slice(-10);
-    const registered = business.phone.replace(/\D/g, "").slice(-10);
+    const registered = business.ownerPhone.replace(/\D/g, "").slice(-10);
 
     if (entered !== registered) {
       setVerifyError(
@@ -208,12 +210,17 @@ export default function OnboardPage() {
   async function handleComplete() {
     setCompleteError("");
     if (!business) return;
+    if (!contactPhone.trim() || contactPhone.length < 10) {
+      setCompleteError("Please enter a valid 10-digit customer contact number.");
+      return;
+    }
 
     setSaving(true);
     await new Promise((r) => setTimeout(r, 500));
 
     const updated: BusinessRecord = {
       ...business,
+      contactPhone: `+91${contactPhone}`,
       description: description.trim() || undefined,
       timings,
       email: email.trim() || business.email,
@@ -426,6 +433,31 @@ export default function OnboardPage() {
             )}
 
             <div className="space-y-6">
+              {/* Customer contact number */}
+              <div>
+                <label className={LABEL}>
+                  <Phone className="w-3.5 h-3.5 inline mr-1" />
+                  Customer Contact Number{" "}
+                  <span className="font-normal text-gray-400">
+                    — displayed on your listing for customers to call
+                  </span>
+                </label>
+                <div className="flex">
+                  <span className="flex items-center px-3 border border-r-0 border-gray-200 rounded-l-lg bg-gray-50 text-sm text-gray-500">
+                    +91
+                  </span>
+                  <input
+                    type="tel"
+                    value={contactPhone}
+                    onChange={(e) =>
+                      setContactPhone(e.target.value.replace(/\D/g, "").slice(0, 10))
+                    }
+                    placeholder="9900000000"
+                    className="flex-1 px-3 py-2.5 border border-gray-200 rounded-r-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                </div>
+              </div>
+
               {/* Description */}
               <div>
                 <label className={LABEL}>

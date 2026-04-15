@@ -49,7 +49,7 @@ export default function AdminBusinessesPage() {
       b.industry.toLowerCase().includes(q) ||
       b.types.some((t) => t.toLowerCase().includes(q)) ||
       b.subtypes.some((s) => s.toLowerCase().includes(q)) ||
-      b.phone.includes(q)
+      b.ownerPhone.includes(q)
   );
 
   return (
@@ -158,7 +158,10 @@ export default function AdminBusinessesPage() {
                           </div>
                         )}
                         <div className="flex flex-wrap gap-3 mt-1.5 text-xs text-gray-400">
-                          <span>{b.phone}</span>
+                          <span title="Owner / Manager No.">{b.ownerPhone}</span>
+                          {b.contactPhone && (
+                            <span title="Customer Contact">{b.contactPhone}</span>
+                          )}
                           {b.email && <span>{b.email}</span>}
                           <span className="truncate max-w-xs">{b.address}</span>
                         </div>
