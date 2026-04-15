@@ -28,6 +28,16 @@ const INPUT =
 
 const LABEL = "block text-xs font-semibold text-gray-500 mb-1.5";
 
+// ─── Mask email for display ──────────────────────────────────────────────────
+
+function maskEmail(email: string): string {
+  const [user, domain] = email.split("@");
+  if (!domain) return email;
+  const visible = user.slice(0, 2);
+  const masked = "*".repeat(Math.max(2, user.length - 2));
+  return `${visible}${masked}@${domain}`;
+}
+
 // ─── Timings editor ──────────────────────────────────────────────────────────
 
 function TimingsEditor({
@@ -160,7 +170,7 @@ export default function OnboardPage() {
     if (record.timings) setTimings(record.timings);
   }, [token]);
 
-  // ── OTP send (simulated) ────────────────────────────────────────────────
+  // ── OTP: send via Resend ────────────────────────────────────────────────
 
   async function handleSendOtp() {
     setVerifyError("");
@@ -170,7 +180,7 @@ export default function OnboardPage() {
     }
     if (!business) return;
 
-    // Normalise: compare last 10 digits
+    // Verify phone matches the registered owner phone
     const entered = phone.replace(/\D/g, "").slice(-10);
     const registered = business.ownerPhone.replace(/\D/g, "").slice(-10);
 
@@ -181,28 +191,63 @@ export default function OnboardPage() {
       return;
     }
 
+    if (!business.email) {
+      setVerifyError(
+        "No email address on file for this business. Contact the administrator to add one."
+      );
+      return;
+    }
+
     setSending(true);
-    await new Promise((r) => setTimeout(r, 800)); // simulate network
-    setSending(false);
-    setOtpSent(true);
-    // In production: POST /api/otp/send { phone }
+    try {
+      const res = await fetch("/api/otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          businessId: token,
+          email: business.email,
+          businessName: business.name,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setVerifyError(data.error ?? "Failed to send OTP. Please try again.");
+        return;
+      }
+      setOtpSent(true);
+    } catch {
+      setVerifyError("Network error. Please check your connection and try again.");
+    } finally {
+      setSending(false);
+    }
   }
+
+  // ── OTP: verify via API ─────────────────────────────────────────────────
 
   async function handleVerifyOtp() {
     setVerifyError("");
-    if (otp.length < 4) {
-      setVerifyError("Please enter the OTP.");
-      return;
-    }
-    // Simulate: accept "123456" or any 6-digit code
-    if (otp !== "123456" && otp.length !== 6) {
-      setVerifyError("Invalid OTP. (Hint: use 123456 in this demo.)");
+    if (otp.length < 6) {
+      setVerifyError("Please enter the 6-digit code from your email.");
       return;
     }
     setVerifying(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setVerifying(false);
-    setStep("complete");
+    try {
+      const res = await fetch("/api/otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ businessId: token, otp }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setVerifyError(data.error ?? "Verification failed. Please try again.");
+        return;
+      }
+      setStep("complete");
+    } catch {
+      setVerifyError("Network error. Please check your connection and try again.");
+    } finally {
+      setVerifying(false);
+    }
   }
 
   // ── Complete profile ────────────────────────────────────────────────────
@@ -216,7 +261,7 @@ export default function OnboardPage() {
     }
 
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 400));
 
     const updated: BusinessRecord = {
       ...business,
@@ -317,12 +362,12 @@ export default function OnboardPage() {
           <div className="flex items-center gap-2 mb-1">
             <Phone className="w-5 h-5 text-brand-600" />
             <h2 className="text-lg font-bold text-gray-900">
-              Verify Your Phone
+              Verify Your Identity
             </h2>
           </div>
           <p className="text-sm text-gray-500 mb-6">
-            Enter the phone number registered for this business to claim your
-            listing.
+            Enter the phone number registered for this business. We&apos;ll
+            send a verification code to the owner&apos;s email address.
           </p>
 
           {verifyError && (
@@ -358,22 +403,29 @@ export default function OnboardPage() {
                 ) : (
                   <ArrowRight className="w-4 h-4" />
                 )}
-                {sending ? "Sending OTP…" : "Send OTP"}
+                {sending ? "Sending Code…" : "Send Verification Code"}
               </button>
             </>
           ) : (
             <>
-              <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 mb-4 text-sm">
-                <p className="font-semibold text-green-800">OTP Sent!</p>
-                <p className="text-green-700 text-xs mt-0.5">
-                  A 6-digit code has been sent to +91 {phone}.{" "}
-                  <span className="text-gray-400">(Demo: use 123456)</span>
+              <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 mb-4">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <Mail className="w-4 h-4 text-green-700 shrink-0" />
+                  <p className="font-semibold text-green-800 text-sm">Code Sent!</p>
+                </div>
+                <p className="text-green-700 text-xs mt-0.5 pl-6">
+                  A 6-digit code was sent to{" "}
+                  <strong>
+                    {business?.email ? maskEmail(business.email) : "your registered email"}
+                  </strong>
+                  . Check your inbox.
                 </p>
               </div>
 
-              <label className={LABEL}>Enter OTP</label>
+              <label className={LABEL}>Enter Verification Code</label>
               <input
                 type="text"
+                inputMode="numeric"
                 value={otp}
                 onChange={(e) =>
                   setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
@@ -400,7 +452,7 @@ export default function OnboardPage() {
                 onClick={() => { setOtpSent(false); setOtp(""); setVerifyError(""); }}
                 className="w-full text-sm text-gray-400 hover:text-gray-600 text-center"
               >
-                Change number
+                Change number / resend code
               </button>
             </>
           )}
@@ -506,7 +558,7 @@ export default function OnboardPage() {
                 </div>
               )}
 
-              {/* Email (optional, can add now) */}
+              {/* Email */}
               <div>
                 <label className={LABEL}>
                   <Mail className="w-3.5 h-3.5 inline mr-1" />

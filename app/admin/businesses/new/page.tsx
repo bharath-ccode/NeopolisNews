@@ -166,6 +166,7 @@ export default function AdminNewBusinessPage() {
   function validateStep2() {
     if (!address.trim()) return "Please enter the address.";
     if (ownerPhone.length < 10) return "Please enter a valid 10-digit owner / manager number.";
+    if (!email.trim() || !email.includes("@")) return "Please enter a valid email address — the OTP will be sent here.";
     return "";
   }
 
@@ -434,8 +435,8 @@ export default function AdminNewBusinessPage() {
               <div>
                 <label className={LABEL}>
                   <Mail className="w-3.5 h-3.5 inline mr-1" />
-                  Email Address{" "}
-                  <span className="font-normal text-gray-400">(optional)</span>
+                  Owner Email Address{" "}
+                  <span className="font-normal text-gray-400">— OTP will be sent here</span>
                 </label>
                 <input
                   type="email"
