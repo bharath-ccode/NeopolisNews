@@ -15,7 +15,7 @@ import { createClient } from "@/lib/supabase/client";
 interface AdminAuthContextValue {
   admin: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<"ok" | "not_admin" | "invalid_credentials" | "error">;
+  login: (email: string, password: string) => Promise<"ok" | "not_admin" | "invalid_credentials" | "timeout" | "error">;
   logout: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<"ok" | "wrong_current" | "error">;
 }
@@ -113,7 +113,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     async (
       email: string,
       password: string
-    ): Promise<"ok" | "not_admin" | "invalid_credentials" | "error"> => {
+    ): Promise<"ok" | "not_admin" | "invalid_credentials" | "timeout" | "error"> => {
       try {
         const supabase = createClient();
         const { data, error } = await withTimeout(
@@ -145,7 +145,8 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         return "ok";
-      } catch {
+      } catch (e) {
+        if (e instanceof Error && e.message === "timeout") return "timeout";
         return "error";
       }
     },
