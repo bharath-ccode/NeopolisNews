@@ -122,6 +122,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         );
 
         if (error) {
+          console.error("[AdminAuth] signInWithPassword error:", error.status, error.message, error);
           const msg = error.message.toLowerCase();
           if (
             msg.includes("invalid") ||
@@ -135,6 +136,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
           return "error";
         }
 
+        console.log("[AdminAuth] signInWithPassword success, user:", data.user?.email);
         if (!data.user) return "error";
 
         // Reject if this account belongs to a builder
