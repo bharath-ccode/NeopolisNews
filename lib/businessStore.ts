@@ -21,6 +21,10 @@ export interface BusinessRecord {
   email?: string;        // optional, can be added by owner later
   status: BusinessStatus;
   createdAt: string;
+  // Admin-managed
+  verified?: boolean;    // skips OTP during onboarding; shows verified badge
+  logo?: string;         // public URL
+  pictures?: string[];   // up to 3 public URLs
   // Owner-completed
   contactPhone?: string; // customer-facing number displayed on the listing
   description?: string;

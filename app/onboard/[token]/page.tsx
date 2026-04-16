@@ -168,6 +168,10 @@ export default function OnboardPage() {
     if (record.email) setEmail(record.email);
     if (record.description) setDescription(record.description);
     if (record.timings) setTimings(record.timings);
+    // Skip OTP for admin-verified businesses
+    if (record.verified && record.status !== "active") {
+      setStep("complete");
+    }
   }, [token]);
 
   // ── OTP: send via Resend ────────────────────────────────────────────────

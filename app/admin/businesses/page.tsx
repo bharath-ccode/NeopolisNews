@@ -11,6 +11,7 @@ import {
   ExternalLink,
   Search,
   Users,
+  Pencil,
 } from "lucide-react";
 import { getAllBusinesses, type BusinessRecord } from "@/lib/businessStore";
 
@@ -175,28 +176,36 @@ export default function AdminBusinessesPage() {
                           day: "numeric", month: "short", year: "numeric",
                         })}
                       </p>
-                      {b.status !== "active" && (
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => copyLink(b.id)}
-                            className="flex items-center gap-1.5 text-xs border border-gray-200 text-gray-600 hover:border-brand-300 hover:text-brand-600 px-2.5 py-1.5 rounded-lg transition-colors"
-                          >
-                            {copiedId === b.id ? (
-                              <><CheckCircle className="w-3.5 h-3.5 text-green-500" /> Copied!</>
-                            ) : (
-                              <><Copy className="w-3.5 h-3.5" /> Copy Invite Link</>
-                            )}
-                          </button>
-                          <a
-                            href={getInviteLink(b.id)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-xs border border-gray-200 text-gray-500 hover:border-brand-300 hover:text-brand-600 px-2 py-1.5 rounded-lg transition-colors"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
-                        </div>
-                      )}
+                      <div className="flex gap-2">
+                        <Link
+                          href={`/admin/businesses/${b.id}`}
+                          className="flex items-center gap-1.5 text-xs border border-gray-200 text-gray-600 hover:border-brand-300 hover:text-brand-600 px-2.5 py-1.5 rounded-lg transition-colors"
+                        >
+                          <Pencil className="w-3.5 h-3.5" /> Edit
+                        </Link>
+                        {b.status !== "active" && (
+                          <>
+                            <button
+                              onClick={() => copyLink(b.id)}
+                              className="flex items-center gap-1.5 text-xs border border-gray-200 text-gray-600 hover:border-brand-300 hover:text-brand-600 px-2.5 py-1.5 rounded-lg transition-colors"
+                            >
+                              {copiedId === b.id ? (
+                                <><CheckCircle className="w-3.5 h-3.5 text-green-500" /> Copied!</>
+                              ) : (
+                                <><Copy className="w-3.5 h-3.5" /> Copy Invite Link</>
+                              )}
+                            </button>
+                            <a
+                              href={getInviteLink(b.id)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-xs border border-gray-200 text-gray-500 hover:border-brand-300 hover:text-brand-600 px-2 py-1.5 rounded-lg transition-colors"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
