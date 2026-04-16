@@ -22,6 +22,16 @@ interface AdminAuthContextValue {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+/** Race a promise against a timeout; throws on timeout. */
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("timeout")), ms)
+    ),
+  ]);
+}
+
 /** Returns true if this Supabase user is a builder (has a row in builders table). */
 async function isBuilder(email: string | undefined): Promise<boolean> {
   if (!email) return false;
@@ -47,7 +57,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     async function init() {
       try {
         const supabase = createClient();
-        const { data } = await supabase.auth.getUser();
+        const { data } = await withTimeout(supabase.auth.getUser(), 8000);
         if (!mounted) return;
         const user = data.user ?? null;
         if (user && await isBuilder(user.email)) {
@@ -104,35 +114,40 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       email: string,
       password: string
     ): Promise<"ok" | "not_admin" | "invalid_credentials" | "error"> => {
-      const supabase = createClient();
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      try {
+        const supabase = createClient();
+        const { data, error } = await withTimeout(
+          supabase.auth.signInWithPassword({ email, password }),
+          10000
+        );
 
-      if (error) {
-        const msg = error.message.toLowerCase();
-        if (
-          msg.includes("invalid") ||
-          msg.includes("wrong") ||
-          msg.includes("not found") ||
-          msg.includes("credentials") ||
-          error.status === 400 ||
-          error.status === 401
-        )
-          return "invalid_credentials";
+        if (error) {
+          const msg = error.message.toLowerCase();
+          if (
+            msg.includes("invalid") ||
+            msg.includes("wrong") ||
+            msg.includes("not found") ||
+            msg.includes("credentials") ||
+            error.status === 400 ||
+            error.status === 401
+          )
+            return "invalid_credentials";
+          return "error";
+        }
+
+        if (!data.user) return "error";
+
+        // Reject if this account belongs to a builder
+        const builderCheck = await withTimeout(isBuilder(data.user.email), 5000).catch(() => false);
+        if (builderCheck) {
+          await supabase.auth.signOut();
+          return "not_admin";
+        }
+
+        return "ok";
+      } catch {
         return "error";
       }
-
-      if (!data.user) return "error";
-
-      // Reject if this account belongs to a builder
-      if (await isBuilder(data.user.email)) {
-        await supabase.auth.signOut();
-        return "not_admin";
-      }
-
-      return "ok";
     },
     []
   );
