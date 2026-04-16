@@ -58,7 +58,6 @@ export async function generateMetadata(
     .from("businesses")
     .select("name, industry, description, address")
     .eq("id", params.id)
-    .eq("status", "active")
     .single();
 
   if (!data) return { title: "Business Not Found" };
@@ -93,7 +92,6 @@ export default async function BusinessProfilePage({
     .from("businesses")
     .select("*")
     .eq("id", params.id)
-    .eq("status", "active")
     .single<BusinessRow>();
 
   if (!b) notFound();
