@@ -78,6 +78,29 @@ function TimingsEditor({ timings, onChange }: { timings: DayTiming[]; onChange: 
   );
 }
 
+function loadFields(
+  data: Business,
+  setters: {
+    setContactPhone: (v: string) => void;
+    setDescription: (v: string) => void;
+    setTimings: (v: DayTiming[]) => void;
+    setInstagram: (v: string) => void;
+    setFacebook: (v: string) => void;
+    setYoutube: (v: string) => void;
+    setLogo: (v: string | null) => void;
+    setPictures: (v: string[]) => void;
+  }
+) {
+  setters.setContactPhone(data.contact_phone?.replace(/^\+91/, "") ?? "");
+  setters.setDescription(data.description ?? "");
+  setters.setTimings(data.timings?.length ? data.timings : []);
+  setters.setInstagram(data.social_links?.instagram ?? "");
+  setters.setFacebook(data.social_links?.facebook ?? "");
+  setters.setYoutube(data.social_links?.youtube ?? "");
+  setters.setLogo(data.logo);
+  setters.setPictures(data.pictures ?? []);
+}
+
 export default function MyBusinessPage() {
   const router = useRouter();
   const supabase = createClient();
@@ -86,6 +109,7 @@ export default function MyBusinessPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [allBiz, setAllBiz] = useState<Business[]>([]);
   const [biz, setBiz] = useState<Business | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
@@ -104,6 +128,15 @@ export default function MyBusinessPage() {
   const logoRef = useRef<HTMLInputElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
 
+  const fieldSetters = { setContactPhone, setDescription, setTimings, setInstagram, setFacebook, setYoutube, setLogo, setPictures };
+
+  function switchBusiness(b: Business) {
+    setBiz(b);
+    setSaved(false);
+    setError("");
+    loadFields(b, fieldSetters);
+  }
+
   useEffect(() => {
     async function init() {
       const { data: { session } } = await supabase.auth.getSession();
@@ -113,28 +146,23 @@ export default function MyBusinessPage() {
       }
       setToken(session.access_token);
 
-      // Find business by owner_email (works with anon client + RLS using(true))
+      // Fetch all businesses for this owner (supports multi-business owners)
       const { data, error: bizErr } = await supabase
         .from("businesses")
         .select("*")
         .eq("owner_email", session.user.email)
-        .single<Business>();
+        .order("completed_at", { ascending: true });
 
-      if (bizErr || !data) {
+      if (bizErr || !data?.length) {
         setError("No business found for your account. Contact support if this is unexpected.");
         setLoading(false);
         return;
       }
 
-      setBiz(data);
-      setContactPhone(data.contact_phone?.replace(/^\+91/, "") ?? "");
-      setDescription(data.description ?? "");
-      setTimings(data.timings?.length ? data.timings : []);
-      setInstagram(data.social_links?.instagram ?? "");
-      setFacebook(data.social_links?.facebook ?? "");
-      setYoutube(data.social_links?.youtube ?? "");
-      setLogo(data.logo);
-      setPictures(data.pictures ?? []);
+      setAllBiz(data as Business[]);
+      const first = data[0] as Business;
+      setBiz(first);
+      loadFields(first, fieldSetters);
       setLoading(false);
     }
     init();
@@ -152,6 +180,7 @@ export default function MyBusinessPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
+          businessId: biz.id,
           contactPhone: contactPhone ? `+91${contactPhone}` : null,
           description: description.trim() || null,
           timings,
@@ -188,7 +217,7 @@ export default function MyBusinessPage() {
     const url = await uploadFile(file);
     if (url) {
       setLogo(url);
-      await createClient()
+      await supabase
         .from("businesses")
         .update({ logo: url })
         .eq("id", biz.id);
@@ -205,7 +234,7 @@ export default function MyBusinessPage() {
     if (url) {
       const updated = [...pictures, url];
       setPictures(updated);
-      await createClient()
+      await supabase
         .from("businesses")
         .update({ pictures: updated })
         .eq("id", biz.id);
@@ -218,7 +247,7 @@ export default function MyBusinessPage() {
     if (!biz) return;
     const updated = pictures.filter((_, i) => i !== idx);
     setPictures(updated);
-    await createClient()
+    await supabase
       .from("businesses")
       .update({ pictures: updated })
       .eq("id", biz.id);
@@ -272,6 +301,29 @@ export default function MyBusinessPage() {
       </header>
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+
+        {/* Business switcher — shown only when owner has multiple listings */}
+        {allBiz.length > 1 && (
+          <div className="card p-4">
+            <p className="text-xs font-semibold text-gray-500 mb-2">Your Businesses</p>
+            <div className="flex flex-wrap gap-2">
+              {allBiz.map((b) => (
+                <button
+                  key={b.id}
+                  onClick={() => switchBusiness(b)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-colors ${
+                    biz?.id === b.id
+                      ? "bg-brand-600 border-brand-600 text-white"
+                      : "bg-white border-gray-200 text-gray-700 hover:border-brand-300 hover:text-brand-700"
+                  }`}
+                >
+                  {b.verified && <ShieldCheck className="w-3.5 h-3.5" />}
+                  {b.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Status banner */}
         {biz?.verified && (

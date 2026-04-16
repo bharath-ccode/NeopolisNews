@@ -74,6 +74,7 @@ export default function ClaimBusinessPage({
   // Step 1 — identity
   const [identifier, setIdentifier] = useState("");
   const [maskedEmail, setMaskedEmail] = useState("");
+  const [userExists, setUserExists] = useState(false); // returning owner with existing account
 
   // Step 2 — otp + profile
   const [otp, setOtp] = useState("");
@@ -99,6 +100,7 @@ export default function ClaimBusinessPage({
       const data = await res.json();
       if (!res.ok) return setError(data.error ?? "Verification failed.");
       setMaskedEmail(data.maskedEmail ?? "");
+      setUserExists(data.userExists ?? false);
       setStep("profile");
     } catch {
       setError("Network error. Please try again.");
@@ -109,8 +111,10 @@ export default function ClaimBusinessPage({
 
   async function submitProfile() {
     if (otp.length < 6) return setError("Please enter the 6-digit code.");
-    if (password.length < 8) return setError("Password must be at least 8 characters.");
-    if (password !== confirmPassword) return setError("Passwords do not match.");
+    if (!userExists) {
+      if (password.length < 8) return setError("Password must be at least 8 characters.");
+      if (password !== confirmPassword) return setError("Passwords do not match.");
+    }
     setError(""); setLoading(true);
     try {
       const res = await fetch(`/api/businesses/${id}/complete`, {
@@ -118,7 +122,7 @@ export default function ClaimBusinessPage({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           otp,
-          password,
+          password: userExists ? undefined : password,
           contactPhone: contactPhone ? `+91${contactPhone}` : null,
           description: description.trim() || null,
           timings,
@@ -251,31 +255,44 @@ export default function ClaimBusinessPage({
 
             <hr className="my-5 border-gray-100" />
 
-            {/* Account password */}
-            <div className="bg-brand-50 border border-brand-100 rounded-xl p-4 mb-5">
-              <p className="text-sm font-bold text-brand-900 mb-1 flex items-center gap-1.5">
-                <Lock className="w-4 h-4" /> Create Your Account Password
-              </p>
-              <p className="text-xs text-brand-700 mb-3">
-                You&apos;ll use this to log in and manage your listing at any time.
-              </p>
-              <div className="space-y-2">
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Password (min. 8 characters)"
-                  className={INPUT}
-                />
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm password"
-                  className={INPUT}
-                />
+            {/* Account — new vs returning */}
+            {userExists ? (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-5 flex items-start gap-3">
+                <Lock className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-bold text-blue-900">You already have an account</p>
+                  <p className="text-xs text-blue-700 mt-0.5">
+                    This business will be linked to your existing NeopolisNews account. After publishing,
+                    sign in to <strong>My Business</strong> to manage all your listings together.
+                  </p>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="bg-brand-50 border border-brand-100 rounded-xl p-4 mb-5">
+                <p className="text-sm font-bold text-brand-900 mb-1 flex items-center gap-1.5">
+                  <Lock className="w-4 h-4" /> Create Your Account Password
+                </p>
+                <p className="text-xs text-brand-700 mb-3">
+                  You&apos;ll use this to log in and manage your listing at any time.
+                </p>
+                <div className="space-y-2">
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Password (min. 8 characters)"
+                    className={INPUT}
+                  />
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm password"
+                    className={INPUT}
+                  />
+                </div>
+              </div>
+            )}
 
             <p className="text-sm font-bold text-gray-900 mb-4">Complete Your Profile</p>
 
@@ -366,17 +383,19 @@ export default function ClaimBusinessPage({
             </div>
             <h1 className="text-2xl font-extrabold text-gray-900 mb-2">You&apos;re Live!</h1>
             <p className="text-gray-500 text-sm mb-6">
-              Your business profile is now published on NeopolisNews. Share it with your customers.
+              {userExists
+                ? "This business has been added to your account. Sign in to manage all your listings."
+                : "Your business profile is now published on NeopolisNews. Share it with your customers."}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link href={profileUrl} className="btn-primary inline-flex justify-center">
-                <ExternalLink className="w-4 h-4" /> View Your Profile
-              </Link>
               <Link
-                href="/my-business"
-                className="inline-flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
+                href="/my-business/login"
+                className="btn-primary inline-flex justify-center"
               >
-                <Lock className="w-4 h-4" /> Go to My Business
+                <Lock className="w-4 h-4" /> {userExists ? "Sign In to My Business" : "Go to My Business"}
+              </Link>
+              <Link href={profileUrl} className="inline-flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
+                <ExternalLink className="w-4 h-4" /> View Profile
               </Link>
             </div>
           </div>

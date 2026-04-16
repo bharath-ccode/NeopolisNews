@@ -17,19 +17,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid or expired session." }, { status: 401 });
   }
 
-  // Find their business by owner_email or owner_id
+  const body = await req.json().catch(() => null);
+  const { businessId, contactPhone, description, timings, socialLinks } = body ?? {};
+
+  if (!businessId) {
+    return NextResponse.json({ error: "businessId is required." }, { status: 400 });
+  }
+
+  // Verify this business belongs to the authenticated user
   const { data: biz, error: bizError } = await supabase
     .from("businesses")
     .select("id, owner_email, owner_id")
+    .eq("id", businessId)
     .or(`owner_email.eq.${user.email},owner_id.eq.${user.id}`)
     .single();
 
   if (bizError || !biz) {
-    return NextResponse.json({ error: "No business found for your account." }, { status: 404 });
+    return NextResponse.json({ error: "Business not found or access denied." }, { status: 404 });
   }
-
-  const body = await req.json().catch(() => null);
-  const { contactPhone, description, timings, socialLinks } = body ?? {};
 
   const { error: updateError } = await supabase
     .from("businesses")

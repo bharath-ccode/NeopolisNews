@@ -97,7 +97,24 @@ export async function POST(
     return NextResponse.json({ error: "Failed to send verification email." }, { status: 502 });
   }
 
-  const res = NextResponse.json({ ok: true, maskedEmail: contactEmail.replace(/(?<=.{2}).(?=.*@)/g, "*") });
+  // Check if this owner already has a NeopolisNews account
+  // (they previously claimed another business — owner_id will be set on that row)
+  const { data: existingClaimed } = await supabase
+    .from("businesses")
+    .select("owner_id")
+    .eq("owner_email", contactEmail)
+    .not("owner_id", "is", null)
+    .neq("id", id)
+    .limit(1)
+    .maybeSingle();
+
+  const userExists = !!existingClaimed?.owner_id;
+
+  const res = NextResponse.json({
+    ok: true,
+    maskedEmail: contactEmail.replace(/(?<=.{2}).(?=.*@)/g, "*"),
+    userExists,
+  });
   res.cookies.set("otp_pending", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

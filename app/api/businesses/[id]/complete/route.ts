@@ -59,31 +59,34 @@ export async function POST(
     .eq("id", id)
     .single();
 
-  // Create Supabase Auth account if password was provided
+  // Create or link a Supabase Auth account
   let ownerId: string | null = null;
-  if (password && biz?.owner_email) {
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: biz.owner_email,
-      password,
-      email_confirm: true, // skip confirmation email — owner already verified via OTP
-    });
+  if (biz?.owner_email) {
+    if (password) {
+      // New user — create account (OTP already verified ownership)
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: biz.owner_email,
+        password,
+        email_confirm: true,
+      });
 
-    if (authError) {
-      const msg = authError.message.toLowerCase();
-      if (msg.includes("already") || msg.includes("exists")) {
-        return NextResponse.json(
-          {
-            error:
-              "An account with this email already exists. Please sign in at /my-business to manage your listing.",
-            code: "account_exists",
-          },
-          { status: 409 }
-        );
+      if (authError) {
+        return NextResponse.json({ error: "Failed to create account. Please try again." }, { status: 500 });
       }
-      return NextResponse.json({ error: "Failed to create account. Please try again." }, { status: 500 });
-    }
+      ownerId = authData.user?.id ?? null;
+    } else {
+      // Existing user — find their owner_id from another business they already claimed
+      const { data: sibling } = await supabase
+        .from("businesses")
+        .select("owner_id")
+        .eq("owner_email", biz.owner_email)
+        .not("owner_id", "is", null)
+        .neq("id", id)
+        .limit(1)
+        .maybeSingle();
 
-    ownerId = authData.user?.id ?? null;
+      ownerId = sibling?.owner_id ?? null;
+    }
   }
 
   // Update business record
