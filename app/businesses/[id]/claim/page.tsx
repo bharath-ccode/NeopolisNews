@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   Building2, ArrowLeft, ArrowRight, CheckCircle,
-  Mail, Phone, Loader2, ShieldCheck, ExternalLink,
+  Mail, Phone, Loader2, ShieldCheck, ExternalLink, Lock,
 } from "lucide-react";
 import { DEFAULT_TIMINGS, type DayTiming } from "@/lib/businessStore";
 
@@ -77,6 +77,8 @@ export default function ClaimBusinessPage({
 
   // Step 2 — otp + profile
   const [otp, setOtp] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [description, setDescription] = useState("");
   const [timings, setTimings] = useState<DayTiming[]>(DEFAULT_TIMINGS.map((t) => ({ ...t })));
@@ -107,6 +109,8 @@ export default function ClaimBusinessPage({
 
   async function submitProfile() {
     if (otp.length < 6) return setError("Please enter the 6-digit code.");
+    if (password.length < 8) return setError("Password must be at least 8 characters.");
+    if (password !== confirmPassword) return setError("Passwords do not match.");
     setError(""); setLoading(true);
     try {
       const res = await fetch(`/api/businesses/${id}/complete`, {
@@ -114,6 +118,7 @@ export default function ClaimBusinessPage({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           otp,
+          password,
           contactPhone: contactPhone ? `+91${contactPhone}` : null,
           description: description.trim() || null,
           timings,
@@ -245,6 +250,33 @@ export default function ClaimBusinessPage({
             </div>
 
             <hr className="my-5 border-gray-100" />
+
+            {/* Account password */}
+            <div className="bg-brand-50 border border-brand-100 rounded-xl p-4 mb-5">
+              <p className="text-sm font-bold text-brand-900 mb-1 flex items-center gap-1.5">
+                <Lock className="w-4 h-4" /> Create Your Account Password
+              </p>
+              <p className="text-xs text-brand-700 mb-3">
+                You&apos;ll use this to log in and manage your listing at any time.
+              </p>
+              <div className="space-y-2">
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password (min. 8 characters)"
+                  className={INPUT}
+                />
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm password"
+                  className={INPUT}
+                />
+              </div>
+            </div>
+
             <p className="text-sm font-bold text-gray-900 mb-4">Complete Your Profile</p>
 
             <div className="space-y-4">
@@ -336,12 +368,17 @@ export default function ClaimBusinessPage({
             <p className="text-gray-500 text-sm mb-6">
               Your business profile is now published on NeopolisNews. Share it with your customers.
             </p>
-            <Link
-              href={profileUrl}
-              className="btn-primary inline-flex justify-center"
-            >
-              <ExternalLink className="w-4 h-4" /> View Your Profile
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link href={profileUrl} className="btn-primary inline-flex justify-center">
+                <ExternalLink className="w-4 h-4" /> View Your Profile
+              </Link>
+              <Link
+                href="/my-business"
+                className="inline-flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
+              >
+                <Lock className="w-4 h-4" /> Go to My Business
+              </Link>
+            </div>
           </div>
         )}
       </div>

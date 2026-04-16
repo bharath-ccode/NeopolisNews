@@ -1,0 +1,437 @@
+"use client";
+
+import { useEffect, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  Building2, Phone, Instagram, Facebook, Youtube,
+  Clock, Loader2, CheckCircle, LogOut, ExternalLink,
+  Image as ImageIcon, Upload, X, ShieldCheck,
+} from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import type { DayTiming } from "@/lib/businessStore";
+
+interface SocialLinks { instagram?: string; facebook?: string; youtube?: string; }
+
+interface Business {
+  id: string;
+  name: string;
+  industry: string;
+  address: string;
+  status: string;
+  verified: boolean;
+  logo: string | null;
+  pictures: string[];
+  social_links: SocialLinks;
+  contact_phone: string | null;
+  description: string | null;
+  timings: DayTiming[];
+}
+
+const INPUT = "w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 text-gray-800";
+const LABEL = "block text-xs font-semibold text-gray-500 mb-1.5";
+
+function TimingsEditor({ timings, onChange }: { timings: DayTiming[]; onChange: (t: DayTiming[]) => void }) {
+  function update(idx: number, patch: Partial<DayTiming>) {
+    onChange(timings.map((t, i) => (i === idx ? { ...t, ...patch } : t)));
+  }
+  return (
+    <div className="overflow-x-auto rounded-xl border border-gray-200">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="bg-gray-50 border-b border-gray-100">
+            <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 w-24">Day</th>
+            <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 w-20">Status</th>
+            <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500">Opens</th>
+            <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500">Closes</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+          {timings.map((t, idx) => (
+            <tr key={t.day} className={t.closed ? "bg-gray-50/50" : ""}>
+              <td className="px-4 py-2.5 font-medium text-gray-700 text-sm">{t.day.slice(0, 3)}</td>
+              <td className="px-4 py-2.5">
+                <button type="button" onClick={() => update(idx, { closed: !t.closed })}
+                  className={`px-2.5 py-1 rounded-full text-xs font-bold border transition-colors ${
+                    t.closed ? "bg-gray-100 border-gray-200 text-gray-400" : "bg-green-50 border-green-200 text-green-700"
+                  }`}>
+                  {t.closed ? "Closed" : "Open"}
+                </button>
+              </td>
+              <td className="px-4 py-2.5">
+                {t.closed ? <span className="text-gray-300 text-xs">—</span> : (
+                  <input type="time" value={t.open} onChange={(e) => update(idx, { open: e.target.value })}
+                    className="border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                )}
+              </td>
+              <td className="px-4 py-2.5">
+                {t.closed ? <span className="text-gray-300 text-xs">—</span> : (
+                  <input type="time" value={t.close} onChange={(e) => update(idx, { close: e.target.value })}
+                    className="border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export default function MyBusinessPage() {
+  const router = useRouter();
+  const supabase = createClient();
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+  const [biz, setBiz] = useState<Business | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+
+  // Editable fields
+  const [contactPhone, setContactPhone] = useState("");
+  const [description, setDescription] = useState("");
+  const [timings, setTimings] = useState<DayTiming[]>([]);
+  const [instagram, setInstagram] = useState("");
+  const [facebook, setFacebook] = useState("");
+  const [youtube, setYoutube] = useState("");
+
+  // Media
+  const [logo, setLogo] = useState<string | null>(null);
+  const [pictures, setPictures] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const logoRef = useRef<HTMLInputElement>(null);
+  const photoRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    async function init() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.replace("/my-business/login");
+        return;
+      }
+      setToken(session.access_token);
+
+      // Find business by owner_email (works with anon client + RLS using(true))
+      const { data, error: bizErr } = await supabase
+        .from("businesses")
+        .select("*")
+        .eq("owner_email", session.user.email)
+        .single<Business>();
+
+      if (bizErr || !data) {
+        setError("No business found for your account. Contact support if this is unexpected.");
+        setLoading(false);
+        return;
+      }
+
+      setBiz(data);
+      setContactPhone(data.contact_phone?.replace(/^\+91/, "") ?? "");
+      setDescription(data.description ?? "");
+      setTimings(data.timings?.length ? data.timings : []);
+      setInstagram(data.social_links?.instagram ?? "");
+      setFacebook(data.social_links?.facebook ?? "");
+      setYoutube(data.social_links?.youtube ?? "");
+      setLogo(data.logo);
+      setPictures(data.pictures ?? []);
+      setLoading(false);
+    }
+    init();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handleSave() {
+    if (!token) return;
+    setSaving(true); setError(""); setSaved(false);
+    try {
+      const res = await fetch("/api/my-business/update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          contactPhone: contactPhone ? `+91${contactPhone}` : null,
+          description: description.trim() || null,
+          timings,
+          socialLinks: {
+            instagram: instagram.trim() || undefined,
+            facebook: facebook.trim() || undefined,
+            youtube: youtube.trim() || undefined,
+          },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error ?? "Save failed."); return; }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function uploadFile(file: File): Promise<string | null> {
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch("/api/upload", { method: "POST", body: form });
+    const data = await res.json();
+    return res.ok ? data.url : null;
+  }
+
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !biz) return;
+    setUploading(true);
+    const url = await uploadFile(file);
+    if (url) {
+      setLogo(url);
+      await createClient()
+        .from("businesses")
+        .update({ logo: url })
+        .eq("id", biz.id);
+    }
+    setUploading(false);
+    if (logoRef.current) logoRef.current.value = "";
+  }
+
+  async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !biz || pictures.length >= 3) return;
+    setUploading(true);
+    const url = await uploadFile(file);
+    if (url) {
+      const updated = [...pictures, url];
+      setPictures(updated);
+      await createClient()
+        .from("businesses")
+        .update({ pictures: updated })
+        .eq("id", biz.id);
+    }
+    setUploading(false);
+    if (photoRef.current) photoRef.current.value = "";
+  }
+
+  async function removePhoto(idx: number) {
+    if (!biz) return;
+    const updated = pictures.filter((_, i) => i !== idx);
+    setPictures(updated);
+    await createClient()
+      .from("businesses")
+      .update({ pictures: updated })
+      .eq("id", biz.id);
+  }
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.push("/my-business/login");
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="w-7 h-7 animate-spin text-brand-600" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-100 sticky top-0 z-10">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
+              <Building2 className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-400 font-medium">My Business</p>
+              <p className="text-sm font-bold text-gray-900 leading-none">{biz?.name ?? "—"}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {biz && (
+              <Link
+                href={`/businesses/${biz.id}`}
+                target="_blank"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 hover:text-brand-700 px-3 py-1.5 rounded-lg hover:bg-brand-50 transition-colors"
+              >
+                <ExternalLink className="w-3.5 h-3.5" /> View Profile
+              </Link>
+            )}
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5" /> Sign Out
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+
+        {/* Status banner */}
+        {biz?.verified && (
+          <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-800">
+            <ShieldCheck className="w-4 h-4 text-green-600 shrink-0" />
+            <span><strong>Verified business</strong> — your listing is live and verified by NeopolisNews.</span>
+          </div>
+        )}
+
+        {error && (
+          <div className="px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl">
+            {error}
+          </div>
+        )}
+
+        {/* ── Logo & Photos ─────────────────────────────────────────────────── */}
+        <div className="card p-6">
+          <h2 className="font-bold text-gray-900 text-base mb-4 flex items-center gap-2">
+            <ImageIcon className="w-4 h-4 text-brand-600" /> Logo &amp; Photos
+          </h2>
+
+          {/* Logo */}
+          <div className="mb-5">
+            <p className={LABEL}>Logo</p>
+            <div className="flex items-center gap-4">
+              <div className="w-20 h-20 rounded-xl bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center shrink-0">
+                {logo ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={logo} alt="Logo" className="w-full h-full object-cover" />
+                ) : (
+                  <Building2 className="w-8 h-8 text-gray-300" />
+                )}
+              </div>
+              <div>
+                <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                <button
+                  onClick={() => logoRef.current?.click()}
+                  disabled={uploading}
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-brand-600 hover:text-brand-700 border border-brand-200 hover:bg-brand-50 px-4 py-2 rounded-lg transition-colors"
+                >
+                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  {logo ? "Replace" : "Upload"} Logo
+                </button>
+                <p className="text-xs text-gray-400 mt-1">JPG, PNG, WebP · max 5 MB</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Photos */}
+          <div>
+            <p className={LABEL}>Photos <span className="font-normal text-gray-400">({pictures.length}/3)</span></p>
+            <div className="flex flex-wrap gap-3 mb-3">
+              {pictures.map((url, i) => (
+                <div key={i} className="relative w-28 h-20 rounded-xl overflow-hidden border border-gray-200 group">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
+                  <button
+                    onClick={() => removePhoto(i)}
+                    className="absolute top-1 right-1 w-6 h-6 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+              {pictures.length < 3 && (
+                <button
+                  onClick={() => photoRef.current?.click()}
+                  disabled={uploading}
+                  className="w-28 h-20 rounded-xl border-2 border-dashed border-gray-200 hover:border-brand-300 flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-brand-600 transition-colors"
+                >
+                  {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
+                  <span className="text-xs">Add photo</span>
+                </button>
+              )}
+            </div>
+            <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+          </div>
+        </div>
+
+        {/* ── Contact & Social ──────────────────────────────────────────────── */}
+        <div className="card p-6">
+          <h2 className="font-bold text-gray-900 text-base mb-4 flex items-center gap-2">
+            <Phone className="w-4 h-4 text-brand-600" /> Contact &amp; Social
+          </h2>
+          <div className="space-y-4">
+            <div>
+              <label className={LABEL}><Phone className="w-3.5 h-3.5 inline mr-1" />Customer Phone Number</label>
+              <div className="flex">
+                <span className="flex items-center px-3 border border-r-0 border-gray-200 rounded-l-lg bg-gray-50 text-sm text-gray-500">+91</span>
+                <input
+                  type="tel"
+                  value={contactPhone}
+                  onChange={(e) => setContactPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  placeholder="9900000000"
+                  className="flex-1 px-3 py-2.5 border border-gray-200 rounded-r-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                />
+              </div>
+            </div>
+            <div>
+              <label className={LABEL}><Instagram className="w-3.5 h-3.5 inline mr-1" />Instagram URL</label>
+              <input type="url" value={instagram} onChange={(e) => setInstagram(e.target.value)}
+                placeholder="https://instagram.com/yourbusiness" className={INPUT} />
+            </div>
+            <div>
+              <label className={LABEL}><Facebook className="w-3.5 h-3.5 inline mr-1" />Facebook URL</label>
+              <input type="url" value={facebook} onChange={(e) => setFacebook(e.target.value)}
+                placeholder="https://facebook.com/yourbusiness" className={INPUT} />
+            </div>
+            <div>
+              <label className={LABEL}><Youtube className="w-3.5 h-3.5 inline mr-1" />YouTube URL</label>
+              <input type="url" value={youtube} onChange={(e) => setYoutube(e.target.value)}
+                placeholder="https://youtube.com/@yourchannel" className={INPUT} />
+            </div>
+          </div>
+        </div>
+
+        {/* ── About ─────────────────────────────────────────────────────────── */}
+        <div className="card p-6">
+          <h2 className="font-bold text-gray-900 text-base mb-4">About Your Business</h2>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Tell customers what makes your place special…"
+            rows={4}
+            maxLength={300}
+            className={INPUT + " resize-none"}
+          />
+          <p className="text-xs text-gray-400 mt-1 text-right">{description.length}/300</p>
+        </div>
+
+        {/* ── Hours ─────────────────────────────────────────────────────────── */}
+        {timings.length > 0 && (
+          <div className="card p-6">
+            <h2 className="font-bold text-gray-900 text-base mb-4 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-brand-600" /> Business Hours
+            </h2>
+            <TimingsEditor timings={timings} onChange={setTimings} />
+          </div>
+        )}
+
+        {/* ── Save ──────────────────────────────────────────────────────────── */}
+        <div className="flex items-center gap-3 pb-8">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="btn-primary"
+          >
+            {saving ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
+            ) : saved ? (
+              <><CheckCircle className="w-4 h-4" /> Saved!</>
+            ) : (
+              "Save Changes"
+            )}
+          </button>
+          {saved && (
+            <span className="text-sm text-green-600 font-medium">Changes saved successfully.</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

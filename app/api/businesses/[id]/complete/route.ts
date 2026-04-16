@@ -14,7 +14,7 @@ export async function POST(
 ) {
   const { id } = params;
   const body = await req.json().catch(() => null);
-  const { otp, contactPhone, description, timings, socialLinks } = body ?? {};
+  const { otp, contactPhone, description, timings, socialLinks, password } = body ?? {};
 
   if (!otp) {
     return NextResponse.json({ error: "Missing verification code." }, { status: 400 });
@@ -50,18 +50,56 @@ export async function POST(
     return NextResponse.json({ error: "Incorrect code. Please try again." }, { status: 400 });
   }
 
-  // Update business in Supabase
   const supabase = createAdminClient();
+
+  // Fetch owner email for account creation
+  const { data: biz } = await supabase
+    .from("businesses")
+    .select("owner_email")
+    .eq("id", id)
+    .single();
+
+  // Create Supabase Auth account if password was provided
+  let ownerId: string | null = null;
+  if (password && biz?.owner_email) {
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email: biz.owner_email,
+      password,
+      email_confirm: true, // skip confirmation email — owner already verified via OTP
+    });
+
+    if (authError) {
+      const msg = authError.message.toLowerCase();
+      if (msg.includes("already") || msg.includes("exists")) {
+        return NextResponse.json(
+          {
+            error:
+              "An account with this email already exists. Please sign in at /my-business to manage your listing.",
+            code: "account_exists",
+          },
+          { status: 409 }
+        );
+      }
+      return NextResponse.json({ error: "Failed to create account. Please try again." }, { status: 500 });
+    }
+
+    ownerId = authData.user?.id ?? null;
+  }
+
+  // Update business record
+  const updateData: Record<string, unknown> = {
+    status: "active",
+    contact_phone: contactPhone ?? null,
+    description: description ?? null,
+    timings: timings ?? [],
+    social_links: socialLinks ?? {},
+    completed_at: new Date().toISOString(),
+  };
+  if (ownerId) updateData.owner_id = ownerId;
+
   const { error } = await supabase
     .from("businesses")
-    .update({
-      status: "active",
-      contact_phone: contactPhone ?? null,
-      description: description ?? null,
-      timings: timings ?? [],
-      social_links: socialLinks ?? {},
-      completed_at: new Date().toISOString(),
-    })
+    .update(updateData)
     .eq("id", id);
 
   if (error) {

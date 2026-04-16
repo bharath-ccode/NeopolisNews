@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   Building2, ArrowLeft, ArrowRight, CheckCircle,
-  Mail, Phone, MapPin, Loader2, ExternalLink,
+  Mail, Phone, MapPin, Loader2, ExternalLink, Lock,
 } from "lucide-react";
 import {
   getIndustries, getTypes, getSubtypesByTypes,
@@ -128,6 +128,8 @@ export default function RegisterBusinessPage() {
   // Step 3 — OTP verify
   const [businessId, setBusinessId] = useState("");
   const [otp, setOtp] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   // Step 4 — profile
   const [contactPhone, setContactPhone] = useState("");
@@ -189,6 +191,8 @@ export default function RegisterBusinessPage() {
 
   async function submitProfile() {
     if (otp.length < 6) return setError("Please enter the 6-digit code.");
+    if (password.length < 8) return setError("Password must be at least 8 characters.");
+    if (password !== confirmPassword) return setError("Passwords do not match.");
     setError(""); setLoading(true);
     try {
       const res = await fetch(`/api/businesses/${businessId}/complete`, {
@@ -196,6 +200,7 @@ export default function RegisterBusinessPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           otp,
+          password,
           contactPhone: contactPhone ? `+91${contactPhone}` : null,
           description: description.trim() || null,
           timings,
@@ -349,6 +354,23 @@ export default function RegisterBusinessPage() {
                 className={INPUT + " text-center text-2xl tracking-[0.4em] font-mono"} />
             </div>
             <hr className="my-5 border-gray-100" />
+
+            {/* Account password */}
+            <div className="bg-brand-50 border border-brand-100 rounded-xl p-4 mb-5">
+              <p className="text-sm font-bold text-brand-900 mb-1 flex items-center gap-1.5">
+                <Lock className="w-4 h-4" /> Create Your Account Password
+              </p>
+              <p className="text-xs text-brand-700 mb-3">
+                You&apos;ll use this to log in and manage your listing at any time.
+              </p>
+              <div className="space-y-2">
+                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password (min. 8 characters)" className={INPUT} />
+                <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm password" className={INPUT} />
+              </div>
+            </div>
+
             <p className="text-sm font-bold text-gray-900 mb-4">Complete Your Profile</p>
             <div className="space-y-4">
               <div>
@@ -405,8 +427,11 @@ export default function RegisterBusinessPage() {
               className="btn-primary w-full justify-center mb-3">
               <ExternalLink className="w-4 h-4" /> View Your Business Profile
             </a>
-            <Link href="/" className="btn-secondary w-full justify-center">
-              Go to NeopolisNews
+            <Link href="/my-business" className="btn-secondary w-full justify-center mb-3">
+              <Lock className="w-4 h-4" /> Go to My Business
+            </Link>
+            <Link href="/" className="text-sm text-gray-400 hover:text-gray-600 transition-colors">
+              Back to NeopolisNews
             </Link>
           </div>
         )}
