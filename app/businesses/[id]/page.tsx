@@ -12,6 +12,7 @@ import {
   Facebook,
   Youtube,
   Globe,
+  Flag,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 
@@ -208,6 +209,31 @@ export default async function BusinessProfilePage({
           </div>
         </div>
       </section>
+
+      {/* ── CLAIM BANNER (unclaimed businesses only) ────────────────────── */}
+      {b.status !== "active" && (
+        <div className="bg-amber-50 border-b border-amber-200">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                <Flag className="w-4 h-4 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-amber-900">Is this your business?</p>
+                <p className="text-xs text-amber-700">
+                  This listing hasn&apos;t been claimed yet. Claim it to add your details and go live.
+                </p>
+              </div>
+            </div>
+            <Link
+              href={`/businesses/${b.id}/claim`}
+              className="shrink-0 inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+            >
+              <ShieldCheck className="w-4 h-4" /> Claim This Business
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* ── PHOTOS ──────────────────────────────────────────────────────────── */}
       {pictures.length > 0 && (

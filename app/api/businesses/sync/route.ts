@@ -28,6 +28,8 @@ export async function POST(req: NextRequest) {
         description:   business.description ?? null,
         timings:       business.timings ?? [],
         completed_at:  business.completedAt ?? null,
+        owner_email:   business.email ?? null,
+        owner_phone:   business.ownerPhone ?? null,
       },
       { onConflict: "id" }
     );
