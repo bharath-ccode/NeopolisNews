@@ -60,11 +60,8 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         const { data } = await withTimeout(supabase.auth.getUser(), 8000);
         if (!mounted) return;
         const user = data.user ?? null;
-        if (user && await isBuilder(user.email)) {
-          setAdmin(null);
-        } else {
-          setAdmin(user);
-        }
+        const builder = await withTimeout(isBuilder(user?.email), 4000).catch(() => false);
+        setAdmin(builder ? null : user);
       } catch {
         if (mounted) setAdmin(null);
       } finally {
@@ -84,17 +81,17 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const supabase = createClient();
       const { data: listener } = supabase.auth.onAuthStateChange(
-        async (_event, session) => {
+        (_event, session) => {
           const user = session?.user ?? null;
-          try {
-            if (user && await isBuilder(user.email)) {
+          // Run async work in background — do NOT await here or it blocks signInWithPassword
+          void (async () => {
+            try {
+              const builder = await withTimeout(isBuilder(user?.email), 4000).catch(() => false);
+              setAdmin(builder ? null : user);
+            } catch {
               setAdmin(null);
-            } else {
-              setAdmin(user);
             }
-          } catch {
-            setAdmin(null);
-          }
+          })();
         }
       );
       unsubscribe = () => listener.subscription.unsubscribe();
