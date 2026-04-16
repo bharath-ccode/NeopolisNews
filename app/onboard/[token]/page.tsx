@@ -289,6 +289,12 @@ export default function OnboardPage() {
     };
     saveBusiness(updated);
     setBusiness(updated);
+    // Sync to Supabase so the public profile is immediately live
+    fetch("/api/businesses/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updated),
+    }).catch(() => {});
     setSaving(false);
     setStep("done");
   }

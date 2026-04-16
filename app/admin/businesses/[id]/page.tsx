@@ -54,6 +54,12 @@ export default function AdminBusinessEditPage() {
     setBusiness(updated);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+    // Fire-and-forget sync to Supabase for public profile
+    fetch("/api/businesses/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updated),
+    }).catch(() => {});
   }
 
   function toggleVerified() {
@@ -169,6 +175,16 @@ export default function AdminBusinessEditPage() {
           <div className="flex items-center gap-1 text-sm text-green-600 shrink-0">
             <CheckCircle className="w-4 h-4" /> Saved
           </div>
+        )}
+        {business.status === "active" && (
+          <a
+            href={`/businesses/${business.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-xs border border-gray-200 text-gray-500 hover:border-brand-300 hover:text-brand-600 px-3 py-1.5 rounded-lg transition-colors shrink-0"
+          >
+            <ExternalLink className="w-3.5 h-3.5" /> View Profile
+          </a>
         )}
       </div>
 
