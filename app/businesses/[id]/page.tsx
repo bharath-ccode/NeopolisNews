@@ -14,7 +14,7 @@ import {
   Globe,
   Flag,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -54,17 +54,17 @@ interface BusinessRow {
 export async function generateMetadata(
   { params }: { params: { id: string } }
 ): Promise<Metadata> {
-  const supabase = createClient();
+  const supabase = createAdminClient();
   const { data } = await supabase
     .from("businesses")
-    .select("name, industry, description, address")
+    .select("name, industry, description")
     .eq("id", params.id)
     .single();
 
   if (!data) return { title: "Business Not Found" };
 
   return {
-    title: `${data.name} | NeopolisNews`,
+    title: data.name,
     description: data.description ?? `${data.name} — ${data.industry} in Neopolis`,
   };
 }

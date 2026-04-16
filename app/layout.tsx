@@ -4,7 +4,10 @@ import { AuthProvider } from "@/context/AuthContext";
 import ConditionalShell from "@/components/ConditionalShell";
 
 export const metadata: Metadata = {
-  title: "NeopolisNews – Urban District Digital Platform",
+  title: {
+    default: "NeopolisNews – Urban District Digital Platform",
+    template: "%s | NeopolisNews",
+  },
   description:
     "Your single source of truth for Neopolis – real estate, rentals, retail, news, and services for India's next urban micro-city.",
   keywords: [
