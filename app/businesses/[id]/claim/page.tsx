@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, use } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   Building2, ArrowLeft, ArrowRight, CheckCircle,
@@ -63,9 +63,9 @@ function TimingsEditor({ timings, onChange }: { timings: DayTiming[]; onChange: 
 export default function ClaimBusinessPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }) {
-  const { id } = use(params);
+  const { id } = params;
 
   const [step, setStep] = useState<Step>("identity");
   const [error, setError] = useState("");
