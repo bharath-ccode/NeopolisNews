@@ -9,6 +9,12 @@ export interface DayTiming {
   closed: boolean;
 }
 
+export interface SocialLinks {
+  instagram?: string;
+  facebook?: string;
+  youtube?: string;
+}
+
 export interface BusinessRecord {
   id: string;            // also used as the invite token
   // Admin-created
@@ -25,6 +31,8 @@ export interface BusinessRecord {
   verified?: boolean;    // skips OTP during onboarding; shows verified badge
   logo?: string;         // public URL
   pictures?: string[];   // up to 3 public URLs
+  // Admin or owner
+  socialLinks?: SocialLinks;
   // Owner-completed
   contactPhone?: string; // customer-facing number displayed on the listing
   description?: string;

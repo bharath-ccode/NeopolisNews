@@ -13,8 +13,12 @@ import {
   CheckCircle,
   Copy,
   ExternalLink,
+  Instagram,
+  Facebook,
+  Youtube,
+  Save,
 } from "lucide-react";
-import { getBusinessById, saveBusiness, type BusinessRecord } from "@/lib/businessStore";
+import { getBusinessById, saveBusiness, type BusinessRecord, type SocialLinks } from "@/lib/businessStore";
 
 const MAX_PICTURES = 3;
 
@@ -32,6 +36,8 @@ export default function AdminBusinessEditPage() {
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [social, setSocial] = useState<SocialLinks>({});
+  const [savingSocial, setSavingSocial] = useState(false);
 
   const logoRef = useRef<HTMLInputElement>(null);
   const picRef = useRef<HTMLInputElement>(null);
@@ -40,6 +46,7 @@ export default function AdminBusinessEditPage() {
     const b = getBusinessById(id);
     if (!b) { setNotFound(true); return; }
     setBusiness(b);
+    setSocial(b.socialLinks ?? {});
   }, [id]);
 
   function persist(updated: BusinessRecord) {
@@ -108,6 +115,13 @@ export default function AdminBusinessEditPage() {
     if (!business) return;
     const pictures = (business.pictures ?? []).filter((_, i) => i !== idx);
     persist({ ...business, pictures });
+  }
+
+  function saveSocialLinks() {
+    if (!business) return;
+    setSavingSocial(true);
+    persist({ ...business, socialLinks: social });
+    setTimeout(() => setSavingSocial(false), 500);
   }
 
   function copyInviteLink() {
@@ -297,6 +311,41 @@ export default function AdminBusinessEditPage() {
           className="hidden"
           onChange={handlePictureAdd}
         />
+      </div>
+
+      {/* Social media links */}
+      <div className="card p-5 mb-4">
+        <p className="font-semibold text-gray-900 text-sm mb-4">Social Media</p>
+        <div className="space-y-3">
+          {(
+            [
+              { key: "instagram", icon: Instagram, label: "Instagram", placeholder: "https://instagram.com/yourbusiness", color: "text-pink-500" },
+              { key: "facebook",  icon: Facebook,  label: "Facebook",  placeholder: "https://facebook.com/yourbusiness", color: "text-blue-600" },
+              { key: "youtube",   icon: Youtube,   label: "YouTube",   placeholder: "https://youtube.com/@yourchannel",  color: "text-red-500"  },
+            ] as const
+          ).map(({ key, icon: Icon, label, placeholder, color }) => (
+            <div key={key} className="flex items-center gap-3">
+              <Icon className={`w-4 h-4 shrink-0 ${color}`} />
+              <div className="flex-1">
+                <input
+                  type="url"
+                  value={social[key] ?? ""}
+                  onChange={(e) => setSocial((s) => ({ ...s, [key]: e.target.value || undefined }))}
+                  placeholder={placeholder}
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500 text-gray-700 placeholder-gray-300"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={saveSocialLinks}
+          disabled={savingSocial}
+          className="mt-4 flex items-center gap-2 text-sm btn-primary py-2"
+        >
+          <Save className="w-3.5 h-3.5" />
+          {savingSocial ? "Saving…" : "Save Social Links"}
+        </button>
       </div>
 
       {/* Business info (read-only summary) */}

@@ -12,6 +12,9 @@ import {
   Clock,
   Mail,
   AlertCircle,
+  Instagram,
+  Facebook,
+  Youtube,
 } from "lucide-react";
 import {
   getBusinessById,
@@ -19,6 +22,7 @@ import {
   DEFAULT_TIMINGS,
   type BusinessRecord,
   type DayTiming,
+  type SocialLinks,
 } from "@/lib/businessStore";
 
 // ─── Input / label helpers ───────────────────────────────────────────────────
@@ -148,6 +152,7 @@ export default function OnboardPage() {
   const [description, setDescription] = useState("");
   const [timings, setTimings] = useState<DayTiming[]>(DEFAULT_TIMINGS.map((t) => ({ ...t })));
   const [email, setEmail] = useState("");
+  const [social, setSocial] = useState<SocialLinks>({});
   const [saving, setSaving] = useState(false);
   const [completeError, setCompleteError] = useState("");
 
@@ -168,6 +173,7 @@ export default function OnboardPage() {
     if (record.email) setEmail(record.email);
     if (record.description) setDescription(record.description);
     if (record.timings) setTimings(record.timings);
+    if (record.socialLinks) setSocial(record.socialLinks);
     // Skip OTP for admin-verified businesses
     if (record.verified && record.status !== "active") {
       setStep("complete");
@@ -273,6 +279,11 @@ export default function OnboardPage() {
       description: description.trim() || undefined,
       timings,
       email: email.trim() || business.email,
+      socialLinks: {
+        instagram: social.instagram?.trim() || undefined,
+        facebook: social.facebook?.trim() || undefined,
+        youtube: social.youtube?.trim() || undefined,
+      },
       status: "active",
       completedAt: new Date().toISOString(),
     };
@@ -576,6 +587,34 @@ export default function OnboardPage() {
                   placeholder="your@email.com"
                   className={INPUT}
                 />
+              </div>
+
+              {/* Social media */}
+              <div>
+                <label className={LABEL}>
+                  Social Media{" "}
+                  <span className="font-normal text-gray-400">(optional)</span>
+                </label>
+                <div className="space-y-2">
+                  {(
+                    [
+                      { key: "instagram", icon: Instagram, placeholder: "https://instagram.com/yourbusiness", color: "text-pink-500" },
+                      { key: "facebook",  icon: Facebook,  placeholder: "https://facebook.com/yourbusiness",  color: "text-blue-600" },
+                      { key: "youtube",   icon: Youtube,   placeholder: "https://youtube.com/@yourchannel",   color: "text-red-500"  },
+                    ] as const
+                  ).map(({ key, icon: Icon, placeholder, color }) => (
+                    <div key={key} className="flex items-center gap-2">
+                      <Icon className={`w-4 h-4 shrink-0 ${color}`} />
+                      <input
+                        type="url"
+                        value={social[key] ?? ""}
+                        onChange={(e) => setSocial((s) => ({ ...s, [key]: e.target.value || undefined }))}
+                        placeholder={placeholder}
+                        className={INPUT}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Operating hours */}
