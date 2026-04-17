@@ -205,7 +205,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const redirectTo =
       (typeof window !== "undefined" ? window.location.origin : process.env.NEXT_PUBLIC_SITE_URL ?? "") +
       "/auth/callback";
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -214,6 +214,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     });
     if (error) throw new Error(error.message);
+    // Supabase silently "succeeds" for existing emails to prevent enumeration.
+    // Detect existing confirmed user (data.user is null) or existing unconfirmed
+    // user (identities array is empty).
+    if (!data.user || (data.user.identities && data.user.identities.length === 0)) {
+      throw new Error("ALREADY_REGISTERED");
+    }
   }, []);
 
   const updateProfile = useCallback(
