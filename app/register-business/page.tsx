@@ -130,6 +130,8 @@ export default function RegisterBusinessPage() {
   const [otp, setOtp] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [resendingOtp, setResendingOtp] = useState(false);
+  const [resendMsg, setResendMsg] = useState("");
 
   // Step 4 — profile
   const [contactPhone, setContactPhone] = useState("");
@@ -187,6 +189,16 @@ export default function RegisterBusinessPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function resendOtp() {
+    setResendingOtp(true); setResendMsg("");
+    try {
+      const res = await fetch(`/api/businesses/${businessId}/resend-otp`, { method: "POST" });
+      const data = await res.json();
+      setResendMsg(res.ok ? "New code sent! Check your inbox." : (data.error ?? "Could not resend code."));
+    } catch { setResendMsg("Network error. Please try again."); }
+    finally { setResendingOtp(false); }
   }
 
   async function submitProfile() {
@@ -346,12 +358,19 @@ export default function RegisterBusinessPage() {
               <p className="font-semibold text-green-800 text-sm">Code sent to {ownerEmail}</p>
               <p className="text-green-700 text-xs mt-0.5">Enter the 6-digit code below, then complete your profile.</p>
             </div>
-            <div className="mb-5">
+            <div className="mb-3">
               <label className={LABEL}>Verification Code</label>
               <input type="text" inputMode="numeric" value={otp}
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 placeholder="• • • • • •" maxLength={6}
                 className={INPUT + " text-center text-2xl tracking-[0.4em] font-mono"} />
+            </div>
+            <div className="flex items-center gap-2 mb-5">
+              <button type="button" onClick={resendOtp} disabled={resendingOtp}
+                className="text-xs text-brand-600 hover:text-brand-700 font-semibold disabled:opacity-50">
+                {resendingOtp ? "Sending…" : "Resend code"}
+              </button>
+              {resendMsg && <span className={`text-xs ${resendMsg.startsWith("New code") ? "text-green-600" : "text-red-600"}`}>{resendMsg}</span>}
             </div>
             <hr className="my-5 border-gray-100" />
 

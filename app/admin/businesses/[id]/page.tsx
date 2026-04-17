@@ -56,6 +56,10 @@ export default function AdminBusinessEditPage() {
   const [verificationRequest, setVerificationRequest] = useState<VerificationRequest | null>(null);
   const [approving, setApproving] = useState(false);
   const [approveMsg, setApproveMsg] = useState("");
+  const [rejecting, setRejecting] = useState(false);
+  const [rejectNotes, setRejectNotes] = useState("");
+  const [rejectMsg, setRejectMsg] = useState("");
+  const [showRejectForm, setShowRejectForm] = useState(false);
 
   const logoRef = useRef<HTMLInputElement>(null);
   const picRef = useRef<HTMLInputElement>(null);
@@ -175,12 +179,33 @@ export default function AdminBusinessEditPage() {
       if (!res.ok) { setError(data.error ?? "Approval failed."); return; }
       setApproveMsg(`Claim link sent to ${data.sentTo}`);
       setVerificationRequest(null);
-      // Update local business status
       persist({ ...business, status: "verified" as BusinessRecord["status"] });
     } catch {
       setError("Network error. Please try again.");
     } finally {
       setApproving(false);
+    }
+  }
+
+  async function rejectClaim() {
+    if (!business) return;
+    setRejecting(true); setRejectMsg("");
+    try {
+      const res = await fetch(`/api/admin/businesses/${business.id}/reject-claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes: rejectNotes.trim() || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error ?? "Rejection failed."); return; }
+      setRejectMsg("Request rejected. Business reset to invited status.");
+      setVerificationRequest(null);
+      setShowRejectForm(false);
+      persist({ ...business, status: "invited" as BusinessRecord["status"] });
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setRejecting(false);
     }
   }
 
@@ -281,16 +306,51 @@ export default function AdminBusinessEditPage() {
               </a>
             )}
 
-            <div className="pt-2 border-t border-amber-100 flex items-center gap-3">
-              <button onClick={approveClaim} disabled={approving}
-                className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors disabled:opacity-60">
-                {approving ? <><Loader2 className="w-4 h-4 animate-spin" /> Approving…</> : <><CheckCircle className="w-4 h-4" /> Approve &amp; Send Claim Link</>}
-              </button>
-              <p className="text-xs text-gray-400">Sends a 24-hour claim link to the owner&apos;s email.</p>
+            <div className="pt-2 border-t border-amber-100 space-y-3">
+              <div className="flex items-center gap-3">
+                <button onClick={approveClaim} disabled={approving || rejecting}
+                  className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors disabled:opacity-60">
+                  {approving ? <><Loader2 className="w-4 h-4 animate-spin" /> Approving…</> : <><CheckCircle className="w-4 h-4" /> Approve &amp; Send Claim Link</>}
+                </button>
+                <button
+                  onClick={() => setShowRejectForm((v) => !v)}
+                  disabled={approving || rejecting}
+                  className="flex items-center gap-2 border border-red-200 text-red-600 hover:bg-red-50 text-sm font-semibold px-4 py-2 rounded-xl transition-colors disabled:opacity-60"
+                >
+                  <X className="w-4 h-4" /> Reject
+                </button>
+                <p className="text-xs text-gray-400">Sends a 24-hour claim link to the owner&apos;s email.</p>
+              </div>
+
+              {showRejectForm && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
+                  <p className="text-sm font-semibold text-red-800">Reject this request?</p>
+                  <p className="text-xs text-red-700">The business will be reset to &quot;Invited&quot; status and the submitter will be notified.</p>
+                  <textarea
+                    value={rejectNotes}
+                    onChange={(e) => setRejectNotes(e.target.value)}
+                    placeholder="Optional: reason for rejection (sent to submitter)"
+                    rows={2}
+                    className="w-full px-3 py-2 border border-red-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400 bg-white text-gray-800 resize-none"
+                  />
+                  <div className="flex gap-2">
+                    <button onClick={rejectClaim} disabled={rejecting}
+                      className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-60">
+                      {rejecting ? <><Loader2 className="w-4 h-4 animate-spin" /> Rejecting…</> : "Confirm Rejection"}
+                    </button>
+                    <button onClick={() => setShowRejectForm(false)} className="text-sm text-gray-500 hover:text-gray-700 px-3">Cancel</button>
+                  </div>
+                </div>
+              )}
             </div>
             {approveMsg && (
               <p className="text-sm text-green-700 font-medium flex items-center gap-1.5">
                 <CheckCircle className="w-4 h-4" /> {approveMsg}
+              </p>
+            )}
+            {rejectMsg && (
+              <p className="text-sm text-red-700 font-medium flex items-center gap-1.5">
+                <X className="w-4 h-4" /> {rejectMsg}
               </p>
             )}
           </div>

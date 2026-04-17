@@ -23,7 +23,7 @@ export interface BusinessRecord {
   types: string[];       // one or more types within the industry
   subtypes: string[];    // flat list of selected subtypes across all types
   address: string;
-  ownerPhone: string;    // owner / manager number — used for OTP claim only, not shown to customers
+  ownerPhone?: string;   // owner / manager number — used for OTP claim only, not shown to customers
   email?: string;        // optional, can be added by owner later
   status: BusinessStatus;
   createdAt: string;

@@ -202,6 +202,10 @@ export default function ClaimBusinessPage({ params }: { params: { id: string } }
   const [uploadingProof, setUploadingProof] = useState(false);
   const proofRef = useRef<HTMLInputElement>(null);
 
+  // Resend claim link state (no-token phase)
+  const [resendEmail, setResendEmail] = useState("");
+  const [resendSent, setResendSent] = useState(false);
+
   // 24h token from URL
   const [urlToken, setUrlToken] = useState<string | null>(null);
 
@@ -338,6 +342,22 @@ export default function ClaimBusinessPage({ params }: { params: { id: string } }
         return setError(data.error ?? "Could not complete claim.");
       }
       setPhase("done");
+    } catch { setError("Network error. Please try again."); }
+    finally { setLoading(false); }
+  }
+
+  async function resendClaimLink() {
+    if (!resendEmail.includes("@")) return setError("Please enter a valid email address.");
+    setError(""); setLoading(true);
+    try {
+      const res = await fetch(`/api/businesses/${id}/resend-claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: resendEmail }),
+      });
+      const data = await res.json();
+      if (!res.ok) return setError(data.error ?? "Could not send link. Please try again.");
+      setResendSent(true);
     } catch { setError("Network error. Please try again."); }
     finally { setLoading(false); }
   }
@@ -563,18 +583,34 @@ export default function ClaimBusinessPage({ params }: { params: { id: string } }
 
         {/* ── Verified — no token ─────────────────────────────────────────── */}
         {phase === "no-token" && (
-          <div className="card p-8 text-center">
-            <div className="w-16 h-16 bg-brand-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Mail className="w-9 h-9 text-brand-600" />
+          <div className="card p-6">
+            <div className="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center mb-5">
+              <Mail className="w-8 h-8 text-brand-600" />
             </div>
-            <h1 className="text-xl font-extrabold text-gray-900 mb-2">Check Your Email</h1>
-            <p className="text-gray-500 text-sm mb-2">
-              A verified claim link has been sent to the email address on file for <strong>{biz?.name}</strong>.
+            <h1 className="text-xl font-extrabold text-gray-900 mb-1">Get Your Claim Link</h1>
+            <p className="text-gray-500 text-sm mb-6">
+              <strong>{biz?.name}</strong> is verified and ready to claim. Enter the email address on file to receive a new 24-hour claim link.
             </p>
-            <p className="text-xs text-gray-400 mb-6">
-              The link is valid for 24 hours. If it expired, contact the NeopolisNews team for a new one.
-            </p>
-            <Link href={profileUrl} className="inline-flex items-center justify-center gap-2 text-sm text-brand-600 hover:underline">
+            {resendSent ? (
+              <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-4 text-center">
+                <CheckCircle className="w-6 h-6 text-green-600 mx-auto mb-2" />
+                <p className="font-semibold text-green-800 text-sm">Claim link sent!</p>
+                <p className="text-green-700 text-xs mt-1">Check your inbox — the link is valid for 24 hours.</p>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <label className={LABEL}><Mail className="w-3.5 h-3.5 inline mr-1" />Email Address on File</label>
+                  <input type="email" value={resendEmail} onChange={(e) => setResendEmail(e.target.value)}
+                    placeholder="you@example.com" className={INPUT}
+                    onKeyDown={(e) => e.key === "Enter" && resendClaimLink()} />
+                </div>
+                <button onClick={resendClaimLink} disabled={loading} className="btn-primary w-full justify-center mt-5">
+                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending…</> : <>Send Claim Link <ArrowRight className="w-4 h-4" /></>}
+                </button>
+              </>
+            )}
+            <Link href={profileUrl} className="inline-flex items-center justify-center gap-2 text-sm text-brand-600 hover:underline mt-5">
               <ArrowLeft className="w-4 h-4" /> Back to business profile
             </Link>
           </div>

@@ -26,6 +26,21 @@ interface PendingBiz {
   verification_requests: { submitter_name: string; submitter_email: string; created_at: string }[];
 }
 
+interface SelfRegBiz {
+  id: string;
+  name: string;
+  industry: string;
+  address: string;
+  status: string;
+  owner_email: string;
+  created_at: string;
+}
+
+function getInviteLink(id: string): string {
+  if (typeof window === "undefined") return "";
+  return `${window.location.origin}/onboard/${id}`;
+}
+
 function StatusBadge({ status }: { status: BusinessRecord["status"] }) {
   if (status === "active")   return <span className="tag-green">Active</span>;
   if (status === "incomplete") return <span className="tag-orange">Incomplete</span>;
@@ -37,20 +52,37 @@ function StatusBadge({ status }: { status: BusinessRecord["status"] }) {
 export default function AdminBusinessesPage() {
   const [businesses, setBusinesses] = useState<BusinessRecord[]>([]);
   const [pendingBiz, setPendingBiz] = useState<PendingBiz[]>([]);
+  const [selfRegBiz, setSelfRegBiz] = useState<SelfRegBiz[]>([]);
   const [search, setSearch] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
-    setBusinesses(getAllBusinesses());
+    const local = getAllBusinesses();
+    setBusinesses(local);
+    const localIds = new Set(local.map((b) => b.id));
 
-    // Also fetch pending verification requests from Supabase
-    // (these come from public users, not the admin panel, so they're not in localStorage)
-    createClient()
+    const supabase = createClient();
+
+    // Fetch pending verification requests from Supabase
+    supabase
       .from("businesses")
       .select("id, name, address, created_at, verification_requests(submitter_name, submitter_email, created_at)")
       .eq("status", "pending")
       .order("created_at", { ascending: false })
       .then(({ data }) => { if (data) setPendingBiz(data as PendingBiz[]); });
+
+    // Fetch self-registered businesses (in Supabase but not in admin localStorage)
+    supabase
+      .from("businesses")
+      .select("id, name, industry, address, status, owner_email, created_at")
+      .in("status", ["active", "invited", "incomplete"])
+      .not("owner_email", "is", null)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        if (data) {
+          setSelfRegBiz((data as SelfRegBiz[]).filter((b) => !localIds.has(b.id)));
+        }
+      });
   }, []);
 
   function copyLink(id: string) {
@@ -66,7 +98,7 @@ export default function AdminBusinessesPage() {
       b.industry.toLowerCase().includes(q) ||
       b.types.some((t) => t.toLowerCase().includes(q)) ||
       b.subtypes.some((s) => s.toLowerCase().includes(q)) ||
-      b.ownerPhone.includes(q)
+      (b.ownerPhone ?? "").includes(q)
   );
 
   return (
@@ -156,6 +188,54 @@ export default function AdminBusinessesPage() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {/* Self-registered businesses */}
+        {selfRegBiz.length > 0 && (
+          <div className="card overflow-hidden mb-6 border-blue-200">
+            <div className="flex items-center gap-2 px-5 py-3 bg-blue-50 border-b border-blue-100">
+              <Users className="w-4 h-4 text-blue-600 shrink-0" />
+              <p className="text-sm font-bold text-blue-900">
+                {selfRegBiz.length} Self-Registered {selfRegBiz.length === 1 ? "Business" : "Businesses"}
+              </p>
+              <p className="text-xs text-blue-700 ml-1">— registered directly by owners, not via admin panel</p>
+            </div>
+            <div className="divide-y divide-blue-50">
+              {selfRegBiz.map((b) => (
+                <div key={b.id} className="px-5 py-4 flex items-center justify-between gap-4">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm shrink-0">
+                      {b.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <p className="font-bold text-sm text-gray-900">{b.name}</p>
+                        {b.status === "active"
+                          ? <span className="tag-green">Active</span>
+                          : <span className="tag-blue">Invited</span>}
+                      </div>
+                      <p className="text-xs text-gray-500 mb-0.5 truncate">{b.industry}</p>
+                      <p className="text-xs text-gray-400 truncate">{b.address}</p>
+                      <p className="text-xs text-gray-400">{b.owner_email}</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    <p className="text-xs text-gray-400">
+                      {new Date(b.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    </p>
+                    <a
+                      href={`/businesses/${b.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-xs border border-gray-200 text-gray-600 hover:border-brand-300 hover:text-brand-600 px-2.5 py-1.5 rounded-lg transition-colors"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" /> View
+                    </a>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}

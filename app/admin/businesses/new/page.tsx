@@ -165,8 +165,8 @@ export default function AdminNewBusinessPage() {
 
   function validateStep2() {
     if (!address.trim()) return "Please enter the address.";
-    if (ownerPhone.length < 10) return "Please enter a valid 10-digit owner / manager number.";
-    if (!email.trim() || !email.includes("@")) return "Please enter a valid email address — the OTP will be sent here.";
+    if (ownerPhone && ownerPhone.length < 10) return "Please enter a valid 10-digit phone number (or leave blank).";
+    if (email && !email.includes("@")) return "Please enter a valid email address (or leave blank).";
     return "";
   }
 
@@ -187,7 +187,7 @@ export default function AdminNewBusinessPage() {
       types: selectedTypes,
       subtypes: selectedSubtypes,
       address: address.trim(),
-      ownerPhone: `+91${ownerPhone}`,
+      ownerPhone: ownerPhone ? `+91${ownerPhone}` : undefined,
       email: email.trim() || undefined,
     });
     setCreated(record);
@@ -412,7 +412,7 @@ export default function AdminNewBusinessPage() {
                   <Phone className="w-3.5 h-3.5 inline mr-1" />
                   Owner / Manager Number{" "}
                   <span className="font-normal text-gray-400">
-                    — for OTP claim only, not visible to customers
+                    (optional) — for OTP claim only, not visible to customers
                   </span>
                 </label>
                 <div className="flex">
@@ -436,7 +436,7 @@ export default function AdminNewBusinessPage() {
                 <label className={LABEL}>
                   <Mail className="w-3.5 h-3.5 inline mr-1" />
                   Owner Email Address{" "}
-                  <span className="font-normal text-gray-400">— OTP will be sent here</span>
+                  <span className="font-normal text-gray-400">(optional) — OTP will be sent here if provided</span>
                 </label>
                 <input
                   type="email"
@@ -482,9 +482,10 @@ export default function AdminNewBusinessPage() {
               Business Created!
             </h1>
             <p className="text-sm text-gray-500 mb-6">
-              Share the invite link with{" "}
-              <strong>{created.name}</strong>. They can claim it using{" "}
-              <strong>{created.ownerPhone}</strong> via OTP.
+              Share the invite link with <strong>{created.name}</strong>.
+              {created.ownerPhone
+                ? <> They can claim it using <strong>{created.ownerPhone}</strong> via OTP.</>
+                : <> Once you have their contact details, update the record and send them the invite link.</>}
             </p>
 
             {/* Invite link */}
@@ -543,10 +544,12 @@ export default function AdminNewBusinessPage() {
                   </span>
                 </div>
               )}
-              <div className="flex justify-between">
-                <span className="text-gray-500">Owner / Manager No.</span>
-                <span className="font-semibold text-gray-800">{created.ownerPhone}</span>
-              </div>
+              {created.ownerPhone && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Owner / Manager No.</span>
+                  <span className="font-semibold text-gray-800">{created.ownerPhone}</span>
+                </div>
+              )}
               {created.email && (
                 <div className="flex justify-between">
                   <span className="text-gray-500">Email</span>

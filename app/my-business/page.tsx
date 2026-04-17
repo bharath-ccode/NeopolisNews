@@ -210,6 +210,15 @@ export default function MyBusinessPage() {
     return res.ok ? data.url : null;
   }
 
+  async function mediaAction(body: Record<string, unknown>): Promise<{ ok: boolean; pictures?: string[] }> {
+    const res = await fetch("/api/my-business/media", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+    });
+    return res.json();
+  }
+
   async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !biz) return;
@@ -217,10 +226,7 @@ export default function MyBusinessPage() {
     const url = await uploadFile(file);
     if (url) {
       setLogo(url);
-      await supabase
-        .from("businesses")
-        .update({ logo: url })
-        .eq("id", biz.id);
+      await mediaAction({ businessId: biz.id, type: "logo", action: "set", url });
     }
     setUploading(false);
     if (logoRef.current) logoRef.current.value = "";
@@ -232,12 +238,8 @@ export default function MyBusinessPage() {
     setUploading(true);
     const url = await uploadFile(file);
     if (url) {
-      const updated = [...pictures, url];
-      setPictures(updated);
-      await supabase
-        .from("businesses")
-        .update({ pictures: updated })
-        .eq("id", biz.id);
+      const result = await mediaAction({ businessId: biz.id, type: "photo", action: "add", url });
+      setPictures(result.pictures ?? [...pictures, url]);
     }
     setUploading(false);
     if (photoRef.current) photoRef.current.value = "";
@@ -245,12 +247,8 @@ export default function MyBusinessPage() {
 
   async function removePhoto(idx: number) {
     if (!biz) return;
-    const updated = pictures.filter((_, i) => i !== idx);
-    setPictures(updated);
-    await supabase
-      .from("businesses")
-      .update({ pictures: updated })
-      .eq("id", biz.id);
+    const result = await mediaAction({ businessId: biz.id, type: "photo", action: "remove", index: idx });
+    setPictures(result.pictures ?? pictures.filter((_, i) => i !== idx));
   }
 
   async function handleLogout() {
