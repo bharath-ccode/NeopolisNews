@@ -14,13 +14,91 @@ export async function POST(
 ) {
   const { id } = params;
   const body = await req.json().catch(() => null);
-  const { otp, contactPhone, description, timings, socialLinks, password } = body ?? {};
+  const { otp, claimToken, contactPhone, description, timings, socialLinks, password } = body ?? {};
 
+  const supabase = createAdminClient();
+
+  // ── Path A: 24-hour claim token (admin-verified flow) ────────────────────
+  if (claimToken) {
+    const { data: biz, error: bizErr } = await supabase
+      .from("businesses")
+      .select("id, owner_email, claim_token, claim_token_expires_at")
+      .eq("id", id)
+      .single();
+
+    if (bizErr || !biz) {
+      return NextResponse.json({ error: "Business not found." }, { status: 404 });
+    }
+    if (!biz.claim_token || biz.claim_token !== claimToken) {
+      return NextResponse.json({ error: "Invalid claim link." }, { status: 400 });
+    }
+    if (!biz.claim_token_expires_at || new Date() > new Date(biz.claim_token_expires_at)) {
+      return NextResponse.json(
+        { error: "This claim link has expired. Please visit the business profile to request a new one.", code: "token_expired" },
+        { status: 400 }
+      );
+    }
+
+    // Create auth account if password provided
+    let ownerId: string | null = null;
+    if (password && biz.owner_email) {
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: biz.owner_email,
+        password,
+        email_confirm: true,
+      });
+
+      if (authError) {
+        // Already has account — find owner_id from sibling business
+        const { data: sibling } = await supabase
+          .from("businesses")
+          .select("owner_id")
+          .eq("owner_email", biz.owner_email)
+          .not("owner_id", "is", null)
+          .neq("id", id)
+          .limit(1)
+          .maybeSingle();
+        ownerId = sibling?.owner_id ?? null;
+      } else {
+        ownerId = authData.user?.id ?? null;
+      }
+    } else if (!password && biz.owner_email) {
+      // Returning user — link via sibling
+      const { data: sibling } = await supabase
+        .from("businesses")
+        .select("owner_id")
+        .eq("owner_email", biz.owner_email)
+        .not("owner_id", "is", null)
+        .neq("id", id)
+        .limit(1)
+        .maybeSingle();
+      ownerId = sibling?.owner_id ?? null;
+    }
+
+    const updateData: Record<string, unknown> = {
+      status: "active",
+      contact_phone: contactPhone ?? null,
+      description: description ?? null,
+      timings: timings ?? [],
+      social_links: socialLinks ?? {},
+      completed_at: new Date().toISOString(),
+      // Clear the claim token
+      claim_token: null,
+      claim_token_expires_at: null,
+    };
+    if (ownerId) updateData.owner_id = ownerId;
+
+    const { error } = await supabase.from("businesses").update(updateData).eq("id", id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    return NextResponse.json({ ok: true });
+  }
+
+  // ── Path B: 10-minute OTP via cookie (self-register / identity-match flow) ─
   if (!otp) {
     return NextResponse.json({ error: "Missing verification code." }, { status: 400 });
   }
 
-  // Verify OTP cookie
   const cookie = req.cookies.get("otp_pending")?.value;
   if (!cookie) {
     return NextResponse.json(
@@ -50,8 +128,6 @@ export async function POST(
     return NextResponse.json({ error: "Incorrect code. Please try again." }, { status: 400 });
   }
 
-  const supabase = createAdminClient();
-
   // Fetch owner email for account creation
   const { data: biz } = await supabase
     .from("businesses")
@@ -59,23 +135,20 @@ export async function POST(
     .eq("id", id)
     .single();
 
-  // Create or link a Supabase Auth account
+  // Create or link Supabase Auth account
   let ownerId: string | null = null;
   if (biz?.owner_email) {
     if (password) {
-      // New user — create account (OTP already verified ownership)
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: biz.owner_email,
         password,
         email_confirm: true,
       });
-
       if (authError) {
         return NextResponse.json({ error: "Failed to create account. Please try again." }, { status: 500 });
       }
       ownerId = authData.user?.id ?? null;
     } else {
-      // Existing user — find their owner_id from another business they already claimed
       const { data: sibling } = await supabase
         .from("businesses")
         .select("owner_id")
@@ -84,12 +157,10 @@ export async function POST(
         .neq("id", id)
         .limit(1)
         .maybeSingle();
-
       ownerId = sibling?.owner_id ?? null;
     }
   }
 
-  // Update business record
   const updateData: Record<string, unknown> = {
     status: "active",
     contact_phone: contactPhone ?? null,
@@ -100,14 +171,8 @@ export async function POST(
   };
   if (ownerId) updateData.owner_id = ownerId;
 
-  const { error } = await supabase
-    .from("businesses")
-    .update(updateData)
-    .eq("id", id);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  const { error } = await supabase.from("businesses").update(updateData).eq("id", id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const res = NextResponse.json({ ok: true });
   res.cookies.set("otp_pending", "", { maxAge: 0, path: "/" });

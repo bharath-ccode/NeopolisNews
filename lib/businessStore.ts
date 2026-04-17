@@ -1,6 +1,6 @@
 // ─── Business record store (localStorage) ───────────────────────────────────
 
-export type BusinessStatus = "invited" | "active" | "incomplete";
+export type BusinessStatus = "invited" | "pending" | "verified" | "active" | "incomplete";
 
 export interface DayTiming {
   day: string;
