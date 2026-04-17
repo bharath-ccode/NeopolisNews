@@ -12,29 +12,45 @@ import {
   Search,
   Users,
   Pencil,
+  AlertCircle,
+  FileText,
 } from "lucide-react";
 import { getAllBusinesses, type BusinessRecord } from "@/lib/businessStore";
+import { createClient } from "@/lib/supabase/client";
 
-function StatusBadge({ status }: { status: BusinessRecord["status"] }) {
-  if (status === "active")
-    return <span className="tag-green">Active</span>;
-  if (status === "incomplete")
-    return <span className="tag-orange">Incomplete</span>;
-  return <span className="tag-blue">Invited</span>;
+interface PendingBiz {
+  id: string;
+  name: string;
+  address: string;
+  created_at: string;
+  verification_requests: { submitter_name: string; submitter_email: string; created_at: string }[];
 }
 
-function getInviteLink(id: string): string {
-  if (typeof window === "undefined") return "";
-  return `${window.location.origin}/onboard/${id}`;
+function StatusBadge({ status }: { status: BusinessRecord["status"] }) {
+  if (status === "active")   return <span className="tag-green">Active</span>;
+  if (status === "incomplete") return <span className="tag-orange">Incomplete</span>;
+  if (status === "pending")  return <span className="inline-flex items-center gap-1 text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full">Pending</span>;
+  if (status === "verified") return <span className="inline-flex items-center gap-1 text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full">Verified</span>;
+  return <span className="tag-blue">Invited</span>;
 }
 
 export default function AdminBusinessesPage() {
   const [businesses, setBusinesses] = useState<BusinessRecord[]>([]);
+  const [pendingBiz, setPendingBiz] = useState<PendingBiz[]>([]);
   const [search, setSearch] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     setBusinesses(getAllBusinesses());
+
+    // Also fetch pending verification requests from Supabase
+    // (these come from public users, not the admin panel, so they're not in localStorage)
+    createClient()
+      .from("businesses")
+      .select("id, name, address, created_at, verification_requests(submitter_name, submitter_email, created_at)")
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => { if (data) setPendingBiz(data as PendingBiz[]); });
   }, []);
 
   function copyLink(id: string) {
@@ -75,11 +91,12 @@ export default function AdminBusinessesPage() {
 
       <div className="max-w-5xl mx-auto px-4 md:px-8 py-8">
         {/* Stats row */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-4 gap-4 mb-6">
           {[
-            { label: "Total", value: businesses.length, icon: Users, color: "bg-blue-50 text-blue-600" },
-            { label: "Active", value: businesses.filter((b) => b.status === "active").length, icon: CheckCircle, color: "bg-green-50 text-green-600" },
+            { label: "Total",   value: businesses.length, icon: Users, color: "bg-blue-50 text-blue-600" },
+            { label: "Active",  value: businesses.filter((b) => b.status === "active").length, icon: CheckCircle, color: "bg-green-50 text-green-600" },
             { label: "Invited", value: businesses.filter((b) => b.status === "invited").length, icon: Clock, color: "bg-orange-50 text-orange-600" },
+            { label: "Pending", value: pendingBiz.length, icon: AlertCircle, color: pendingBiz.length > 0 ? "bg-amber-50 text-amber-600" : "bg-gray-50 text-gray-400" },
           ].map((s) => (
             <div key={s.label} className="card p-4 flex items-center gap-3">
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${s.color}`}>
@@ -92,6 +109,56 @@ export default function AdminBusinessesPage() {
             </div>
           ))}
         </div>
+
+        {/* Pending verification requests */}
+        {pendingBiz.length > 0 && (
+          <div className="card overflow-hidden mb-6 border-amber-200">
+            <div className="flex items-center gap-2 px-5 py-3 bg-amber-50 border-b border-amber-100">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+              <p className="text-sm font-bold text-amber-900">
+                {pendingBiz.length} Pending Verification {pendingBiz.length === 1 ? "Request" : "Requests"}
+              </p>
+              <p className="text-xs text-amber-700 ml-1">— review and approve to send the owner a claim link</p>
+            </div>
+            <div className="divide-y divide-amber-50">
+              {pendingBiz.map((b) => {
+                const vr = b.verification_requests?.[0];
+                return (
+                  <div key={b.id} className="px-5 py-4 flex items-center justify-between gap-4">
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-sm shrink-0">
+                        {b.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <p className="font-bold text-sm text-gray-900">{b.name}</p>
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full">Pending</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mb-1 truncate">{b.address}</p>
+                        {vr && (
+                          <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                            <FileText className="w-3 h-3" />
+                            <span>
+                              Request from <strong className="text-gray-600">{vr.submitter_name}</strong>
+                              {" "}({vr.submitter_email}) ·{" "}
+                              {new Date(vr.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <Link
+                      href={`/admin/businesses/${b.id}`}
+                      className="shrink-0 flex items-center gap-1.5 text-xs bg-amber-600 hover:bg-amber-700 text-white font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      <Pencil className="w-3.5 h-3.5" /> Review
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Search + list */}
         <div className="card overflow-hidden">

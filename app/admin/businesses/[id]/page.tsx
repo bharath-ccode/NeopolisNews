@@ -17,8 +17,23 @@ import {
   Facebook,
   Youtube,
   Save,
+  FileText,
+  Phone,
+  Mail,
+  AlertCircle,
 } from "lucide-react";
 import { getBusinessById, saveBusiness, type BusinessRecord, type SocialLinks } from "@/lib/businessStore";
+import { createClient } from "@/lib/supabase/client";
+
+interface VerificationRequest {
+  id: string;
+  submitter_name: string;
+  submitter_email: string;
+  submitter_phone: string;
+  proof_url: string | null;
+  status: string;
+  created_at: string;
+}
 
 const MAX_PICTURES = 3;
 
@@ -38,6 +53,9 @@ export default function AdminBusinessEditPage() {
   const [copied, setCopied] = useState(false);
   const [social, setSocial] = useState<SocialLinks>({});
   const [savingSocial, setSavingSocial] = useState(false);
+  const [verificationRequest, setVerificationRequest] = useState<VerificationRequest | null>(null);
+  const [approving, setApproving] = useState(false);
+  const [approveMsg, setApproveMsg] = useState("");
 
   const logoRef = useRef<HTMLInputElement>(null);
   const picRef = useRef<HTMLInputElement>(null);
@@ -47,6 +65,17 @@ export default function AdminBusinessEditPage() {
     if (!b) { setNotFound(true); return; }
     setBusiness(b);
     setSocial(b.socialLinks ?? {});
+
+    // Fetch pending verification request from Supabase if status is pending
+    createClient()
+      .from("verification_requests")
+      .select("id, submitter_name, submitter_email, submitter_phone, proof_url, status, created_at")
+      .eq("business_id", id)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => { if (data) setVerificationRequest(data as VerificationRequest); });
   }, [id]);
 
   function persist(updated: BusinessRecord) {
@@ -137,6 +166,24 @@ export default function AdminBusinessEditPage() {
     setTimeout(() => setCopied(false), 2000);
   }
 
+  async function approveClaim() {
+    if (!business) return;
+    setApproving(true); setApproveMsg("");
+    try {
+      const res = await fetch(`/api/admin/businesses/${business.id}/approve-claim`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error ?? "Approval failed."); return; }
+      setApproveMsg(`Claim link sent to ${data.sentTo}`);
+      setVerificationRequest(null);
+      // Update local business status
+      persist({ ...business, status: "verified" as BusinessRecord["status"] });
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setApproving(false);
+    }
+  }
+
   if (notFound) {
     return (
       <div className="p-8 text-center">
@@ -191,6 +238,62 @@ export default function AdminBusinessEditPage() {
       {error && (
         <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl">
           {error}
+        </div>
+      )}
+
+      {/* Pending verification request */}
+      {verificationRequest && (
+        <div className="card border-amber-200 overflow-hidden mb-4">
+          <div className="flex items-center gap-2 px-5 py-3 bg-amber-50 border-b border-amber-100">
+            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+            <p className="text-sm font-bold text-amber-900">Pending Ownership Verification</p>
+          </div>
+          <div className="p-5 space-y-3">
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="flex items-start gap-2">
+                <span className="text-gray-400 w-5 shrink-0 mt-0.5 text-xs font-semibold">NAME</span>
+                <span className="text-gray-800 font-medium">{verificationRequest.submitter_name}</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <Mail className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
+                <a href={`mailto:${verificationRequest.submitter_email}`} className="text-brand-600 hover:underline text-sm truncate">
+                  {verificationRequest.submitter_email}
+                </a>
+              </div>
+              <div className="flex items-start gap-2">
+                <Phone className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
+                <a href={`tel:${verificationRequest.submitter_phone}`} className="text-gray-800 text-sm">
+                  {verificationRequest.submitter_phone}
+                </a>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-gray-400 text-xs font-semibold w-5 shrink-0 mt-0.5">DATE</span>
+                <span className="text-gray-600 text-sm">
+                  {new Date(verificationRequest.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                </span>
+              </div>
+            </div>
+
+            {verificationRequest.proof_url && (
+              <a href={verificationRequest.proof_url} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm text-brand-600 hover:text-brand-700 border border-brand-200 hover:bg-brand-50 px-3 py-1.5 rounded-lg transition-colors">
+                <FileText className="w-4 h-4" /> View Proof Document
+              </a>
+            )}
+
+            <div className="pt-2 border-t border-amber-100 flex items-center gap-3">
+              <button onClick={approveClaim} disabled={approving}
+                className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors disabled:opacity-60">
+                {approving ? <><Loader2 className="w-4 h-4 animate-spin" /> Approving…</> : <><CheckCircle className="w-4 h-4" /> Approve &amp; Send Claim Link</>}
+              </button>
+              <p className="text-xs text-gray-400">Sends a 24-hour claim link to the owner&apos;s email.</p>
+            </div>
+            {approveMsg && (
+              <p className="text-sm text-green-700 font-medium flex items-center gap-1.5">
+                <CheckCircle className="w-4 h-4" /> {approveMsg}
+              </p>
+            )}
+          </div>
         </div>
       )}
 
