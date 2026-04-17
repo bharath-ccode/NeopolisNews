@@ -19,7 +19,13 @@ import {
   getTypes,
   getSubtypesByTypes,
 } from "@/lib/businessDirectory";
-import { createBusiness, type BusinessRecord } from "@/lib/businessStore";
+
+interface CreatedBiz {
+  id: string;
+  name: string;
+  ownerPhone?: string;
+  email?: string;
+}
 
 type Step = 1 | 2 | 3;
 
@@ -119,8 +125,9 @@ export default function AdminNewBusinessPage() {
   const [email, setEmail] = useState("");
 
   // Done
-  const [created, setCreated] = useState<BusinessRecord | null>(null);
+  const [created, setCreated] = useState<CreatedBiz | null>(null);
   const [copied, setCopied] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   // ── Taxonomy helpers ──────────────────────────────────────────────────────
 
@@ -177,26 +184,39 @@ export default function AdminNewBusinessPage() {
     setStep(2);
   }
 
-  function handleCreate() {
+  async function handleCreate() {
     const e = validateStep2();
     if (e) { setError(e); return; }
     setError("");
-    const record = createBusiness({
-      name: name.trim(),
-      industry,
-      types: selectedTypes,
-      subtypes: selectedSubtypes,
-      address: address.trim(),
-      ownerPhone: ownerPhone ? `+91${ownerPhone}` : undefined,
-      email: email.trim() || undefined,
-    });
-    setCreated(record);
-    setStep(3);
+    setCreating(true);
+    try {
+      const res = await fetch("/api/admin/businesses/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          industry,
+          types: selectedTypes,
+          subtypes: selectedSubtypes,
+          address: address.trim(),
+          ownerEmail: email.trim() || undefined,
+          ownerPhone: ownerPhone ? `+91${ownerPhone}` : undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error ?? "Failed to create business."); return; }
+      setCreated({ id: data.id, name: data.name, ownerPhone: ownerPhone ? `+91${ownerPhone}` : undefined, email: email.trim() || undefined });
+      setStep(3);
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setCreating(false);
+    }
   }
 
   function inviteLink() {
     return typeof window !== "undefined"
-      ? `${window.location.origin}/onboard/${created?.id}`
+      ? `${window.location.origin}/businesses/${created?.id}/claim`
       : "";
   }
 
@@ -464,10 +484,10 @@ export default function AdminNewBusinessPage() {
 
             <button
               onClick={handleCreate}
+              disabled={creating}
               className="btn-primary w-full justify-center mt-5"
             >
-              Create &amp; Generate Invite Link{" "}
-              <ArrowRight className="w-4 h-4" />
+              {creating ? "Creating…" : <><span>Create &amp; Generate Invite Link</span> <ArrowRight className="w-4 h-4" /></>}
             </button>
           </div>
         )}
@@ -526,21 +546,21 @@ export default function AdminNewBusinessPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Industry</span>
-                <span className="font-semibold text-gray-800">{created.industry}</span>
+                <span className="font-semibold text-gray-800">{industry}</span>
               </div>
               <div className="flex flex-wrap justify-between gap-2">
                 <span className="text-gray-500 shrink-0">Types</span>
                 <div className="flex flex-wrap gap-1 justify-end">
-                  {created.types.map((t) => (
+                  {selectedTypes.map((t) => (
                     <span key={t} className="tag-blue text-xs">{t}</span>
                   ))}
                 </div>
               </div>
-              {created.subtypes.length > 0 && (
+              {selectedSubtypes.length > 0 && (
                 <div className="flex flex-wrap justify-between gap-2">
                   <span className="text-gray-500 shrink-0">Offerings</span>
                   <span className="font-semibold text-gray-800 text-right text-xs">
-                    {created.subtypes.join(", ")}
+                    {selectedSubtypes.join(", ")}
                   </span>
                 </div>
               )}
@@ -561,7 +581,7 @@ export default function AdminNewBusinessPage() {
                 <span className="tag-blue">Invited</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-500">Token</span>
+                <span className="text-gray-500">ID</span>
                 <code className="text-xs font-mono bg-gray-200 px-1.5 py-0.5 rounded text-gray-700">
                   {created.id}
                 </code>

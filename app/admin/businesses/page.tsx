@@ -71,12 +71,11 @@ export default function AdminBusinessesPage() {
       .order("created_at", { ascending: false })
       .then(({ data }) => { if (data) setPendingBiz(data as PendingBiz[]); });
 
-    // Fetch self-registered businesses (in Supabase but not in admin localStorage)
+    // Fetch all Supabase businesses not already tracked in localStorage
     supabase
       .from("businesses")
       .select("id, name, industry, address, status, owner_email, created_at")
       .in("status", ["active", "invited", "incomplete"])
-      .not("owner_email", "is", null)
       .order("created_at", { ascending: false })
       .then(({ data }) => {
         if (data) {
@@ -198,9 +197,9 @@ export default function AdminBusinessesPage() {
             <div className="flex items-center gap-2 px-5 py-3 bg-blue-50 border-b border-blue-100">
               <Users className="w-4 h-4 text-blue-600 shrink-0" />
               <p className="text-sm font-bold text-blue-900">
-                {selfRegBiz.length} Self-Registered {selfRegBiz.length === 1 ? "Business" : "Businesses"}
+                {selfRegBiz.length} {selfRegBiz.length === 1 ? "Business" : "Businesses"} in Database
               </p>
-              <p className="text-xs text-blue-700 ml-1">— registered directly by owners, not via admin panel</p>
+              <p className="text-xs text-blue-700 ml-1">— stored in Supabase (admin-created or self-registered)</p>
             </div>
             <div className="divide-y divide-blue-50">
               {selfRegBiz.map((b) => (
