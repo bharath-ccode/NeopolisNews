@@ -109,11 +109,16 @@ All transactional email goes through `resend.emails.send()` inline in API routes
 - **My Business dashboard** (`/my-business`) — owner login, profile editing, logo/photo upload via `/api/my-business/media`
 - **Admin panel** (`/admin`) — business list + detail, news, projects, builders, analytics, settings; protected client-side by `AdminAuthContext`
 - **Builder portal** (`/builder`) — project management, launches, availability; protected by `BuilderAuthContext`
-- **Individual auth** — `AuthContext` fully wired to Supabase Auth (OTP, email+password, Google OAuth redirect); `user_profiles` table migration at `supabase/migrations/20260417_create_user_profiles.sql` (**must be run in Supabase SQL editor**)
+- **Individual auth** — `AuthContext` fully wired to Supabase Auth (OTP, email+password, Google OAuth); `user_profiles` table migration at `supabase/migrations/20260417_create_user_profiles.sql` (**must be run in Supabase SQL editor**); `updateProfile` and `changePassword` exposed on the context
+- **Google OAuth callback** — `app/auth/callback/page.tsx` handles both PKCE (code exchange) and implicit (hash fragment) flows
+- **Individual dashboard** — overview stats and listings pulled from real localStorage data; profile page saves to `user_profiles` via Supabase; property post form saves to localStorage via `lib/listings.ts`
+- **Cross-registration identity** — all three entry points (individual signup, business self-register, business claim) resolve to a single `auth.users` row regardless of order; `resolveOwnerId()` in `complete/route.ts` uses `findAuthUserIdByEmail()` (GoTrue Admin REST) to link existing accounts instead of silently setting `owner_id = null`
+
+### Key identity invariant
+One `auth.users` record per email/phone, always. `user_profiles` (individual data) and `businesses.owner_id` (owned businesses) both FK to the same `auth.users.id`. Registration order does not matter.
 
 ### Not yet implemented
-- **Google OAuth callback** — `loginWithGoogle` redirects to `/auth/callback` but that route does not exist yet
-- **Individual user dashboard** — pages under `app/dashboard/individual/` exist as scaffolding but are not backed by real data
-- **Classifieds / Gigs** — designed (post types: For Sale, For Rent, Service Offered) but no API routes or DB tables yet; property listings currently use `localStorage` only
+- **Classifieds / Gigs** — designed (post types: For Sale, For Rent, Service Offered, Gig) but no API routes or DB tables yet; property listings use `localStorage` only
+- **Enquiries** — enquiries page exists as UI scaffolding with mock data; no DB table or API routes
 - **Middleware auth guards** — `middleware.ts` is a pass-through; all route protection is client-side
 - **Mobile app** — `auth.users` identity model is ready for a React Native / mobile client; not started
