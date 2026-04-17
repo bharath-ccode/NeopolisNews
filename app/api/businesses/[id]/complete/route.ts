@@ -8,6 +8,62 @@ function sign(data: string): string {
   return createHmac("sha256", secret).update(data).digest("hex");
 }
 
+// Look up an existing auth.users record by email via the GoTrue Admin REST API.
+// The Supabase JS admin SDK has no email-filter on listUsers(), so we call the
+// endpoint directly with the service-role key.
+async function findAuthUserIdByEmail(email: string): Promise<string | null> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  try {
+    const res = await fetch(
+      `${url}/auth/v1/admin/users?filter=${encodeURIComponent(email)}&per_page=1`,
+      { headers: { apikey: key, Authorization: `Bearer ${key}` } }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const users: Array<{ email: string; id: string }> = data?.users ?? [];
+    return users.find((u) => u.email === email)?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// Get or create a Supabase Auth user for the given email.
+// - If password is provided: create with email+password.
+// - If the email already exists (individual account or prior business claim):
+//   look up their existing ID rather than failing.
+// - If no password: find existing account only (returning owner).
+async function resolveOwnerId(
+  supabase: ReturnType<typeof createAdminClient>,
+  email: string,
+  password?: string
+): Promise<string | null> {
+  if (password) {
+    const { data, error } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    });
+    if (!error) return data.user?.id ?? null;
+    // Email already exists (individual registration or prior business) — link to it.
+    return findAuthUserIdByEmail(email);
+  }
+
+  // No password: returning owner who already has an account.
+  // First try sibling businesses (faster), then fall back to email lookup.
+  const { data: sibling } = await supabase
+    .from("businesses")
+    .select("owner_id")
+    .eq("owner_email", email)
+    .not("owner_id", "is", null)
+    .limit(1)
+    .maybeSingle();
+  if (sibling?.owner_id) return sibling.owner_id;
+
+  return findAuthUserIdByEmail(email);
+}
+
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -39,41 +95,9 @@ export async function POST(
       );
     }
 
-    // Create auth account if password provided
-    let ownerId: string | null = null;
-    if (password && biz.owner_email) {
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: biz.owner_email,
-        password,
-        email_confirm: true,
-      });
-
-      if (authError) {
-        // Already has account — find owner_id from sibling business
-        const { data: sibling } = await supabase
-          .from("businesses")
-          .select("owner_id")
-          .eq("owner_email", biz.owner_email)
-          .not("owner_id", "is", null)
-          .neq("id", id)
-          .limit(1)
-          .maybeSingle();
-        ownerId = sibling?.owner_id ?? null;
-      } else {
-        ownerId = authData.user?.id ?? null;
-      }
-    } else if (!password && biz.owner_email) {
-      // Returning user — link via sibling
-      const { data: sibling } = await supabase
-        .from("businesses")
-        .select("owner_id")
-        .eq("owner_email", biz.owner_email)
-        .not("owner_id", "is", null)
-        .neq("id", id)
-        .limit(1)
-        .maybeSingle();
-      ownerId = sibling?.owner_id ?? null;
-    }
+    const ownerId = biz.owner_email
+      ? await resolveOwnerId(supabase, biz.owner_email, password || undefined)
+      : null;
 
     const updateData: Record<string, unknown> = {
       status: "active",
@@ -82,7 +106,6 @@ export async function POST(
       timings: timings ?? [],
       social_links: socialLinks ?? {},
       completed_at: new Date().toISOString(),
-      // Clear the claim token
       claim_token: null,
       claim_token_expires_at: null,
     };
@@ -128,38 +151,15 @@ export async function POST(
     return NextResponse.json({ error: "Incorrect code. Please try again." }, { status: 400 });
   }
 
-  // Fetch owner email for account creation
   const { data: biz } = await supabase
     .from("businesses")
     .select("owner_email")
     .eq("id", id)
     .single();
 
-  // Create or link Supabase Auth account
-  let ownerId: string | null = null;
-  if (biz?.owner_email) {
-    if (password) {
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: biz.owner_email,
-        password,
-        email_confirm: true,
-      });
-      if (authError) {
-        return NextResponse.json({ error: "Failed to create account. Please try again." }, { status: 500 });
-      }
-      ownerId = authData.user?.id ?? null;
-    } else {
-      const { data: sibling } = await supabase
-        .from("businesses")
-        .select("owner_id")
-        .eq("owner_email", biz.owner_email)
-        .not("owner_id", "is", null)
-        .neq("id", id)
-        .limit(1)
-        .maybeSingle();
-      ownerId = sibling?.owner_id ?? null;
-    }
-  }
+  const ownerId = biz?.owner_email
+    ? await resolveOwnerId(supabase, biz.owner_email, password || undefined)
+    : null;
 
   const updateData: Record<string, unknown> = {
     status: "active",
