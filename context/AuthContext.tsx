@@ -54,7 +54,7 @@ interface AuthContextValue {
   loginWithOtp: (contact: string, otp: string, userType: UserType) => Promise<void>;
   sendOtp: (contact: string) => Promise<void>;
   verifyOtp: (contact: string, otp: string) => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
+  signUp: (email: string, password: string, name: string) => Promise<void>;
   updateProfile: (updates: ProfileUpdate) => Promise<void>;
   changePassword: (newPassword: string) => Promise<void>;
   logout: () => void;
@@ -87,6 +87,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   // Build a User object from an auth.users row + user_profiles row.
+  // On first login after email confirmation, auto-creates the user_profiles
+  // row from metadata stored during signUp so the name is never lost.
   const loadProfile = useCallback(async (authUser: SupabaseUser) => {
     const { data } = await supabase
       .from("user_profiles")
@@ -94,9 +96,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq("user_id", authUser.id)
       .maybeSingle();
 
+    const meta = authUser.user_metadata as { name?: string; phone?: string } | undefined;
+
+    if (!data) {
+      // First login — seed profile from signUp metadata
+      const seedName = meta?.name || authUser.email?.split("@")[0] || "User";
+      supabase.from("user_profiles").upsert(
+        { user_id: authUser.id, name: seedName, phone: meta?.phone ?? null },
+        { onConflict: "user_id" }
+      ).then(); // fire-and-forget
+    }
+
     setUser({
       id: authUser.id,
-      name: data?.name || authUser.email?.split("@")[0] || "User",
+      name: data?.name || meta?.name || authUser.email?.split("@")[0] || "User",
       email: authUser.email ?? undefined,
       phone: authUser.phone ?? data?.phone ?? undefined,
       userType: "individual",
@@ -185,6 +198,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [loadProfile]
   );
 
+  // Registration via email confirmation link (not OTP).
+  // Name is stored in user_metadata so loadProfile can seed user_profiles
+  // after the user clicks the confirmation link.
+  const signUp = useCallback(async (email: string, password: string, name: string) => {
+    const redirectTo =
+      (typeof window !== "undefined" ? window.location.origin : process.env.NEXT_PUBLIC_SITE_URL ?? "") +
+      "/auth/callback";
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { name },
+        emailRedirectTo: redirectTo,
+      },
+    });
+    if (error) throw new Error(error.message);
+  }, []);
+
   const updateProfile = useCallback(
     async (updates: ProfileUpdate) => {
       const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -228,7 +259,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loginWithOtp,
         sendOtp,
         verifyOtp,
-        register,
+        signUp,
         updateProfile,
         changePassword,
         logout,

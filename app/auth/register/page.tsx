@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   User,
   Building2,
   Mail,
-  Phone,
   Lock,
   Eye,
   EyeOff,
@@ -16,278 +15,86 @@ import {
   Loader2,
   CheckCircle,
   Briefcase,
-  ShieldCheck,
-  RefreshCw,
-  Utensils,
-  Film,
-  ShoppingBag,
-  Scissors,
-  Coffee,
-  Dumbbell,
-  Clock,
-  Hospital,
-  Pill,
-  Stethoscope,
-  PhoneCall,
-  Ambulance,
-  Landmark,
-  Wine,
-  Trees,
-  Microscope,
+  MailCheck,
 } from "lucide-react";
-import { useAuth, UserType, RegisterData, BusinessHours } from "@/context/AuthContext";
+import { useAuth, UserType } from "@/context/AuthContext";
 
-type Step = "type" | "details" | "verify";
+type Step = "type" | "details" | "done";
 
-type BizType = { id: string; label: string; group: string; Icon: React.ComponentType<{ className?: string }>; color: string };
+const Logo = () => (
+  <Link href="/" className="flex items-center gap-2 mb-8">
+    <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
+      <Building2 className="w-5 h-5 text-white" />
+    </div>
+    <span className="text-lg font-bold text-gray-900">
+      Neopolis<span className="text-brand-600">News</span>
+    </span>
+  </Link>
+);
 
-const LIFESTYLE_TYPES: BizType[] = [
-  { id: "Restaurant",  label: "Restaurant",    group: "Lifestyle", Icon: Utensils,    color: "bg-orange-50 text-orange-600" },
-  { id: "Movie Hall",  label: "Movie Hall",    group: "Lifestyle", Icon: Film,        color: "bg-purple-50 text-purple-600" },
-  { id: "Shop",        label: "Shop / Retail", group: "Lifestyle", Icon: ShoppingBag, color: "bg-blue-50 text-blue-600"     },
-  { id: "Saloon",      label: "Saloon",        group: "Lifestyle", Icon: Scissors,    color: "bg-pink-50 text-pink-600"     },
-  { id: "Cafe",        label: "Cafe",          group: "Lifestyle", Icon: Coffee,      color: "bg-yellow-50 text-yellow-700" },
-  { id: "Fitness",     label: "Fitness & Gym", group: "Lifestyle", Icon: Dumbbell,    color: "bg-green-50 text-green-600"   },
-  { id: "Other",       label: "Other",         group: "Lifestyle", Icon: Building2,   color: "bg-gray-50 text-gray-600"     },
-];
-
-const HEALTH_TYPES: BizType[] = [
-  { id: "Hospital",    label: "Hospital",     group: "Health", Icon: Hospital,    color: "bg-red-50 text-red-600"       },
-  { id: "Pharmacy",    label: "Pharmacy",     group: "Health", Icon: Pill,        color: "bg-teal-50 text-teal-600"    },
-  { id: "Clinic",      label: "Clinic",       group: "Health", Icon: Stethoscope, color: "bg-cyan-50 text-cyan-600"    },
-  { id: "Ambulance",   label: "Ambulance",    group: "Health", Icon: Ambulance,   color: "bg-orange-50 text-orange-600" },
-  { id: "Diagnostics", label: "Diagnostics",  group: "Health", Icon: Microscope,  color: "bg-sky-50 text-sky-600"      },
-];
-
-const EVENT_TYPES: BizType[] = [
-  { id: "Convention Center", label: "Convention Center", group: "Events", Icon: Landmark, color: "bg-violet-50 text-violet-600" },
-  { id: "Banquet Hall",      label: "Banquet Hall",      group: "Events", Icon: Wine,     color: "bg-rose-50 text-rose-600"    },
-  { id: "Outdoor Space",     label: "Outdoor Space",     group: "Events", Icon: Trees,    color: "bg-lime-50 text-lime-600"    },
-];
-
-const ALL_BIZ_TYPES: BizType[] = [...LIFESTYLE_TYPES, ...HEALTH_TYPES, ...EVENT_TYPES];
-
-// types that require an emergency / helpline number
-const EMERGENCY_TYPES = new Set(["Hospital", "Clinic", "Ambulance"]);
-
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
-function TypeGrid({
-  types,
-  selected,
-  onSelect,
-  healthStyle = false,
-}: {
-  types: BizType[];
-  selected: string;
-  onSelect: (id: string) => void;
-  healthStyle?: boolean;
-}) {
+const ProgressBar = ({ current }: { current: Step }) => {
+  const steps: Step[] = ["type", "details", "done"];
   return (
-    <div className="grid grid-cols-4 gap-2">
-      {types.map(({ id, label, Icon, color }) => {
-        const sel = selected === id;
-        return (
-          <button
-            key={id}
-            type="button"
-            onClick={() => onSelect(id)}
-            className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all text-center ${
-              sel
-                ? healthStyle ? "border-red-500 bg-red-50" : "border-brand-500 bg-brand-50"
-                : "border-gray-100 hover:border-gray-300 bg-white"
-            }`}
-          >
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${sel ? (healthStyle ? "bg-red-100" : "bg-brand-100") : color}`}>
-              <Icon className={`w-4 h-4 ${sel ? (healthStyle ? "text-red-600" : "text-brand-600") : ""}`} />
-            </div>
-            <span className={`text-xs font-semibold leading-tight ${sel ? (healthStyle ? "text-red-700" : "text-brand-700") : "text-gray-600"}`}>
-              {label}
-            </span>
-            {sel && <CheckCircle className={`w-3.5 h-3.5 ${healthStyle ? "text-red-600" : "text-brand-600"}`} />}
-          </button>
-        );
-      })}
+    <div className="flex items-center gap-2 mb-6">
+      {steps.map((s, idx) => (
+        <div key={s} className="flex items-center gap-2">
+          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+            s === current ? "bg-brand-600 text-white" : steps.indexOf(current) > idx ? "bg-brand-200 text-brand-700" : "bg-gray-100 text-gray-400"
+          }`}>
+            {steps.indexOf(current) > idx ? <CheckCircle className="w-4 h-4" /> : idx + 1}
+          </div>
+          {idx < 2 && <div className="h-px w-8 bg-gray-200" />}
+        </div>
+      ))}
     </div>
   );
-}
-
-const OTP_RESEND_SECONDS = 60;
-
-const DEFAULT_HOURS: BusinessHours = {
-  open: "09:00",
-  close: "21:00",
-  days: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
 };
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { register, loginWithGoogle, sendOtp, verifyOtp } = useAuth();
+  const { signUp, loginWithGoogle } = useAuth();
 
   const [step, setStep] = useState<Step>("type");
   const [userType, setUserType] = useState<UserType>("individual");
 
-  // Shared fields
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [contactMethod, setContactMethod] = useState<"email" | "phone">("email");
-
-  // Business only
-  const [businessName, setBusinessName] = useState("");
-  const [bizSubType, setBizSubType] = useState("");   // e.g. "Diagnostics"
-  const [emergencyPhone, setEmergencyPhone] = useState("");
-  const [hoursOpen, setHoursOpen] = useState(DEFAULT_HOURS.open);
-  const [hoursClose, setHoursClose] = useState(DEFAULT_HOURS.close);
-  const [openDays, setOpenDays] = useState<string[]>(DEFAULT_HOURS.days);
-  const [gstin, setGstin] = useState("");
-
-  // OTP state
-  const [otp, setOtp] = useState("");
-  const [resendTimer, setResendTimer] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Countdown timer for OTP resend
-  useEffect(() => {
-    if (resendTimer <= 0) return;
-    timerRef.current = setInterval(() => {
-      setResendTimer((t) => {
-        if (t <= 1) { clearInterval(timerRef.current!); return 0; }
-        return t - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timerRef.current!);
-  }, [resendTimer]);
-
-  // Business is always phone-only; individual can choose email or phone
-  const effectiveContactMethod: "email" | "phone" = userType === "business" ? "phone" : contactMethod;
-  const contactDisplay = effectiveContactMethod === "email" ? email : `+91 ${phone}`;
-
-  function toggleDay(day: string) {
-    setOpenDays((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
-    );
-  }
-
   async function handleGoogle() {
     setLoading(true);
     await loginWithGoogle(userType);
-    router.push("/dashboard");
   }
 
   async function handleDetailsSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!name) { setError("Please enter your name."); return; }
-    if (effectiveContactMethod === "email" && !email) { setError("Please enter your email."); return; }
-    if (effectiveContactMethod === "phone" && phone.length < 10) { setError("Please enter a valid 10-digit phone number."); return; }
-    if (userType === "business" && !businessName) { setError("Please enter your business name."); return; }
-    if (userType === "business" && !bizSubType) { setError("Please select your business type."); return; }
-    if (userType === "business" && openDays.length === 0) { setError("Please select at least one open day."); return; }
+    if (!name.trim()) { setError("Please enter your name."); return; }
+    if (!email) { setError("Please enter your email address."); return; }
+    if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
+    if (password !== confirmPassword) { setError("Passwords do not match."); return; }
 
     setLoading(true);
     try {
-      const contact = effectiveContactMethod === "email" ? email : `+91${phone}`;
-      await sendOtp(contact);
-      setResendTimer(OTP_RESEND_SECONDS);
-      setOtp("");
-      setStep("verify");
-    } catch {
-      setError("Something went wrong. Please try again.");
+      await signUp(email, password, name.trim());
+      setStep("done");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Something went wrong.";
+      if (msg.toLowerCase().includes("already registered")) {
+        setError("An account with this email already exists. Please sign in instead.");
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
   }
-
-  async function handleVerifySubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    if (otp.length < 6) { setError("Please enter the 6-digit OTP."); return; }
-
-    setLoading(true);
-    try {
-      const contact = effectiveContactMethod === "email" ? email : `+91${phone}`;
-      await verifyOtp(contact, otp);
-      await register(buildRegisterData());
-      router.push("/dashboard");
-    } catch {
-      setError("Invalid OTP. Please check and try again.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleResendOtp() {
-    if (resendTimer > 0) return;
-    setError("");
-    setLoading(true);
-    try {
-      const contact = effectiveContactMethod === "email" ? email : `+91${phone}`;
-      await sendOtp(contact);
-      setResendTimer(OTP_RESEND_SECONDS);
-      setOtp("");
-    } catch {
-      setError("Failed to resend OTP. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function buildRegisterData(): RegisterData {
-    return {
-      userType,
-      name,
-      email: effectiveContactMethod === "email" ? email : undefined,
-      phone: effectiveContactMethod === "phone" ? `+91${phone}` : undefined,
-      password: password || undefined,
-      businessName: userType === "business" ? businessName : undefined,
-      businessType: userType === "business"
-        ? (ALL_BIZ_TYPES.find((t) => t.id === bizSubType)?.group ?? "") : undefined,
-      businessSubType: userType === "business" ? bizSubType : undefined,
-      businessCategory: userType === "business" ? bizSubType : undefined,
-      emergencyPhone: userType === "business" && EMERGENCY_TYPES.has(bizSubType) && emergencyPhone
-        ? emergencyPhone : undefined,
-      businessHours: userType === "business"
-        ? { open: hoursOpen, close: hoursClose, days: openDays }
-        : undefined,
-      gstin: userType === "business" && gstin ? gstin : undefined,
-    };
-  }
-
-  // ── Logo header ────────────────────────────────────────────────────────────
-  const Logo = () => (
-    <Link href="/" className="flex items-center gap-2 mb-8">
-      <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
-        <Building2 className="w-5 h-5 text-white" />
-      </div>
-      <span className="text-lg font-bold text-gray-900">
-        Neopolis<span className="text-brand-600">News</span>
-      </span>
-    </Link>
-  );
-
-  const ProgressBar = ({ current }: { current: Step }) => {
-    const steps: Step[] = ["type", "details", "verify"];
-    return (
-      <div className="flex items-center gap-2 mb-6">
-        {steps.map((s, idx) => (
-          <div key={s} className="flex items-center gap-2">
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-              s === current ? "bg-brand-600 text-white" : "bg-brand-100 text-brand-600"
-            }`}>
-              {idx + 1}
-            </div>
-            {idx < 2 && <div className="flex-1 h-px w-8 bg-gray-200" />}
-          </div>
-        ))}
-      </div>
-    );
-  };
 
   // ── Step 1: Choose type ────────────────────────────────────────────────────
   if (step === "type") {
@@ -315,7 +122,7 @@ export default function RegisterPage() {
               </div>
               <div className="text-center">
                 <p className="font-bold text-sm text-gray-900">Individual</p>
-                <p className="text-xs text-gray-400 mt-0.5">Home owner / buyer / tenant</p>
+                <p className="text-xs text-gray-400 mt-0.5">Resident / buyer / tenant</p>
               </div>
               {userType === "individual" && <CheckCircle className="w-5 h-5 text-brand-600" />}
             </button>
@@ -331,7 +138,7 @@ export default function RegisterPage() {
               </div>
               <div className="text-center">
                 <p className="font-bold text-sm text-gray-900">Business</p>
-                <p className="text-xs text-gray-400 mt-0.5">Restaurant / shop / salon&hellip;</p>
+                <p className="text-xs text-gray-400 mt-0.5">Restaurant / shop / salon…</p>
               </div>
               {userType === "business" && <CheckCircle className="w-5 h-5 text-brand-600" />}
             </button>
@@ -374,66 +181,38 @@ export default function RegisterPage() {
     );
   }
 
-  // ── Step 3: OTP Verification ───────────────────────────────────────────────
-  if (step === "verify") {
+  // ── Step 3: Done — check your email ───────────────────────────────────────
+  if (step === "done") {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-12">
         <Logo />
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-          <button onClick={() => { setStep("details"); setError(""); }} className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mb-4">
-            <ArrowLeft className="w-4 h-4" /> Back
-          </button>
-          <ProgressBar current="verify" />
-
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center">
-              <ShieldCheck className="w-5 h-5 text-brand-600" />
-            </div>
-            <h1 className="text-2xl font-extrabold text-gray-900">Verify your {effectiveContactMethod}</h1>
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+          <div className="w-16 h-16 rounded-full bg-brand-50 flex items-center justify-center mx-auto mb-4">
+            <MailCheck className="w-8 h-8 text-brand-600" />
           </div>
-          <p className="text-sm text-gray-500 mb-6">
-            We sent a 6-digit OTP to{" "}
-            <span className="font-semibold text-gray-700">{contactDisplay}</span>.
+          <h1 className="text-2xl font-extrabold text-gray-900 mb-2">Check your email</h1>
+          <p className="text-sm text-gray-500 mb-2">
+            We sent a verification link to
           </p>
-
-          {error && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-4">{error}</p>}
-
-          <form onSubmit={handleVerifySubmit} className="space-y-5">
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">One-time password</label>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                placeholder="• • • • • •"
-                maxLength={6}
-                autoFocus
-                required
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg text-xl text-center tracking-[0.5em] font-mono focus:outline-none focus:ring-2 focus:ring-brand-500"
-              />
-            </div>
-            <button type="submit" disabled={loading || otp.length < 6} className="btn-primary w-full justify-center">
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-              {loading ? "Verifying…" : "Verify & Create Account"}
-            </button>
-          </form>
-
-          <div className="mt-4 flex items-center justify-center gap-2 text-sm">
-            {resendTimer > 0 ? (
-              <p className="text-gray-400">Resend OTP in <span className="font-semibold text-gray-600">{resendTimer}s</span></p>
-            ) : (
-              <button onClick={handleResendOtp} disabled={loading} className="flex items-center gap-1.5 text-brand-600 hover:text-brand-700 font-semibold">
-                <RefreshCw className="w-3.5 h-3.5" /> Resend OTP
+          <p className="font-semibold text-gray-800 mb-6">{email}</p>
+          <p className="text-sm text-gray-400 mb-8">
+            Click the link in the email to verify your account and sign in.
+            The link expires in 24 hours.
+          </p>
+          <div className="space-y-3">
+            <Link href="/auth/login" className="btn-primary w-full justify-center">
+              Go to Sign In <ArrowRight className="w-4 h-4" />
+            </Link>
+            <p className="text-xs text-gray-400">
+              Wrong email?{" "}
+              <button
+                onClick={() => { setStep("details"); setError(""); }}
+                className="text-brand-600 font-semibold hover:underline"
+              >
+                Go back and change it
               </button>
-            )}
+            </p>
           </div>
-          <p className="text-xs text-gray-400 text-center mt-4">
-            Wrong contact?{" "}
-            <button onClick={() => { setStep("details"); setError(""); }} className="text-brand-600 font-semibold hover:underline">
-              Go back and edit
-            </button>
-          </p>
         </div>
       </div>
     );
@@ -444,28 +223,21 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-12">
       <Logo />
       <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-        <button onClick={() => setStep("type")} className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mb-4">
+        <button onClick={() => { setStep("type"); setError(""); }} className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mb-4">
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
         <ProgressBar current="details" />
 
-        <div className="flex items-center gap-2 mb-1">
-          <h1 className="text-2xl font-extrabold text-gray-900">
-            {userType === "individual" ? "Your details" : "Business details"}
-          </h1>
-          <span className={`badge ${userType === "individual" ? "tag-blue" : "tag-purple"}`}>
-            {userType === "individual" ? "Individual" : "Business"}
-          </span>
-        </div>
+        <h1 className="text-2xl font-extrabold text-gray-900 mb-1">Your details</h1>
         <p className="text-sm text-gray-500 mb-6">
-          We&apos;ll send an OTP to verify your {userType === "business" ? "phone number" : "contact"}.
+          We&apos;ll send a verification link to your email.
         </p>
 
         {/* Google shortcut */}
         <button
           onClick={handleGoogle}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-lg py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors mb-4"
+          className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-lg py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors mb-4 disabled:opacity-60"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -487,9 +259,7 @@ export default function RegisterPage() {
         <form onSubmit={handleDetailsSubmit} className="space-y-4">
           {/* Name */}
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5">
-              {userType === "individual" ? "Full name" : "Contact person name"}
-            </label>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5">Full name</label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -503,207 +273,25 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* ── Business-only fields ── */}
-          {userType === "business" && (
-            <>
-              {/* Business name */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Business name</label>
-                <div className="relative">
-                  <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    value={businessName}
-                    onChange={(e) => setBusinessName(e.target.value)}
-                    placeholder="Your business / brand name"
-                    required
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  />
-                </div>
-              </div>
-
-              {/* Business type — visual cards */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-2">What type of business?</label>
-                <TypeGrid
-                  types={LIFESTYLE_TYPES}
-                  selected={bizSubType}
-                  onSelect={(id) => { setBizSubType(id); setEmergencyPhone(""); }}
-                />
-                <div className="flex items-center gap-2 my-2">
-                  <div className="flex-1 h-px bg-red-100" />
-                  <span className="text-xs font-semibold text-red-500 uppercase tracking-wide">Health</span>
-                  <div className="flex-1 h-px bg-red-100" />
-                </div>
-                <TypeGrid
-                  types={HEALTH_TYPES}
-                  selected={bizSubType}
-                  onSelect={(id) => { setBizSubType(id); setEmergencyPhone(""); }}
-                  healthStyle
-                />
-                <div className="flex items-center gap-2 my-2">
-                  <div className="flex-1 h-px bg-violet-100" />
-                  <span className="text-xs font-semibold text-violet-500 uppercase tracking-wide">Events</span>
-                  <div className="flex-1 h-px bg-violet-100" />
-                </div>
-                <TypeGrid
-                  types={EVENT_TYPES}
-                  selected={bizSubType}
-                  onSelect={(id) => { setBizSubType(id); setEmergencyPhone(""); }}
-                />
-              </div>
-
-              {/* Emergency number — hospitals & clinics only */}
-              {EMERGENCY_TYPES.has(bizSubType) && (
-                <div className="border border-red-200 bg-red-50 rounded-xl p-3 space-y-2">
-                  <label className="flex items-center gap-1.5 text-xs font-semibold text-red-700">
-                    <PhoneCall className="w-3.5 h-3.5" /> Emergency / 24h helpline number
-                  </label>
-                  <div className="flex">
-                    <span className="flex items-center px-3 border border-r-0 border-red-200 rounded-l-lg bg-red-100 text-sm text-red-600 font-semibold">
-                      +91
-                    </span>
-                    <input
-                      type="tel"
-                      value={emergencyPhone}
-                      onChange={(e) => setEmergencyPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                      placeholder="Emergency contact number"
-                      className="flex-1 px-3 py-2.5 border border-red-200 rounded-r-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400 bg-white"
-                    />
-                  </div>
-                  <p className="text-xs text-red-500">Displayed prominently on your listing for patients.</p>
-                </div>
-              )}
-
-              {/* Business hours */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5" /> Business hours
-                </label>
-                <div className="border border-gray-200 rounded-xl p-3 space-y-3">
-                  {/* Open / Close time */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs text-gray-400 mb-1">Opens at</label>
-                      <input
-                        type="time"
-                        value={hoursOpen}
-                        onChange={(e) => setHoursOpen(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-400 mb-1">Closes at</label>
-                      <input
-                        type="time"
-                        value={hoursClose}
-                        onChange={(e) => setHoursClose(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                      />
-                    </div>
-                  </div>
-                  {/* Days open */}
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1.5">Open on</label>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {DAYS.map((day) => {
-                        const active = openDays.includes(day);
-                        return (
-                          <button
-                            key={day}
-                            type="button"
-                            onClick={() => toggleDay(day)}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${
-                              active
-                                ? "bg-brand-600 text-white border-brand-600"
-                                : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
-                            }`}
-                          >
-                            {day}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* GSTIN */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5">
-                  GSTIN <span className="font-normal text-gray-400">(optional)</span>
-                </label>
-                <input
-                  type="text"
-                  value={gstin}
-                  onChange={(e) => setGstin(e.target.value.toUpperCase())}
-                  placeholder="22AAAAA0000A1Z5"
-                  maxLength={15}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-              </div>
-            </>
-          )}
-
-          {/* Contact method */}
+          {/* Email */}
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-2">
-              {userType === "individual" ? "Verify via" : "Phone number"}
-            </label>
-
-            {userType === "individual" && (
-              <div className="flex gap-2 mb-3">
-                {(["email", "phone"] as const).map((m) => (
-                  <button
-                    type="button"
-                    key={m}
-                    onClick={() => setContactMethod(m)}
-                    className={`flex-1 py-2 rounded-lg border text-xs font-semibold transition-colors ${
-                      contactMethod === m
-                        ? "bg-brand-50 border-brand-400 text-brand-700"
-                        : "border-gray-200 text-gray-400 hover:border-gray-300"
-                    }`}
-                  >
-                    {m === "email"
-                      ? <><Mail className="w-3.5 h-3.5 inline mr-1" />Email</>
-                      : <><Phone className="w-3.5 h-3.5 inline mr-1" />Phone</>}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {effectiveContactMethod === "email" ? (
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  required
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-              </div>
-            ) : (
-              <div className="flex">
-                <span className="flex items-center px-3 border border-r-0 border-gray-200 rounded-l-lg bg-gray-50 text-sm text-gray-500">+91</span>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                  placeholder="9900000000"
-                  required
-                  className="flex-1 px-3 py-2.5 border border-gray-200 rounded-r-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-              </div>
-            )}
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5">Email address</label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
+            </div>
           </div>
 
           {/* Password */}
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5">
-              Password <span className="font-normal text-gray-400">(optional — or use OTP to login)</span>
-            </label>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5">Password</label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -711,21 +299,48 @@ export default function RegisterPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Min 8 characters"
+                required
                 className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>
 
-          <button type="submit" disabled={loading} className="btn-primary w-full justify-center">
+          {/* Confirm Password */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5">Confirm password</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type={showConfirm ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Re-enter your password"
+                required
+                className={`w-full pl-10 pr-10 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 ${
+                  confirmPassword && confirmPassword !== password
+                    ? "border-red-300 bg-red-50"
+                    : "border-gray-200"
+                }`}
+              />
+              <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {confirmPassword && confirmPassword !== password && (
+              <p className="text-xs text-red-500 mt-1">Passwords do not match.</p>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading || (!!confirmPassword && confirmPassword !== password)}
+            className="btn-primary w-full justify-center"
+          >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
-            {loading ? "Sending OTP…" : "Send OTP"}
+            {loading ? "Creating account…" : "Create Account"}
           </button>
 
           <p className="text-xs text-gray-400 text-center">
