@@ -40,6 +40,12 @@ export interface User {
   createdAt: string;
 }
 
+export interface ProfileUpdate {
+  name?: string;
+  phone?: string;
+  location?: string;
+}
+
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
@@ -49,6 +55,8 @@ interface AuthContextValue {
   sendOtp: (contact: string) => Promise<void>;
   verifyOtp: (contact: string, otp: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
+  updateProfile: (updates: ProfileUpdate) => Promise<void>;
+  changePassword: (newPassword: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -177,6 +185,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [loadProfile]
   );
 
+  const updateProfile = useCallback(
+    async (updates: ProfileUpdate) => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) throw new Error("Not authenticated");
+      const { error } = await supabase
+        .from("user_profiles")
+        .update(updates)
+        .eq("user_id", authUser.id);
+      if (error) throw new Error(error.message);
+      setUser((prev) => (prev ? { ...prev, ...updates } : prev));
+    },
+    []
+  );
+
+  const changePassword = useCallback(async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw new Error(error.message);
+  }, []);
+
   // Google OAuth — redirect-based, works on both web and mobile WebView.
   const loginWithGoogle = useCallback(async (_userType: UserType) => {
     const { error } = await supabase.auth.signInWithOAuth({
@@ -202,6 +229,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         sendOtp,
         verifyOtp,
         register,
+        updateProfile,
+        changePassword,
         logout,
       }}
     >

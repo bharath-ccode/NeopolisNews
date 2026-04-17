@@ -357,7 +357,16 @@ export default function RegisterPage() {
             )}
           </div>
 
-          <button onClick={() => setStep("details")} className="btn-primary w-full justify-center">
+          <button
+            onClick={() => {
+              if (userType === "business") {
+                router.push("/register-business");
+              } else {
+                setStep("details");
+              }
+            }}
+            className="btn-primary w-full justify-center"
+          >
             Continue <ArrowRight className="w-4 h-4" />
           </button>
         </div>
