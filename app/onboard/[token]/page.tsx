@@ -192,7 +192,7 @@ export default function OnboardPage() {
 
     // Verify phone matches the registered owner phone
     const entered = phone.replace(/\D/g, "").slice(-10);
-    const registered = business.ownerPhone.replace(/\D/g, "").slice(-10);
+    const registered = (business.ownerPhone ?? "").replace(/\D/g, "").slice(-10);
 
     if (entered !== registered) {
       setVerifyError(

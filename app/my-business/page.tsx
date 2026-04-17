@@ -170,7 +170,7 @@ export default function MyBusinessPage() {
   }, []);
 
   async function handleSave() {
-    if (!token) return;
+    if (!biz || !token) return;
     setSaving(true); setError(""); setSaved(false);
     try {
       const res = await fetch("/api/my-business/update", {
