@@ -90,7 +90,7 @@ export default async function BusinessProfilePage({
 }: {
   params: { id: string };
 }) {
-  const supabase = createClient();
+  const supabase = createAdminClient();
   const { data: b } = await supabase
     .from("businesses")
     .select("*")
