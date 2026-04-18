@@ -22,8 +22,29 @@ import {
   Mail,
   AlertCircle,
 } from "lucide-react";
-import { getBusinessById, saveBusiness, type BusinessRecord, type SocialLinks } from "@/lib/businessStore";
+import type { SocialLinks } from "@/lib/businessStore";
 import { createClient } from "@/lib/supabase/client";
+
+interface Business {
+  id: string;
+  name: string;
+  industry: string;
+  types: string[];
+  subtypes: string[];
+  address: string;
+  status: string;
+  verified: boolean;
+  logo: string | null;
+  pictures: string[];
+  social_links: SocialLinks;
+  contact_phone: string | null;
+  description: string | null;
+  timings: unknown[];
+  owner_email: string | null;
+  owner_phone: string | null;
+  created_at: string;
+  completed_at: string | null;
+}
 
 interface VerificationRequest {
   id: string;
@@ -37,14 +58,14 @@ interface VerificationRequest {
 
 const MAX_PICTURES = 3;
 
-function getInviteLink(id: string): string {
+function getClaimLink(id: string): string {
   if (typeof window === "undefined") return "";
-  return `${window.location.origin}/onboard/${id}`;
+  return `${window.location.origin}/businesses/${id}/claim`;
 }
 
 export default function AdminBusinessEditPage() {
   const { id } = useParams<{ id: string }>();
-  const [business, setBusiness] = useState<BusinessRecord | null>(null);
+  const [business, setBusiness] = useState<Business | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingPic, setUploadingPic] = useState(false);
@@ -65,13 +86,20 @@ export default function AdminBusinessEditPage() {
   const picRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const b = getBusinessById(id);
-    if (!b) { setNotFound(true); return; }
-    setBusiness(b);
-    setSocial(b.socialLinks ?? {});
+    const supabase = createClient();
 
-    // Fetch pending verification request from Supabase if status is pending
-    createClient()
+    supabase
+      .from("businesses")
+      .select("*")
+      .eq("id", id)
+      .single()
+      .then(({ data }) => {
+        if (!data) { setNotFound(true); return; }
+        setBusiness(data as Business);
+        setSocial((data as Business).social_links ?? {});
+      });
+
+    supabase
       .from("verification_requests")
       .select("id, submitter_name, submitter_email, submitter_phone, proof_url, status, created_at")
       .eq("business_id", id)
@@ -82,22 +110,21 @@ export default function AdminBusinessEditPage() {
       .then(({ data }) => { if (data) setVerificationRequest(data as VerificationRequest); });
   }, [id]);
 
-  function persist(updated: BusinessRecord) {
-    saveBusiness(updated);
-    setBusiness(updated);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-    // Fire-and-forget sync to Supabase for public profile
-    fetch("/api/businesses/sync", {
+  async function persist(updates: Partial<Business>) {
+    const res = await fetch(`/api/admin/businesses/${id}/update`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updated),
-    }).catch(() => {});
+      body: JSON.stringify(updates),
+    });
+    if (!res.ok) { setError("Save failed. Please try again."); return; }
+    setBusiness((prev) => prev ? { ...prev, ...updates } : prev);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
   }
 
   function toggleVerified() {
     if (!business) return;
-    persist({ ...business, verified: !business.verified });
+    persist({ verified: !business.verified });
   }
 
   async function uploadFile(file: File, folder: string): Promise<string> {
@@ -113,11 +140,10 @@ export default function AdminBusinessEditPage() {
   async function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !business) return;
-    setError("");
-    setUploadingLogo(true);
+    setError(""); setUploadingLogo(true);
     try {
       const url = await uploadFile(file, "logos");
-      persist({ ...business, logo: url });
+      await persist({ logo: url });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
@@ -131,11 +157,10 @@ export default function AdminBusinessEditPage() {
     if (!file || !business) return;
     const pics = business.pictures ?? [];
     if (pics.length >= MAX_PICTURES) return;
-    setError("");
-    setUploadingPic(true);
+    setError(""); setUploadingPic(true);
     try {
       const url = await uploadFile(file, "pictures");
-      persist({ ...business, pictures: [...pics, url] });
+      await persist({ pictures: [...pics, url] });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
@@ -144,28 +169,25 @@ export default function AdminBusinessEditPage() {
     }
   }
 
-  function removeLogo() {
+  async function removeLogo() {
     if (!business) return;
-    const { logo: _, ...rest } = business;
-    persist(rest as BusinessRecord);
+    await persist({ logo: null });
   }
 
-  function removePicture(idx: number) {
+  async function removePicture(idx: number) {
     if (!business) return;
-    const pictures = (business.pictures ?? []).filter((_, i) => i !== idx);
-    persist({ ...business, pictures });
+    await persist({ pictures: (business.pictures ?? []).filter((_, i) => i !== idx) });
   }
 
-  function saveSocialLinks() {
-    if (!business) return;
+  async function saveSocialLinks() {
     setSavingSocial(true);
-    persist({ ...business, socialLinks: social });
-    setTimeout(() => setSavingSocial(false), 500);
+    await persist({ social_links: social });
+    setSavingSocial(false);
   }
 
-  function copyInviteLink() {
+  function copyClaimLink() {
     if (!business) return;
-    navigator.clipboard.writeText(getInviteLink(business.id));
+    navigator.clipboard.writeText(getClaimLink(business.id));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -179,7 +201,7 @@ export default function AdminBusinessEditPage() {
       if (!res.ok) { setError(data.error ?? "Approval failed."); return; }
       setApproveMsg(`Claim link sent to ${data.sentTo}`);
       setVerificationRequest(null);
-      persist({ ...business, status: "verified" as BusinessRecord["status"] });
+      await persist({ status: "verified" });
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -201,7 +223,7 @@ export default function AdminBusinessEditPage() {
       setRejectMsg("Request rejected. Business reset to invited status.");
       setVerificationRequest(null);
       setShowRejectForm(false);
-      persist({ ...business, status: "invited" as BusinessRecord["status"] });
+      await persist({ status: "invited" });
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -228,10 +250,7 @@ export default function AdminBusinessEditPage() {
     <div className="max-w-2xl mx-auto py-2">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <Link
-          href="/admin/businesses"
-          className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
-        >
+        <Link href="/admin/businesses" className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div className="w-9 h-9 rounded-xl bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-sm shrink-0">
@@ -239,9 +258,7 @@ export default function AdminBusinessEditPage() {
         </div>
         <div className="flex-1 min-w-0">
           <h1 className="font-bold text-gray-900 truncate">{business.name}</h1>
-          <p className="text-xs text-gray-400">
-            {business.industry} · <span className="capitalize">{business.status}</span>
-          </p>
+          <p className="text-xs text-gray-400">{business.industry} · <span className="capitalize">{business.status}</span></p>
         </div>
         {saved && (
           <div className="flex items-center gap-1 text-sm text-green-600 shrink-0">
@@ -249,21 +266,15 @@ export default function AdminBusinessEditPage() {
           </div>
         )}
         {business.status === "active" && (
-          <a
-            href={`/businesses/${business.id}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-xs border border-gray-200 text-gray-500 hover:border-brand-300 hover:text-brand-600 px-3 py-1.5 rounded-lg transition-colors shrink-0"
-          >
+          <a href={`/businesses/${business.id}`} target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-xs border border-gray-200 text-gray-500 hover:border-brand-300 hover:text-brand-600 px-3 py-1.5 rounded-lg transition-colors shrink-0">
             <ExternalLink className="w-3.5 h-3.5" /> View Profile
           </a>
         )}
       </div>
 
       {error && (
-        <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl">
-          {error}
-        </div>
+        <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl">{error}</div>
       )}
 
       {/* Pending verification request */}
@@ -298,41 +309,31 @@ export default function AdminBusinessEditPage() {
                 </span>
               </div>
             </div>
-
             {verificationRequest.proof_url && (
               <a href={verificationRequest.proof_url} target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-sm text-brand-600 hover:text-brand-700 border border-brand-200 hover:bg-brand-50 px-3 py-1.5 rounded-lg transition-colors">
                 <FileText className="w-4 h-4" /> View Proof Document
               </a>
             )}
-
             <div className="pt-2 border-t border-amber-100 space-y-3">
               <div className="flex items-center gap-3">
                 <button onClick={approveClaim} disabled={approving || rejecting}
                   className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors disabled:opacity-60">
                   {approving ? <><Loader2 className="w-4 h-4 animate-spin" /> Approving…</> : <><CheckCircle className="w-4 h-4" /> Approve &amp; Send Claim Link</>}
                 </button>
-                <button
-                  onClick={() => setShowRejectForm((v) => !v)}
-                  disabled={approving || rejecting}
-                  className="flex items-center gap-2 border border-red-200 text-red-600 hover:bg-red-50 text-sm font-semibold px-4 py-2 rounded-xl transition-colors disabled:opacity-60"
-                >
+                <button onClick={() => setShowRejectForm((v) => !v)} disabled={approving || rejecting}
+                  className="flex items-center gap-2 border border-red-200 text-red-600 hover:bg-red-50 text-sm font-semibold px-4 py-2 rounded-xl transition-colors disabled:opacity-60">
                   <X className="w-4 h-4" /> Reject
                 </button>
                 <p className="text-xs text-gray-400">Sends a 24-hour claim link to the owner&apos;s email.</p>
               </div>
-
               {showRejectForm && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
                   <p className="text-sm font-semibold text-red-800">Reject this request?</p>
                   <p className="text-xs text-red-700">The business will be reset to &quot;Invited&quot; status and the submitter will be notified.</p>
-                  <textarea
-                    value={rejectNotes}
-                    onChange={(e) => setRejectNotes(e.target.value)}
-                    placeholder="Optional: reason for rejection (sent to submitter)"
-                    rows={2}
-                    className="w-full px-3 py-2 border border-red-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400 bg-white text-gray-800 resize-none"
-                  />
+                  <textarea value={rejectNotes} onChange={(e) => setRejectNotes(e.target.value)}
+                    placeholder="Optional: reason for rejection (sent to submitter)" rows={2}
+                    className="w-full px-3 py-2 border border-red-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400 bg-white text-gray-800 resize-none" />
                   <div className="flex gap-2">
                     <button onClick={rejectClaim} disabled={rejecting}
                       className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-60">
@@ -343,16 +344,8 @@ export default function AdminBusinessEditPage() {
                 </div>
               )}
             </div>
-            {approveMsg && (
-              <p className="text-sm text-green-700 font-medium flex items-center gap-1.5">
-                <CheckCircle className="w-4 h-4" /> {approveMsg}
-              </p>
-            )}
-            {rejectMsg && (
-              <p className="text-sm text-red-700 font-medium flex items-center gap-1.5">
-                <X className="w-4 h-4" /> {rejectMsg}
-              </p>
-            )}
+            {approveMsg && <p className="text-sm text-green-700 font-medium flex items-center gap-1.5"><CheckCircle className="w-4 h-4" /> {approveMsg}</p>}
+            {rejectMsg && <p className="text-sm text-red-700 font-medium flex items-center gap-1.5"><X className="w-4 h-4" /> {rejectMsg}</p>}
           </div>
         </div>
       )}
@@ -361,31 +354,17 @@ export default function AdminBusinessEditPage() {
       <div className="card p-5 mb-4">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            {business.verified ? (
-              <ShieldCheck className="w-6 h-6 text-green-500 shrink-0" />
-            ) : (
-              <Shield className="w-6 h-6 text-gray-300 shrink-0" />
-            )}
+            {business.verified ? <ShieldCheck className="w-6 h-6 text-green-500 shrink-0" /> : <Shield className="w-6 h-6 text-gray-300 shrink-0" />}
             <div>
               <p className="font-semibold text-gray-900 text-sm">Verified Business</p>
               <p className="text-xs text-gray-400">
-                {business.verified
-                  ? "Owner skips OTP verification during onboarding"
-                  : "Owner must complete OTP verification during onboarding"}
+                {business.verified ? "Shows verified badge on the public profile" : "No verified badge shown"}
               </p>
             </div>
           </div>
-          <button
-            onClick={toggleVerified}
-            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none ${
-              business.verified ? "bg-green-500" : "bg-gray-200"
-            }`}
-          >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-                business.verified ? "translate-x-6" : "translate-x-1"
-              }`}
-            />
+          <button onClick={toggleVerified}
+            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none ${business.verified ? "bg-green-500" : "bg-gray-200"}`}>
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${business.verified ? "translate-x-6" : "translate-x-1"}`} />
           </button>
         </div>
       </div>
@@ -397,51 +376,25 @@ export default function AdminBusinessEditPage() {
           {business.logo ? (
             <div className="relative">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={business.logo}
-                alt="Business logo"
-                className="w-20 h-20 rounded-xl object-cover border border-gray-200"
-              />
-              <button
-                onClick={removeLogo}
-                className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
-              >
+              <img src={business.logo} alt="Business logo" className="w-20 h-20 rounded-xl object-cover border border-gray-200" />
+              <button onClick={removeLogo}
+                className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors">
                 <X className="w-3 h-3" />
               </button>
             </div>
           ) : (
-            <button
-              onClick={() => logoRef.current?.click()}
-              disabled={uploadingLogo}
-              className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-brand-400 hover:text-brand-500 transition-colors disabled:opacity-50"
-            >
-              {uploadingLogo ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>
-                  <ImageIcon className="w-5 h-5" />
-                  <span className="text-xs">Upload</span>
-                </>
-              )}
+            <button onClick={() => logoRef.current?.click()} disabled={uploadingLogo}
+              className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-brand-400 hover:text-brand-500 transition-colors disabled:opacity-50">
+              {uploadingLogo ? <Loader2 className="w-5 h-5 animate-spin" /> : <><ImageIcon className="w-5 h-5" /><span className="text-xs">Upload</span></>}
             </button>
           )}
           {business.logo && (
-            <button
-              onClick={() => logoRef.current?.click()}
-              disabled={uploadingLogo}
-              className="text-sm text-brand-600 hover:text-brand-700 disabled:opacity-50"
-            >
+            <button onClick={() => logoRef.current?.click()} disabled={uploadingLogo} className="text-sm text-brand-600 hover:text-brand-700 disabled:opacity-50">
               {uploadingLogo ? "Uploading…" : "Change logo"}
             </button>
           )}
         </div>
-        <input
-          ref={logoRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handleLogoChange}
-        />
+        <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
       </div>
 
       {/* Pictures */}
@@ -452,82 +405,48 @@ export default function AdminBusinessEditPage() {
           {pictures.map((url, idx) => (
             <div key={idx} className="relative">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={url}
-                alt={`Photo ${idx + 1}`}
-                className="w-28 h-28 rounded-xl object-cover border border-gray-200"
-              />
-              <button
-                onClick={() => removePicture(idx)}
-                className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
-              >
+              <img src={url} alt={`Photo ${idx + 1}`} className="w-28 h-28 rounded-xl object-cover border border-gray-200" />
+              <button onClick={() => removePicture(idx)}
+                className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors">
                 <X className="w-3 h-3" />
               </button>
             </div>
           ))}
-
           {pictures.length < MAX_PICTURES && (
-            <button
-              onClick={() => picRef.current?.click()}
-              disabled={uploadingPic}
-              className="w-28 h-28 rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-brand-400 hover:text-brand-500 transition-colors disabled:opacity-50"
-            >
-              {uploadingPic ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>
-                  <ImageIcon className="w-5 h-5" />
-                  <span className="text-xs">Add Photo</span>
-                </>
-              )}
+            <button onClick={() => picRef.current?.click()} disabled={uploadingPic}
+              className="w-28 h-28 rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-brand-400 hover:text-brand-500 transition-colors disabled:opacity-50">
+              {uploadingPic ? <Loader2 className="w-5 h-5 animate-spin" /> : <><ImageIcon className="w-5 h-5" /><span className="text-xs">Add Photo</span></>}
             </button>
           )}
         </div>
-        <input
-          ref={picRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handlePictureAdd}
-        />
+        <input ref={picRef} type="file" accept="image/*" className="hidden" onChange={handlePictureAdd} />
       </div>
 
       {/* Social media links */}
       <div className="card p-5 mb-4">
         <p className="font-semibold text-gray-900 text-sm mb-4">Social Media</p>
         <div className="space-y-3">
-          {(
-            [
-              { key: "instagram", icon: Instagram, label: "Instagram", placeholder: "https://instagram.com/yourbusiness", color: "text-pink-500" },
-              { key: "facebook",  icon: Facebook,  label: "Facebook",  placeholder: "https://facebook.com/yourbusiness", color: "text-blue-600" },
-              { key: "youtube",   icon: Youtube,   label: "YouTube",   placeholder: "https://youtube.com/@yourchannel",  color: "text-red-500"  },
-            ] as const
-          ).map(({ key, icon: Icon, label, placeholder, color }) => (
+          {([
+            { key: "instagram" as const, icon: Instagram, placeholder: "https://instagram.com/yourbusiness", color: "text-pink-500" },
+            { key: "facebook"  as const, icon: Facebook,  placeholder: "https://facebook.com/yourbusiness",  color: "text-blue-600" },
+            { key: "youtube"   as const, icon: Youtube,   placeholder: "https://youtube.com/@yourchannel",   color: "text-red-500"  },
+          ]).map(({ key, icon: Icon, placeholder, color }) => (
             <div key={key} className="flex items-center gap-3">
               <Icon className={`w-4 h-4 shrink-0 ${color}`} />
-              <div className="flex-1">
-                <input
-                  type="url"
-                  value={social[key] ?? ""}
-                  onChange={(e) => setSocial((s) => ({ ...s, [key]: e.target.value || undefined }))}
-                  placeholder={placeholder}
-                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500 text-gray-700 placeholder-gray-300"
-                />
-              </div>
+              <input type="url" value={social[key] ?? ""}
+                onChange={(e) => setSocial((s) => ({ ...s, [key]: e.target.value || undefined }))}
+                placeholder={placeholder}
+                className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500 text-gray-700 placeholder-gray-300" />
             </div>
           ))}
         </div>
-        <button
-          onClick={saveSocialLinks}
-          disabled={savingSocial}
-          className="mt-4 flex items-center gap-2 text-sm btn-primary py-2"
-        >
+        <button onClick={saveSocialLinks} disabled={savingSocial} className="mt-4 flex items-center gap-2 text-sm btn-primary py-2">
           <Save className="w-3.5 h-3.5" />
           {savingSocial ? "Saving…" : "Save Social Links"}
         </button>
       </div>
 
-      {/* Business info (read-only summary) */}
+      {/* Business details */}
       <div className="card p-5 mb-4">
         <p className="font-semibold text-gray-900 text-sm mb-3">Details</p>
         <div className="space-y-2 text-sm">
@@ -535,56 +454,47 @@ export default function AdminBusinessEditPage() {
             <span className="text-gray-400 w-28 shrink-0">Address</span>
             <span className="text-gray-700">{business.address}</span>
           </div>
-          <div className="flex gap-2">
-            <span className="text-gray-400 w-28 shrink-0">Owner Phone</span>
-            <span className="text-gray-700">{business.ownerPhone}</span>
-          </div>
-          {business.email && (
+          {business.owner_phone && (
             <div className="flex gap-2">
-              <span className="text-gray-400 w-28 shrink-0">Email</span>
-              <span className="text-gray-700">{business.email}</span>
+              <span className="text-gray-400 w-28 shrink-0">Owner Phone</span>
+              <span className="text-gray-700">{business.owner_phone}</span>
             </div>
           )}
-          {business.contactPhone && (
+          {business.owner_email && (
+            <div className="flex gap-2">
+              <span className="text-gray-400 w-28 shrink-0">Owner Email</span>
+              <span className="text-gray-700">{business.owner_email}</span>
+            </div>
+          )}
+          {business.contact_phone && (
             <div className="flex gap-2">
               <span className="text-gray-400 w-28 shrink-0">Customer Phone</span>
-              <span className="text-gray-700">{business.contactPhone}</span>
+              <span className="text-gray-700">{business.contact_phone}</span>
             </div>
           )}
           <div className="flex gap-2">
             <span className="text-gray-400 w-28 shrink-0">Created</span>
             <span className="text-gray-700">
-              {new Date(business.createdAt).toLocaleDateString("en-IN", {
-                day: "numeric", month: "short", year: "numeric",
-              })}
+              {new Date(business.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Invite link */}
+      {/* Claim link */}
       {business.status !== "active" && (
         <div className="card p-5">
-          <p className="font-semibold text-gray-900 text-sm mb-3">Invite Link</p>
+          <p className="font-semibold text-gray-900 text-sm mb-3">Claim Link</p>
           <div className="flex gap-2">
-            <input
-              readOnly
-              value={getInviteLink(business.id)}
-              className="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-2 text-gray-600 bg-gray-50 outline-none"
-            />
-            <button
-              onClick={copyInviteLink}
-              className="flex items-center gap-1.5 text-xs border border-gray-200 text-gray-600 hover:border-brand-300 hover:text-brand-600 px-3 py-2 rounded-lg transition-colors shrink-0"
-            >
+            <input readOnly value={getClaimLink(business.id)}
+              className="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-2 text-gray-600 bg-gray-50 outline-none" />
+            <button onClick={copyClaimLink}
+              className="flex items-center gap-1.5 text-xs border border-gray-200 text-gray-600 hover:border-brand-300 hover:text-brand-600 px-3 py-2 rounded-lg transition-colors shrink-0">
               {copied ? <CheckCircle className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
               {copied ? "Copied!" : "Copy"}
             </button>
-            <a
-              href={getInviteLink(business.id)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-xs border border-gray-200 text-gray-500 hover:border-brand-300 hover:text-brand-600 px-2.5 py-2 rounded-lg transition-colors shrink-0"
-            >
+            <a href={getClaimLink(business.id)} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1 text-xs border border-gray-200 text-gray-500 hover:border-brand-300 hover:text-brand-600 px-2.5 py-2 rounded-lg transition-colors shrink-0">
               <ExternalLink className="w-3.5 h-3.5" />
             </a>
           </div>

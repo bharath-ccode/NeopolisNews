@@ -16,7 +16,7 @@ import {
   Store,
 } from "lucide-react";
 import { getArticles, getArticleStats, Article } from "@/lib/newsStore";
-import { getAllBusinesses } from "@/lib/businessStore";
+import { createClient } from "@/lib/supabase/client";
 
 export default function AdminDashboardPage() {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -32,7 +32,10 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     getArticles().then(setArticles);
     getArticleStats().then(setStats);
-    setBusinessCount(getAllBusinesses().length);
+    createClient()
+      .from("businesses")
+      .select("id", { count: "exact", head: true })
+      .then(({ count }) => { if (count !== null) setBusinessCount(count); });
   }, []);
 
   const recent = [...articles]
