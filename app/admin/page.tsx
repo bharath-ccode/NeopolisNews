@@ -15,6 +15,7 @@ import {
   AlertCircle,
   Store,
   Home,
+  Tag,
 } from "lucide-react";
 import { getArticles, getArticleStats, Article } from "@/lib/newsStore";
 import { createClient } from "@/lib/supabase/client";
@@ -190,21 +191,34 @@ export default function AdminDashboardPage() {
             <Home className="w-5 h-5 text-rose-600" />
           </div>
           <div>
-            <p className="font-semibold text-gray-900 text-sm">Classifieds</p>
+            <p className="font-semibold text-gray-900 text-sm">Properties</p>
             <p className="text-xs text-gray-400">
               {pendingClassifieds > 0
                 ? `${pendingClassifieds} pending review`
                 : "Property listings queue"}
             </p>
           </div>
-          {pendingClassifieds > 0 && (
+          {pendingClassifieds > 0 ? (
             <span className="ml-auto bg-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
               {pendingClassifieds}
             </span>
-          )}
-          {pendingClassifieds === 0 && (
+          ) : (
             <ArrowRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-brand-500 transition-colors" />
           )}
+        </Link>
+
+        <Link
+          href="/admin/ads"
+          className="card p-5 flex items-center gap-4 hover:border-brand-300 group"
+        >
+          <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0 group-hover:bg-indigo-100 transition-colors">
+            <Tag className="w-5 h-5 text-indigo-600" />
+          </div>
+          <div>
+            <p className="font-semibold text-gray-900 text-sm">Classifieds</p>
+            <p className="text-xs text-gray-400">Cars, bikes, furniture &amp; more</p>
+          </div>
+          <ArrowRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-brand-500 transition-colors" />
         </Link>
       </div>
 

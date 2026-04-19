@@ -21,6 +21,7 @@ import {
   HeartPulse,
   CalendarDays,
   Sparkles,
+  Tag,
 } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "@/context/AuthContext";
@@ -116,6 +117,19 @@ const NAV_ITEMS = [
       { label: "Home",     href: "/services/local?type=home"     },
       { label: "Delivery", href: "/services/local?type=delivery" },
       { label: "Driving",  href: "/services/local?type=driving"  },
+    ],
+  },
+  {
+    label: "Classifieds",
+    href: "/classifieds",
+    icon: Tag,
+    sub: [
+      { label: "All Ads",          href: "/classifieds"                              },
+      { label: "Cars & Vehicles",  href: "/classifieds?cat=cars"                     },
+      { label: "Bikes & Scooters", href: "/classifieds?cat=bikes"                    },
+      { label: "Furniture",        href: "/classifieds?cat=furniture"                },
+      { label: "Electronics",      href: "/classifieds?cat=electronics"              },
+      { label: "Post a Free Ad",   href: "/dashboard/individual/classifieds"         },
     ],
   },
   {
