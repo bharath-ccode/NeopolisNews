@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Store,
+  Home,
 } from "lucide-react";
 import { getArticles, getArticleStats, Article } from "@/lib/newsStore";
 import { createClient } from "@/lib/supabase/client";
@@ -21,6 +22,7 @@ import { createClient } from "@/lib/supabase/client";
 export default function AdminDashboardPage() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [businessCount, setBusinessCount] = useState(0);
+  const [pendingClassifieds, setPendingClassifieds] = useState(0);
   const [stats, setStats] = useState({
     total: 0,
     published: 0,
@@ -36,6 +38,14 @@ export default function AdminDashboardPage() {
       .from("businesses")
       .select("id", { count: "exact", head: true })
       .then(({ count }) => { if (count !== null) setBusinessCount(count); });
+    fetch("/api/admin/classifieds")
+      .then((r) => r.json())
+      .then((data: { status: string }[]) => {
+        if (Array.isArray(data)) {
+          setPendingClassifieds(data.filter((c) => c.status === "pending").length);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const recent = [...articles]
@@ -170,6 +180,31 @@ export default function AdminDashboardPage() {
             <p className="text-xs text-gray-400">{businessCount} listed · Invite &amp; manage</p>
           </div>
           <ArrowRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-brand-500 transition-colors" />
+        </Link>
+
+        <Link
+          href="/admin/classifieds"
+          className="card p-5 flex items-center gap-4 hover:border-brand-300 group"
+        >
+          <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center shrink-0 group-hover:bg-rose-100 transition-colors">
+            <Home className="w-5 h-5 text-rose-600" />
+          </div>
+          <div>
+            <p className="font-semibold text-gray-900 text-sm">Classifieds</p>
+            <p className="text-xs text-gray-400">
+              {pendingClassifieds > 0
+                ? `${pendingClassifieds} pending review`
+                : "Property listings queue"}
+            </p>
+          </div>
+          {pendingClassifieds > 0 && (
+            <span className="ml-auto bg-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+              {pendingClassifieds}
+            </span>
+          )}
+          {pendingClassifieds === 0 && (
+            <ArrowRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-brand-500 transition-colors" />
+          )}
         </Link>
       </div>
 

@@ -17,6 +17,7 @@ import {
   Settings,
   HardHat,
   Layers,
+  Home,
 } from "lucide-react";
 import clsx from "clsx";
 import { AdminAuthProvider, useAdminAuth } from "@/context/AdminAuthContext";
@@ -27,6 +28,7 @@ const NAV = [
   { href: "/admin/builders",      icon: HardHat,         label: "Builders"      },
   { href: "/admin/projects",      icon: Layers,          label: "Projects"      },
   { href: "/admin/businesses",    icon: Store,           label: "Businesses"    },
+  { href: "/admin/classifieds",   icon: Home,            label: "Classifieds"   },
   { href: "/admin/analytics",     icon: BarChart3,       label: "Analytics"     },
   { href: "/admin/settings",      icon: Settings,        label: "Settings"      },
 ];
