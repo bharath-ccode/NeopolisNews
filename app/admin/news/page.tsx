@@ -13,6 +13,7 @@ import {
   AlertCircle,
   Filter,
   Newspaper,
+  Building2,
 } from "lucide-react";
 import clsx from "clsx";
 import {
@@ -201,7 +202,14 @@ export default function AdminNewsPage() {
                           <p className="text-sm font-medium text-gray-900 line-clamp-2 leading-snug">
                             {article.title}
                           </p>
-                          <p className="text-xs text-gray-400 mt-0.5">{article.date}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-xs text-gray-400">{article.date}</span>
+                            {article.source === "business" && (
+                              <span className="inline-flex items-center gap-1 text-xs font-semibold bg-cyan-50 text-cyan-700 border border-cyan-200 px-1.5 py-0.5 rounded-full">
+                                <Building2 className="w-3 h-3" />Business
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </td>
