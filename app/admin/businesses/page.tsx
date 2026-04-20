@@ -14,6 +14,7 @@ import {
   Pencil,
   AlertCircle,
   FileText,
+  Star,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -26,6 +27,7 @@ interface Business {
   address: string;
   status: string;
   verified: boolean;
+  is_featured: boolean;
   owner_phone: string | null;
   owner_email: string | null;
   contact_phone: string | null;
@@ -58,6 +60,7 @@ export default function AdminBusinessesPage() {
   const [pendingBiz, setPendingBiz] = useState<PendingBiz[]>([]);
   const [search, setSearch] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [featuringId, setFeaturingId] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -65,7 +68,7 @@ export default function AdminBusinessesPage() {
     // Fetch all businesses from Supabase
     supabase
       .from("businesses")
-      .select("id, name, industry, types, subtypes, address, status, verified, owner_phone, owner_email, contact_phone, created_at")
+      .select("id, name, industry, types, subtypes, address, status, verified, is_featured, owner_phone, owner_email, contact_phone, created_at")
       .in("status", ["active", "invited", "incomplete", "pending", "verified"])
       .order("created_at", { ascending: false })
       .then(({ data }) => { if (data) setBusinesses(data as Business[]); });
@@ -78,6 +81,16 @@ export default function AdminBusinessesPage() {
       .order("created_at", { ascending: false })
       .then(({ data }) => { if (data) setPendingBiz(data as PendingBiz[]); });
   }, []);
+
+  async function toggleFeatured(id: string) {
+    setFeaturingId(id);
+    const res = await fetch(`/api/admin/businesses/${id}/feature`, { method: "PATCH" });
+    if (res.ok) {
+      const { is_featured } = await res.json();
+      setBusinesses((prev) => prev.map((b) => b.id === id ? { ...b, is_featured } : b));
+    }
+    setFeaturingId(null);
+  }
 
   function copyLink(id: string) {
     navigator.clipboard.writeText(getInviteLink(id));
@@ -270,6 +283,19 @@ export default function AdminBusinessesPage() {
                         })}
                       </p>
                       <div className="flex gap-2">
+                        <button
+                          onClick={() => toggleFeatured(b.id)}
+                          disabled={featuringId === b.id}
+                          title={b.is_featured ? "Remove featured" : "Mark as featured"}
+                          className={`flex items-center gap-1.5 text-xs border px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50 ${
+                            b.is_featured
+                              ? "border-yellow-300 bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
+                              : "border-gray-200 text-gray-400 hover:border-yellow-300 hover:text-yellow-600"
+                          }`}
+                        >
+                          <Star className={`w-3.5 h-3.5 ${b.is_featured ? "fill-yellow-400" : ""}`} />
+                          {b.is_featured ? "Featured" : "Feature"}
+                        </button>
                         <Link
                           href={`/admin/businesses/${b.id}`}
                           className="flex items-center gap-1.5 text-xs border border-gray-200 text-gray-600 hover:border-brand-300 hover:text-brand-600 px-2.5 py-1.5 rounded-lg transition-colors"
