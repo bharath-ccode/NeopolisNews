@@ -7,13 +7,14 @@ import {
   Building2, Phone, Instagram, Facebook, Youtube,
   Clock, Loader2, CheckCircle, LogOut, ExternalLink,
   Image as ImageIcon, Upload, X, ShieldCheck,
-  CalendarDays, Tag, Newspaper, Eye,
+  CalendarDays, Tag, Newspaper, Eye, MessageSquare,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { DayTiming } from "@/lib/businessStore";
 import EventsTab from "./_tabs/EventsTab";
 import OffersTab from "./_tabs/OffersTab";
 import NewsTab from "./_tabs/NewsTab";
+import EnquiriesTab from "./_tabs/EnquiriesTab";
 
 interface SocialLinks { instagram?: string; facebook?: string; youtube?: string; }
 
@@ -36,7 +37,7 @@ interface Business {
 const INPUT = "w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 text-gray-800";
 const LABEL = "block text-xs font-semibold text-gray-500 mb-1.5";
 
-type Tab = "profile" | "events" | "offers" | "news";
+type Tab = "profile" | "events" | "offers" | "news" | "enquiries";
 
 function TimingsEditor({ timings, onChange }: { timings: DayTiming[]; onChange: (t: DayTiming[]) => void }) {
   function update(idx: number, patch: Partial<DayTiming>) {
@@ -269,10 +270,11 @@ export default function MyBusinessPage() {
   }
 
   const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
-    { id: "profile",  label: "Profile",  icon: Building2    },
-    { id: "events",   label: "Events",   icon: CalendarDays },
-    { id: "offers",   label: "Offers",   icon: Tag          },
-    { id: "news",     label: "News",     icon: Newspaper    },
+    { id: "profile",    label: "Profile",    icon: Building2    },
+    { id: "events",     label: "Events",     icon: CalendarDays },
+    { id: "offers",     label: "Offers",     icon: Tag          },
+    { id: "news",       label: "News",       icon: Newspaper    },
+    { id: "enquiries",  label: "Messages",   icon: MessageSquare },
   ];
 
   return (
@@ -380,6 +382,11 @@ export default function MyBusinessPage() {
         {/* ── News tab ──────────────────────────────────────────────────────── */}
         {activeTab === "news" && biz && token && (
           <NewsTab businessId={biz.id} token={token} />
+        )}
+
+        {/* ── Enquiries tab ─────────────────────────────────────────────────── */}
+        {activeTab === "enquiries" && biz && token && (
+          <EnquiriesTab businessId={biz.id} token={token} />
         )}
 
         {/* ── Profile tab ─────────────────────────────────────────────────────── */}

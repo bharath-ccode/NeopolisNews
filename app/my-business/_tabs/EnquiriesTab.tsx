@@ -1,18 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MessageSquare, Phone, Clock, CheckCheck, Home, Loader2 } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
-import { createClient } from "@/lib/supabase/client";
-
-interface ClassifiedInfo {
-  property_type: string;
-  bedrooms: number | null;
-  project_name: string | null;
-  listing_type: string;
-  is_standalone: boolean;
-  standalone_description: string | null;
-}
+import { MessageSquare, Phone, Clock, CheckCheck, Loader2 } from "lucide-react";
 
 interface Enquiry {
   id: string;
@@ -21,8 +10,6 @@ interface Enquiry {
   message: string;
   is_read: boolean;
   created_at: string;
-  classified_id: string;
-  classified: ClassifiedInfo | null;
 }
 
 function relativeTime(iso: string) {
@@ -37,81 +24,60 @@ function relativeTime(iso: string) {
   return `${days} days ago`;
 }
 
-function listingLabel(c: ClassifiedInfo | null) {
-  if (!c) return "Your listing";
-  const title = c.bedrooms ? `${c.bedrooms} BHK ${c.property_type}` : c.property_type;
-  const location = c.is_standalone
-    ? (c.standalone_description ?? "Standalone")
-    : (c.project_name ?? "Neopolis");
-  return `${title} · ${location}`;
-}
-
-export default function IndividualEnquiries() {
-  const { user } = useAuth();
+export default function EnquiriesTab({
+  businessId,
+  token,
+}: {
+  businessId: string;
+  token: string;
+}) {
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [active, setActive] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) return;
-    const sb = createClient();
-
-    sb.from("classifieds")
-      .select("id")
-      .eq("user_id", user.id)
-      .is("broker_id", null)
-      .then(async ({ data: classifieds }) => {
-        const ids = (classifieds ?? []).map((c: { id: string }) => c.id);
-        if (ids.length === 0) { setLoading(false); return; }
-
-        const { data } = await sb
-          .from("enquiries")
-          .select("id, sender_name, sender_phone, message, is_read, created_at, classified_id, classified:classifieds(property_type, bedrooms, project_name, listing_type, is_standalone, standalone_description)")
-          .in("classified_id", ids)
-          .order("created_at", { ascending: false });
-
-        setEnquiries(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (data ?? []).map((row: any) => ({
-            ...row,
-            classified: Array.isArray(row.classified) ? (row.classified[0] ?? null) : row.classified,
-          }))
-        );
-        setLoading(false);
-      });
-  }, [user]);
+    fetch(`/api/my-business/enquiries?businessId=${businessId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((data) => { if (Array.isArray(data)) setEnquiries(data); })
+      .finally(() => setLoading(false));
+  }, [businessId, token]);
 
   async function markRead(id: string) {
     setEnquiries((prev) => prev.map((e) => (e.id === id ? { ...e, is_read: true } : e)));
-    const sb = createClient();
-    await sb.from("enquiries").update({ is_read: true }).eq("id", id);
+    await fetch("/api/my-business/enquiries", {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ businessId, enquiryId: id }),
+    });
   }
 
   const unread = enquiries.filter((e) => !e.is_read).length;
 
   if (loading) {
     return (
-      <div className="flex justify-center py-20">
+      <div className="flex justify-center py-16">
         <Loader2 className="w-6 h-6 animate-spin text-gray-300" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl space-y-5">
+    <div className="space-y-4">
       <div>
-        <h2 className="text-xl font-extrabold text-gray-900">Enquiries</h2>
-        <p className="text-sm text-gray-400 mt-0.5">
+        <h3 className="text-base font-bold text-gray-900">Customer Messages</h3>
+        <p className="text-xs text-gray-400 mt-0.5">
           {enquiries.length} total · {unread} unread
         </p>
       </div>
 
       {enquiries.length === 0 ? (
         <div className="card p-12 text-center">
-          <MessageSquare className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="font-semibold text-gray-500">No enquiries yet</p>
+          <MessageSquare className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+          <p className="font-semibold text-gray-500 text-sm">No messages yet</p>
           <p className="text-xs text-gray-400 mt-1">
-            Enquiries from buyers and tenants will appear here.
+            Messages from customers via your business profile will appear here.
           </p>
         </div>
       ) : (
@@ -133,7 +99,7 @@ export default function IndividualEnquiries() {
                     {e.sender_name.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center justify-between gap-2 mb-0.5">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-sm text-gray-900">{e.sender_name}</span>
                         {!e.is_read && <span className="w-2 h-2 rounded-full bg-brand-500 shrink-0" />}
@@ -142,13 +108,7 @@ export default function IndividualEnquiries() {
                         <Clock className="w-3 h-3" /> {relativeTime(e.created_at)}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <Home className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                      <span className="text-xs text-gray-500 truncate">{listingLabel(e.classified)}</span>
-                      <span className={e.classified?.listing_type === "rent" ? "tag-green text-xs" : "tag-blue text-xs"}>
-                        {e.classified?.listing_type === "rent" ? "Rent" : "Sale"}
-                      </span>
-                    </div>
+                    <p className="text-xs text-gray-500">{e.sender_phone}</p>
                     <p className="text-sm text-gray-500 mt-1.5 line-clamp-1">{e.message}</p>
                   </div>
                 </div>

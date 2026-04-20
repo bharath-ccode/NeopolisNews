@@ -42,12 +42,20 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     ? (listing.standalone_description ?? "Standalone property")
     : (listing.project_name ?? "Neopolis");
 
-  await resend.emails.send({
-    from: "NeopolisNews <no-reply@neopolis.news>",
-    to: toEmail,
-    subject: `New enquiry on your ${listingTitle} listing — NeopolisNews`,
-    html: buildEnquiryEmail({ ownerName: listing.owner_name, listingTitle, location, price: listing.price, listingType: listing.listing_type, senderName, senderPhone, message }),
-  });
+  await Promise.all([
+    admin.from("enquiries").insert({
+      classified_id: params.id,
+      sender_name: senderName.trim(),
+      sender_phone: senderPhone.trim(),
+      message: message.trim(),
+    }),
+    resend.emails.send({
+      from: "NeopolisNews <no-reply@neopolis.news>",
+      to: toEmail,
+      subject: `New enquiry on your ${listingTitle} listing — NeopolisNews`,
+      html: buildEnquiryEmail({ ownerName: listing.owner_name, listingTitle, location, price: listing.price, listingType: listing.listing_type, senderName, senderPhone, message }),
+    }),
+  ]);
 
   return NextResponse.json({ ok: true });
 }

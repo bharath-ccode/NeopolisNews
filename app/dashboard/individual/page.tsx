@@ -24,18 +24,25 @@ export default function IndividualDashboard() {
     if (!user) return;
     const sb = createClient();
     sb.from("classifieds")
-      .select("status")
+      .select("id, status")
       .eq("user_id", user.id)
       .is("broker_id", null)
       .then(({ data }) => {
         const rows = data ?? [];
         setTotalListings(rows.length);
         setActiveListings(rows.filter((r) => r.status === "active").length);
+        const ids = rows.map((r: { id: string }) => r.id);
+        if (ids.length > 0) {
+          sb.from("enquiries")
+            .select("id", { count: "exact", head: true })
+            .in("classified_id", ids)
+            .then(({ count }) => { if (count !== null) setTotalEnquiries(count); });
+        }
       });
   }, [user]);
 
   const totalViews = 0;
-  const totalEnquiries = 0;
+  const [totalEnquiries, setTotalEnquiries] = useState(0);
 
   return (
     <div className="space-y-6 max-w-5xl">

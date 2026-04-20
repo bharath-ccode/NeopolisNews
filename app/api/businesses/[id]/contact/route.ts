@@ -25,12 +25,20 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const toEmail: string | undefined = (biz as any).owner_email ?? process.env.ADMIN_EMAIL;
   if (!toEmail) return NextResponse.json({ error: "Unable to deliver message." }, { status: 500 });
 
-  await resend.emails.send({
-    from: "NeopolisNews <no-reply@neopolis.news>",
-    to: toEmail,
-    subject: `New message for ${biz.name} — NeopolisNews`,
-    html: buildContactEmail({ businessName: biz.name, senderName, senderPhone, message }),
-  });
+  await Promise.all([
+    admin.from("business_enquiries").insert({
+      business_id: params.id,
+      sender_name: senderName.trim(),
+      sender_phone: senderPhone.trim(),
+      message: message.trim(),
+    }),
+    resend.emails.send({
+      from: "NeopolisNews <no-reply@neopolis.news>",
+      to: toEmail,
+      subject: `New message for ${biz.name} — NeopolisNews`,
+      html: buildContactEmail({ businessName: biz.name, senderName, senderPhone, message }),
+    }),
+  ]);
 
   return NextResponse.json({ ok: true });
 }
