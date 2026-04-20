@@ -1,7 +1,7 @@
 -- Business Events
 create table public.business_events (
   id           uuid primary key default gen_random_uuid(),
-  business_id  uuid not null references public.businesses(id) on delete cascade,
+  business_id  text not null references public.businesses(id) on delete cascade,
   name         text not null,
   event_date   date not null,
   start_time   time not null,
@@ -19,7 +19,7 @@ create policy "public can read active business events"
 -- Business Offers
 create table public.business_offers (
   id               uuid primary key default gen_random_uuid(),
-  business_id      uuid not null references public.businesses(id) on delete cascade,
+  business_id      text not null references public.businesses(id) on delete cascade,
   name             text not null,
   description      text null,
   discount_percent numeric(5,2) null,
@@ -38,7 +38,7 @@ create policy "public can read active business offers"
 -- Business News Submissions
 create table public.business_news_submissions (
   id                uuid primary key default gen_random_uuid(),
-  business_id       uuid not null references public.businesses(id) on delete cascade,
+  business_id       text not null references public.businesses(id) on delete cascade,
   headline          text not null,
   what_happened     text not null,
   where_location    text not null,
