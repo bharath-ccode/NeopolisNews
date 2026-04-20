@@ -58,10 +58,11 @@ function shortDay(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-IN", { weekday: "short" });
 }
 
-function weatherInfo(code: number) {
-  if (code === 0)                  return { emoji: "☀️",  label: "Clear sky" };
-  if (code === 1)                  return { emoji: "🌤️", label: "Mainly clear" };
-  if (code === 2)                  return { emoji: "⛅",  label: "Partly cloudy" };
+function weatherInfo(code: number, hour?: number) {
+  const isNight = hour !== undefined && (hour < 6 || hour >= 19);
+  if (code === 0)                  return { emoji: isNight ? "🌙"  : "☀️",  label: "Clear sky" };
+  if (code === 1)                  return { emoji: isNight ? "🌙"  : "🌤️", label: "Mainly clear" };
+  if (code === 2)                  return { emoji: isNight ? "☁️"  : "⛅",  label: "Partly cloudy" };
   if (code === 3)                  return { emoji: "☁️",  label: "Overcast" };
   if (code === 45 || code === 48)  return { emoji: "🌫️", label: "Foggy" };
   if (code >= 51 && code <= 55)    return { emoji: "🌦️", label: "Drizzle" };
@@ -153,10 +154,10 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
   }, [open]);
 
   const { current, hourly, daily } = weather;
-  const { emoji, label }    = weatherInfo(current.weather_code);
+  const nowHour             = new Date().getHours();
+  const { emoji, label }    = weatherInfo(current.weather_code, nowHour);
   const temp                = Math.round(current.temperature_2m);
   const feelsLike           = Math.round(current.apparent_temperature);
-  const nowHour             = new Date().getHours();
   const aqiInfo             = aqi !== null ? getAqiInfo(aqi) : null;
 
   return (
@@ -231,7 +232,7 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
                 {hourly.time.map((t, i) => {
                   const h     = parseInt(t.split("T")[1], 10);
                   const isNow = h === nowHour;
-                  const { emoji: e } = weatherInfo(hourly.weather_code[i]);
+                  const { emoji: e } = weatherInfo(hourly.weather_code[i], h);
                   const pr    = hourly.precipitation_probability[i];
 
                   return (
@@ -293,7 +294,7 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
                 <div className="flex items-center gap-2">
                   <Leaf className="w-4 h-4 text-brand-400 shrink-0" />
                   <div>
-                    <p className="text-xs text-gray-400">AQI (US)</p>
+                    <p className="text-xs text-gray-400">AQI · Kokapet</p>
                     <p className="text-sm font-bold text-gray-800">{aqi}</p>
                   </div>
                 </div>
