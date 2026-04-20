@@ -17,6 +17,8 @@ import {
   Flag,
 } from "lucide-react";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import ViewTracker from "./ViewTracker";
+import ContactButton from "./ContactButton";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -49,6 +51,7 @@ interface BusinessRow {
   description: string | null;
   timings: DayTiming[];
   completed_at: string | null;
+  view_count: number;
 }
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
@@ -107,6 +110,7 @@ export default async function BusinessProfilePage({
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <ViewTracker id={b.id} />
 
       {/* ── HERO ────────────────────────────────────────────────────────────── */}
       <section className="bg-gradient-to-br from-brand-950 via-brand-900 to-brand-800 text-white">
@@ -204,6 +208,7 @@ export default async function BusinessProfilePage({
                     <Phone className="w-4 h-4" /> Call Now
                   </a>
                 )}
+                <ContactButton businessId={b.id} businessName={b.name} />
                 {social.instagram && (
                   <a
                     href={social.instagram}
@@ -410,6 +415,7 @@ export default async function BusinessProfilePage({
               </Link>
             </span>
           </div>
+          <span className="text-gray-300 text-xs">{b.view_count.toLocaleString("en-IN")} profile views</span>
           {b.verified && (
             <div className="flex items-center gap-1.5 text-green-600">
               <ShieldCheck className="w-4 h-4" />

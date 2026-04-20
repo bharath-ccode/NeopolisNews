@@ -22,6 +22,7 @@ import {
   CalendarDays,
   Sparkles,
   Tag,
+  Search,
 } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "@/context/AuthContext";
@@ -242,8 +243,31 @@ function UserMenu() {
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (searchOpen) setTimeout(() => searchInputRef.current?.focus(), 50);
+  }, [searchOpen]);
+
+  useEffect(() => {
+    if (!searchOpen) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setSearchOpen(false); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [searchOpen]);
+
+  function handleSearchSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (searchQuery.trim().length < 2) return;
+    router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    setSearchOpen(false);
+    setSearchQuery("");
+  }
 
   function handleMouseEnter(href: string) {
     if (leaveTimer.current) clearTimeout(leaveTimer.current);
@@ -354,9 +378,13 @@ export default function Navbar() {
 
           {/* Auth + Mobile toggle */}
           <div className="flex items-center gap-3">
-            {/* <div className="hidden md:flex items-center border-r border-gray-200 pr-3 mr-1">
-              <WeatherWidget variant="nav" />
-            </div> */}
+            <button
+              onClick={() => setSearchOpen(true)}
+              aria-label="Search"
+              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+            >
+              <Search className="w-4 h-4" />
+            </button>
             <Link
               href="/advertise"
               className="hidden lg:flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-accent-500 text-white hover:bg-accent-600 transition-colors"
@@ -377,6 +405,50 @@ export default function Navbar() {
           </div>
         </div>
       </nav>
+
+      {/* Search overlay */}
+      {searchOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-[100] flex items-start justify-center pt-24 px-4"
+          onClick={() => setSearchOpen(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <form onSubmit={handleSearchSubmit} className="flex items-center gap-3 px-5 py-4">
+              <Search className="w-5 h-5 text-gray-400 shrink-0" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search businesses, properties, news…"
+                className="flex-1 text-base outline-none text-gray-900 placeholder:text-gray-400"
+              />
+              <button
+                type="button"
+                onClick={() => setSearchOpen(false)}
+                className="p-1 rounded-lg hover:bg-gray-100 text-gray-400"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </form>
+            <div className="px-5 pb-4 flex gap-2 flex-wrap">
+              {["Restaurants", "Gym", "2 BHK for rent", "Cafe", "Construction"].map((hint) => (
+                <button
+                  key={hint}
+                  type="button"
+                  onClick={() => { setSearchQuery(hint); router.push(`/search?q=${encodeURIComponent(hint)}`); setSearchOpen(false); setSearchQuery(""); }}
+                  className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-brand-50 hover:text-brand-700 text-gray-600 rounded-full transition-colors"
+                >
+                  {hint}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Mobile menu */}
       {mobileOpen && (

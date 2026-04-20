@@ -7,7 +7,7 @@ import {
   Building2, Phone, Instagram, Facebook, Youtube,
   Clock, Loader2, CheckCircle, LogOut, ExternalLink,
   Image as ImageIcon, Upload, X, ShieldCheck,
-  CalendarDays, Tag, Newspaper,
+  CalendarDays, Tag, Newspaper, Eye,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { DayTiming } from "@/lib/businessStore";
@@ -30,6 +30,7 @@ interface Business {
   contact_phone: string | null;
   description: string | null;
   timings: DayTiming[];
+  view_count: number;
 }
 
 const INPUT = "w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 text-gray-800";
@@ -384,6 +385,19 @@ export default function MyBusinessPage() {
         {/* ── Profile tab ─────────────────────────────────────────────────────── */}
         {activeTab === "profile" && (
           <>
+            {/* View count stat */}
+            {biz && (
+              <div className="card p-4 flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center shrink-0">
+                  <Eye className="w-5 h-5 text-brand-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-extrabold text-gray-900">{(biz.view_count ?? 0).toLocaleString("en-IN")}</p>
+                  <p className="text-xs text-gray-500">Total profile views</p>
+                </div>
+              </div>
+            )}
+
             {/* Logo & Photos */}
             <div className="card p-6">
               <h2 className="font-bold text-gray-900 text-base mb-4 flex items-center gap-2">
