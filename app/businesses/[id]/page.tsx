@@ -19,6 +19,7 @@ import {
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import ViewTracker from "./ViewTracker";
 import ContactButton from "./ContactButton";
+import ReviewSection from "./ReviewSection";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -282,6 +283,9 @@ export default async function BusinessProfilePage({
                   </div>
                 </div>
               )}
+
+              {/* Reviews */}
+              <ReviewSection businessId={b.id} />
 
               {/* Contact & Social */}
               {(b.contact_phone || hasSocial) && (

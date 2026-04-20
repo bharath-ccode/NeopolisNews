@@ -17,6 +17,7 @@ import {
   Home,
   Tag,
   UserCheck,
+  Mail,
 } from "lucide-react";
 import { getArticles, getArticleStats, Article } from "@/lib/newsStore";
 import { createClient } from "@/lib/supabase/client";
@@ -251,6 +252,20 @@ export default function AdminDashboardPage() {
           <div>
             <p className="font-semibold text-gray-900 text-sm">Classifieds</p>
             <p className="text-xs text-gray-400">Cars, bikes, furniture &amp; more</p>
+          </div>
+          <ArrowRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-brand-500 transition-colors" />
+        </Link>
+
+        <Link
+          href="/admin/digest"
+          className="card p-5 flex items-center gap-4 hover:border-brand-300 group"
+        >
+          <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center shrink-0 group-hover:bg-teal-100 transition-colors">
+            <Mail className="w-5 h-5 text-teal-600" />
+          </div>
+          <div>
+            <p className="font-semibold text-gray-900 text-sm">Email Digest</p>
+            <p className="text-xs text-gray-400">Subscribers &amp; weekly send</p>
           </div>
           <ArrowRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-brand-500 transition-colors" />
         </Link>

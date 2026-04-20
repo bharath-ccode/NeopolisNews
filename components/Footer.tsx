@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Building2, Mail, Phone, MapPin } from "lucide-react";
+import FooterSubscribe from "./FooterSubscribe";
 
 const FOOTER_LINKS = {
   "Real Estate": [
@@ -32,7 +33,7 @@ export default function Footer() {
   return (
     <footer className="bg-brand-950 text-brand-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 mb-10">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-8 mb-10">
           {/* Brand */}
           <div className="col-span-2">
             <Link href="/" className="flex items-center gap-2 mb-4">
@@ -68,6 +69,11 @@ export default function Footer() {
                 Neopolis District, India
               </span>
             </div>
+          </div>
+
+          {/* Subscribe */}
+          <div className="col-span-2 lg:col-span-1">
+            <FooterSubscribe />
           </div>
 
           {/* Link columns */}
