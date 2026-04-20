@@ -5,7 +5,7 @@ export async function GET() {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("classifieds")
-    .select("*, projects(project_name)")
+    .select("*, projects(project_name), broker:brokers(name, company_name, rera_number)")
     .order("created_at", { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

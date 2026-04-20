@@ -14,6 +14,7 @@ import {
   IndianRupee,
   MapPin,
   Phone,
+  BadgeCheck,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -44,6 +45,8 @@ interface Classified {
   description: string | null;
   owner_consent: boolean;
   consent_at: string | null;
+  broker_id: string | null;
+  broker?: { name: string; company_name: string | null; rera_number: string | null } | null;
   status: string;
   rejection_note: string | null;
   created_at: string;
@@ -205,17 +208,23 @@ export default function AdminClassifiedsPage() {
                       </span>
                     </div>
 
-                    {/* Owner + consent */}
+                    {/* Contact + source */}
                     <div className="flex items-center gap-3 text-xs text-gray-400">
                       <span className="flex items-center gap-1">
                         <Phone className="w-3 h-3" /> {c.owner_name} · +91{c.contact_phone}
                       </span>
-                      {c.owner_consent && (
+                      {c.broker_id ? (
+                        <span className="flex items-center gap-1 text-cyan-600 font-medium">
+                          <BadgeCheck className="w-3 h-3" />
+                          Broker — {c.broker?.company_name ?? c.broker?.name ?? "Licensed"}
+                          {c.broker?.rera_number ? ` · ${c.broker.rera_number}` : ""}
+                        </span>
+                      ) : c.owner_consent ? (
                         <span className="flex items-center gap-1 text-green-600">
-                          <CheckCircle className="w-3 h-3" /> Consent recorded
+                          <CheckCircle className="w-3 h-3" /> Owner consent recorded
                           {c.consent_at && ` · ${new Date(c.consent_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`}
                         </span>
-                      )}
+                      ) : null}
                     </div>
 
                     {c.description && (
@@ -314,6 +323,17 @@ export default function AdminClassifiedsPage() {
                         <span className="font-semibold text-brand-700">
                           ₹{c.price}{c.listing_type === "rent" ? "/mo" : ""}
                         </span>
+                        {c.broker_id ? (
+                          <span className="flex items-center gap-1 text-cyan-600 font-medium">
+                            <BadgeCheck className="w-3 h-3" />
+                            {c.broker?.company_name ?? c.broker?.name ?? "Broker"}
+                            {c.broker?.rera_number ? ` · ${c.broker.rera_number}` : ""}
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-green-600">
+                            <CheckCircle className="w-3 h-3" /> Owner
+                          </span>
+                        )}
                         <span>{new Date(c.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
                       </div>
                       {c.status === "rejected" && c.rejection_note && (

@@ -12,20 +12,30 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { getUserListings, type Listing } from "@/lib/listings";
+import { createClient } from "@/lib/supabase/client";
 
 export default function IndividualDashboard() {
   const { user } = useAuth();
   const firstName = user?.name?.split(" ")[0] ?? "there";
-  const [listings, setListings] = useState<Listing[]>([]);
+  const [totalListings,  setTotalListings]  = useState(0);
+  const [activeListings, setActiveListings] = useState(0);
 
   useEffect(() => {
-    if (user) setListings(getUserListings(user.id));
+    if (!user) return;
+    const sb = createClient();
+    sb.from("classifieds")
+      .select("status")
+      .eq("user_id", user.id)
+      .is("broker_id", null)
+      .then(({ data }) => {
+        const rows = data ?? [];
+        setTotalListings(rows.length);
+        setActiveListings(rows.filter((r) => r.status === "active").length);
+      });
   }, [user]);
 
-  const activeListings = listings.filter((l) => l.status === "active");
-  const totalViews = listings.reduce((s, l) => s + (l.views ?? 0), 0);
-  const totalEnquiries = listings.reduce((s, l) => s + (l.enquiries ?? 0), 0);
+  const totalViews = 0;
+  const totalEnquiries = 0;
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -42,10 +52,10 @@ export default function IndividualDashboard() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Active Listings", value: String(activeListings.length), icon: Home, color: "bg-blue-50 text-blue-600" },
+          { label: "Active Listings", value: String(activeListings), icon: Home, color: "bg-blue-50 text-blue-600" },
           { label: "Total Views", value: String(totalViews), icon: Eye, color: "bg-green-50 text-green-600" },
           { label: "Enquiries Received", value: String(totalEnquiries), icon: MessageSquare, color: "bg-purple-50 text-purple-600" },
-          { label: "Total Listings", value: String(listings.length), icon: TrendingUp, color: "bg-orange-50 text-orange-600" },
+          { label: "Total Listings", value: String(totalListings), icon: TrendingUp, color: "bg-orange-50 text-orange-600" },
         ].map((s) => (
           <div key={s.label} className="card p-4">
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 ${s.color}`}>
@@ -75,7 +85,7 @@ export default function IndividualDashboard() {
           </div>
           <div>
             <p className="font-semibold text-sm text-gray-900 group-hover:text-brand-700">Manage Listings</p>
-            <p className="text-xs text-gray-400">{activeListings.length} active</p>
+            <p className="text-xs text-gray-400">{activeListings} active</p>
           </div>
           <ArrowRight className="w-4 h-4 text-gray-300 ml-auto" />
         </Link>
@@ -91,47 +101,16 @@ export default function IndividualDashboard() {
         </Link>
       </div>
 
-      {/* My Listings */}
-      <div className="card overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
-          <h3 className="font-bold text-gray-900 text-sm">My Listings</h3>
-          <Link href="/dashboard/individual/listings" className="text-xs text-brand-600 font-semibold hover:underline">
-            View all
+      {/* Listings CTA if none yet */}
+      {totalListings === 0 && (
+        <div className="card p-6 text-center border-dashed">
+          <Home className="w-8 h-8 text-gray-200 mx-auto mb-2" />
+          <p className="text-sm text-gray-500 mb-3">You haven&apos;t posted any property listings yet.</p>
+          <Link href="/dashboard/individual/post" className="btn-primary text-sm">
+            Post your first listing
           </Link>
         </div>
-        {listings.length === 0 ? (
-          <div className="px-5 py-8 text-center">
-            <Home className="w-8 h-8 text-gray-200 mx-auto mb-2" />
-            <p className="text-sm text-gray-400">No listings yet.</p>
-            <Link href="/dashboard/individual/post" className="text-xs text-brand-600 font-semibold hover:underline mt-1 inline-block">
-              Post your first listing
-            </Link>
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-50">
-            {listings.slice(0, 3).map((l) => (
-              <div key={l.id} className="px-5 py-4 flex items-center justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm text-gray-900 truncate">
-                    {l.propertyType.charAt(0).toUpperCase() + l.propertyType.slice(1)} in {l.projectName} — {l.tower}
-                  </p>
-                  <div className="flex items-center gap-3 mt-0.5">
-                    <span className={l.listingType === "rent" ? "tag-green" : "tag-blue"}>
-                      {l.listingType === "rent" ? "Rent" : "Sale"}
-                    </span>
-                    <span className="text-xs font-bold text-brand-700">₹{l.price}{l.listingType === "rent" ? "/mo" : ""}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 text-xs text-gray-400 shrink-0">
-                  <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" />{l.views}</span>
-                  <span className="flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" />{l.enquiries}</span>
-                  <span className={l.status === "active" ? "tag-green" : "tag-red"}>{l.status}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Tips */}
       <div className="bg-brand-50 border border-brand-100 rounded-2xl p-5">
