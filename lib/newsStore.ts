@@ -41,7 +41,7 @@ export const CATEGORY_META: Record<
 // ─── Row mapper: Supabase snake_case → Article camelCase ─────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function toArticle(row: any): Article {
+export function toArticle(row: any): Article {
   return {
     id:        row.id,
     title:     row.title,

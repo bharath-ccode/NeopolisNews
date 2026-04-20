@@ -1,18 +1,19 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
   Building2, MapPin, ArrowLeft, ExternalLink,
   Tag, FileText, ChevronRight, CheckCircle,
-  Send, Loader2,
 } from "lucide-react";
-import { getProjectById, type Project } from "@/lib/projectsStore";
-import { getActiveAnnouncementsByProject, type Announcement } from "@/lib/announcementsStore";
+import { createAdminClient } from "@/lib/supabase/server";
+import { toProject, type Project, type UnitPlan } from "@/lib/projectsStore";
+import { toAnnouncement, type Announcement } from "@/lib/announcementsStore";
 import SectionWrapper from "@/components/SectionWrapper";
+import ProjectEnquiryForm from "./ProjectEnquiryForm";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+export const dynamic = "force-dynamic";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const TIER_LABELS: Record<string, string> = {
   affordable:  "Affordable",
@@ -36,52 +37,119 @@ const TIER_COLORS: Record<string, string> = {
   uber_luxury: "bg-rose-50 text-rose-800",
 };
 
+const PROJECT_SELECT = `
+  *, builders(builder_name),
+  contacts(id, email, website, project_owner, facebook_url, instagram_url, youtube_url,
+    contact_phones(id, phone_number, role, sort_order)
+  ),
+  project_details(id, num_towers, max_floors, amenities_sqft,
+    towers(id, tower_name, num_floors, sort_order,
+      tower_unit_plans(id, project_id, unit_plan_id, floor_from, floor_to, units_per_floor, sort_order)
+    )
+  ),
+  unit_plans(id, plan_name, bhk, maid_room, home_office, size_sqft, facing, plan_url, sort_order)
+`;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 function formatInr(val: number) {
   if (val >= 10_000_000) return `₹${(val / 10_000_000).toFixed(2)} Cr`;
   if (val >= 100_000)    return `₹${(val / 100_000).toFixed(1)} L`;
   return `₹${val.toLocaleString("en-IN")}`;
 }
 
+// ─── Metadata ─────────────────────────────────────────────────────────────────
+
+export async function generateMetadata(
+  { params }: { params: { id: string } }
+): Promise<Metadata> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("projects")
+    .select("project_name, builders(builder_name), tier")
+    .eq("id", params.id)
+    .single();
+
+  if (!data) return { title: "Project Not Found — NeopolisNews" };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const builderRow = Array.isArray((data as any).builders)
+    ? (data as any).builders[0]
+    : (data as any).builders;
+  const builderName = builderRow?.builder_name ?? null;
+
+  return {
+    title: `${data.project_name}${builderName ? ` by ${builderName}` : ""} — NeopolisNews`,
+    description: `${TIER_LABELS[(data as any).tier] ?? ""} real estate project in Neopolis district, Hyderabad.`.trim(),
+  };
+}
+
+// ─── Announcement Card ────────────────────────────────────────────────────────
+
+function AnnouncementCard({ ann }: { ann: Announcement }) {
+  return (
+    <div className="bg-white border border-green-200 rounded-xl p-4 shadow-sm">
+      <div className="flex flex-wrap items-start gap-3 justify-between mb-2">
+        <div>
+          <p className="font-bold text-gray-900 text-sm">
+            {ann.unitPlanSummary ?? ann.unitPlanName ?? "Unit"}
+          </p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            {ann.towerName ?? "Tower"}
+            {(ann.floorFrom || ann.floorTo) && (
+              <> · Floors {ann.floorFrom ?? "–"}{ann.floorTo && ann.floorTo !== ann.floorFrom ? ` – ${ann.floorTo}` : ""}</>
+            )}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-3 text-sm font-black">
+          {ann.unitsAvailable != null && (
+            <span className="text-green-700">{ann.unitsAvailable} available</span>
+          )}
+          {ann.pricePerSqft != null && (
+            <span className="text-brand-700">₹{ann.pricePerSqft.toLocaleString("en-IN")}/sft</span>
+          )}
+        </div>
+      </div>
+      {ann.message && (
+        <p className="text-sm text-gray-600 border-t border-gray-100 pt-2 mt-2">{ann.message}</p>
+      )}
+      {ann.validUntil && (
+        <p className="text-xs text-gray-400 mt-2">
+          Offer valid until{" "}
+          {new Date(ann.validUntil + "T00:00:00").toLocaleDateString("en-IN", {
+            day: "2-digit", month: "long", year: "numeric",
+          })}
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function ProjectDetailPage() {
-  const { id } = useParams<{ id: string }>();
-  const [project, setProject]             = useState<Project | null | undefined>(undefined);
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [loading, setLoading]             = useState(true);
+export default async function ProjectDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const admin = createAdminClient();
+  const today = new Date().toISOString().split("T")[0];
 
-  useEffect(() => {
-    if (!id) return;
-    Promise.all([
-      getProjectById(id),
-      getActiveAnnouncementsByProject(id),
-    ]).then(([proj, anns]) => {
-      setProject(proj);
-      setAnnouncements(anns);
-      setLoading(false);
-    });
-  }, [id]);
+  const [{ data: projectData }, { data: annData }] = await Promise.all([
+    admin.from("projects").select(PROJECT_SELECT).eq("id", params.id).single(),
+    admin
+      .from("availability_announcements")
+      .select("*, unit_plans(plan_name, bhk, maid_room, home_office, size_sqft, facing), towers(tower_name)")
+      .eq("project_id", params.id)
+      .eq("status", "active")
+      .or(`valid_until.is.null,valid_until.gte.${today}`)
+      .order("created_at", { ascending: false }),
+  ]);
 
-  if (loading || project === undefined) {
-    return (
-      <SectionWrapper>
-        <div className="py-24 text-center text-gray-400 text-sm">Loading project…</div>
-      </SectionWrapper>
-    );
-  }
+  if (!projectData) notFound();
 
-  if (!project) {
-    return (
-      <SectionWrapper>
-        <div className="py-24 text-center">
-          <p className="text-gray-500 font-medium">Project not found.</p>
-          <Link href="/real-estate" className="text-brand-600 text-sm mt-2 inline-flex items-center gap-1">
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to projects
-          </Link>
-        </div>
-      </SectionWrapper>
-    );
-  }
+  const project: Project = toProject(projectData);
+  const announcements: Announcement[] = (annData ?? []).map(toAnnouncement);
 
   const towers    = project.projectDetail?.towers ?? [];
   const unitPlans = project.unitPlans ?? [];
@@ -92,13 +160,12 @@ export default function ProjectDetailPage() {
     ? `From ₹${project.priceRangeMin.toLocaleString("en-IN")} /sft`
     : null;
 
-  // Rough total price range from unit plans + price range
-  const cheapestPlan = unitPlans.reduce<number | null>((min, u) => {
+  const cheapestPlan = unitPlans.reduce<number | null>((min, u: UnitPlan) => {
     if (!project.priceRangeMin) return min;
     const total = project.priceRangeMin * u.sizeSqft;
     return min === null || total < min ? total : min;
   }, null);
-  const pricestPlan = unitPlans.reduce<number | null>((max, u) => {
+  const pricestPlan = unitPlans.reduce<number | null>((max, u: UnitPlan) => {
     if (!project.priceRangeMax) return max;
     const total = project.priceRangeMax * u.sizeSqft;
     return max === null || total > max ? total : max;
@@ -114,7 +181,6 @@ export default function ProjectDetailPage() {
             <ArrowLeft className="w-4 h-4" /> All Projects
           </Link>
           <div className="flex items-start gap-5">
-            {/* Logo */}
             <div className="w-16 h-16 rounded-2xl border border-brand-700 bg-brand-800 flex items-center justify-center shrink-0 overflow-hidden">
               {project.projectLogoUrl
                 ? <img src={project.projectLogoUrl} alt={project.projectName} className="w-full h-full object-cover" />
@@ -215,7 +281,7 @@ export default function ProjectDetailPage() {
                 {t.floorPlans && t.floorPlans.length > 0 && (
                   <div className="border-t border-gray-100 pt-3 space-y-2.5">
                     {t.floorPlans.map((fp, i) => {
-                      const plan = unitPlans.find(u => u.id === fp.unitPlanId);
+                      const plan = unitPlans.find((u: UnitPlan) => u.id === fp.unitPlanId);
                       if (!plan) return null;
                       return (
                         <div key={i} className="flex items-center justify-between gap-2">
@@ -257,7 +323,7 @@ export default function ProjectDetailPage() {
           <SectionWrapper tight>
             <h2 className="text-lg font-extrabold text-gray-900 mb-4">Unit Plans</h2>
             <div className="grid sm:grid-cols-2 gap-3">
-              {unitPlans.map(u => (
+              {unitPlans.map((u: UnitPlan) => (
                 <div key={u.id} className="card p-4 flex items-start gap-3">
                   <div className="w-10 h-10 rounded-lg bg-brand-50 flex items-center justify-center shrink-0 font-black text-brand-700 text-lg">
                     {u.bhk}
@@ -289,7 +355,7 @@ export default function ProjectDetailPage() {
         </section>
       )}
 
-      {/* ── Project Layout Plan ── */}
+      {/* ── Master Plan ── */}
       {project.projectPlanUrl && (
         <SectionWrapper tight>
           <h2 className="text-lg font-extrabold text-gray-900 mb-4">Master Plan</h2>
@@ -314,8 +380,6 @@ export default function ProjectDetailPage() {
         <SectionWrapper tight>
           <h2 className="text-lg font-extrabold mb-5">Contact &amp; Enquiry</h2>
           <div className="grid md:grid-cols-2 gap-8">
-
-            {/* Left — contact details */}
             {project.contact && (
               <div className="space-y-4">
                 {project.contact.projectOwner && (
@@ -359,132 +423,10 @@ export default function ProjectDetailPage() {
                 </div>
               </div>
             )}
-
-            {/* Right — enquiry form */}
             <ProjectEnquiryForm projectId={project.id} projectName={project.projectName} />
           </div>
         </SectionWrapper>
       </section>
     </>
-  );
-}
-
-// ─── Project Enquiry Form ─────────────────────────────────────────────────────
-
-function ProjectEnquiryForm({ projectId, projectName }: { projectId: string; projectName: string }) {
-  const [form, setForm] = useState({ senderName: "", senderPhone: "", message: "" });
-  const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const INPUT = "w-full bg-brand-900 border border-brand-700 text-white placeholder-brand-400 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400";
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/projects/${projectId}/enquire`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error ?? "Something went wrong."); return; }
-      setDone(true);
-    } catch {
-      setError("Network error. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  if (done) {
-    return (
-      <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
-        <CheckCircle className="w-10 h-10 text-green-400" />
-        <p className="font-bold text-white text-lg">Enquiry sent!</p>
-        <p className="text-brand-300 text-sm">The {projectName} team will contact you shortly.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <p className="text-white font-bold text-base mb-1">Send an Enquiry</p>
-      <p className="text-brand-300 text-sm mb-4">Interested in a unit? We&apos;ll get back to you within 24 hours.</p>
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <input
-          className={INPUT}
-          placeholder="Your name *"
-          value={form.senderName}
-          onChange={(e) => setForm({ ...form, senderName: e.target.value })}
-          required
-        />
-        <input
-          className={INPUT}
-          placeholder="Mobile number *"
-          type="tel"
-          value={form.senderPhone}
-          onChange={(e) => setForm({ ...form, senderPhone: e.target.value })}
-          required
-        />
-        <textarea
-          className={INPUT}
-          placeholder="Message — e.g. BHK preference, budget, timeline…"
-          rows={3}
-          value={form.message}
-          onChange={(e) => setForm({ ...form, message: e.target.value })}
-          required
-        />
-        {error && <p className="text-red-400 text-xs">{error}</p>}
-        <button type="submit" disabled={loading}
-          className="w-full flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-400 disabled:opacity-60 text-white font-semibold py-2.5 rounded-lg transition-colors text-sm">
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-          {loading ? "Sending…" : "Send Enquiry"}
-        </button>
-      </form>
-    </div>
-  );
-}
-
-// ─── Announcement Card (public view) ─────────────────────────────────────────
-
-function AnnouncementCard({ ann }: { ann: Announcement }) {
-  return (
-    <div className="bg-white border border-green-200 rounded-xl p-4 shadow-sm">
-      <div className="flex flex-wrap items-start gap-3 justify-between mb-2">
-        <div>
-          <p className="font-bold text-gray-900 text-sm">
-            {ann.unitPlanSummary ?? ann.unitPlanName ?? "Unit"}
-          </p>
-          <p className="text-xs text-gray-500 mt-0.5">
-            {ann.towerName ?? "Tower"}
-            {(ann.floorFrom || ann.floorTo) && (
-              <> · Floors {ann.floorFrom ?? "–"}{ann.floorTo && ann.floorTo !== ann.floorFrom ? ` – ${ann.floorTo}` : ""}</>
-            )}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3 text-sm font-black">
-          {ann.unitsAvailable != null && (
-            <span className="text-green-700">{ann.unitsAvailable} available</span>
-          )}
-          {ann.pricePerSqft != null && (
-            <span className="text-brand-700">₹{ann.pricePerSqft.toLocaleString("en-IN")}/sft</span>
-          )}
-        </div>
-      </div>
-      {ann.message && (
-        <p className="text-sm text-gray-600 border-t border-gray-100 pt-2 mt-2">{ann.message}</p>
-      )}
-      {ann.validUntil && (
-        <p className="text-xs text-gray-400 mt-2">
-          Offer valid until{" "}
-          {new Date(ann.validUntil + "T00:00:00").toLocaleDateString("en-IN", {
-            day: "2-digit", month: "long", year: "numeric",
-          })}
-        </p>
-      )}
-    </div>
   );
 }

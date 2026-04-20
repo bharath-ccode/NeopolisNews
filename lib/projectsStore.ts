@@ -109,7 +109,7 @@ export interface ProjectInput {
 // ─── Mapping ─────────────────────────────────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function toProject(row: any): Project {
+export function toProject(row: any): Project {
   const contactRow = Array.isArray(row.contacts) ? row.contacts[0] : row.contacts;
   const detailRow  = Array.isArray(row.project_details) ? row.project_details[0] : row.project_details;
 

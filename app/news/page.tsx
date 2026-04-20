@@ -73,7 +73,7 @@ const CONTENT_PACKAGES = [
 
 function ArticleCard({ article }: { article: Article }) {
   return (
-    <div className="card p-5 relative">
+    <Link href={`/news/${article.id}`} className="card p-5 relative block hover:shadow-md transition-shadow">
       {article.sponsored && (
         <span className="absolute top-3 right-3 bg-yellow-100 text-yellow-700 text-xs font-bold px-2 py-0.5 rounded-full">
           Sponsored
@@ -107,7 +107,7 @@ function ArticleCard({ article }: { article: Article }) {
           <Eye className="w-3 h-3" /> {article.views.toLocaleString("en-IN")}
         </span>
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -180,7 +180,7 @@ export default async function NewsPage() {
       {/* ── Featured Article ── */}
       {featured && (
         <SectionWrapper>
-          <div className="card overflow-hidden">
+          <Link href={`/news/${featured.id}`} className="card overflow-hidden block hover:shadow-md transition-shadow">
             {featured.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -213,7 +213,7 @@ export default async function NewsPage() {
                 <span>{featured.date}</span>
               </div>
             </div>
-          </div>
+          </Link>
         </SectionWrapper>
       )}
 
