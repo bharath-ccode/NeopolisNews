@@ -101,15 +101,10 @@ export default function Footer() {
         <div className="border-t border-brand-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-brand-400">
           <p>© 2026 NeopolisNews. All rights reserved.</p>
           <div className="flex gap-4">
-            <Link href="/privacy" className="hover:text-white">
-              Privacy Policy
-            </Link>
-            <Link href="/terms" className="hover:text-white">
-              Terms of Use
-            </Link>
-            <Link href="/advertise" className="hover:text-white">
-              Advertise
-            </Link>
+            <Link href="/privacy" className="hover:text-white">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-white">Terms of Use</Link>
+            <Link href="/cookies" className="hover:text-white">Cookies</Link>
+            <Link href="/advertise" className="hover:text-white">Advertise</Link>
           </div>
         </div>
       </div>
