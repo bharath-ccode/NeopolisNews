@@ -449,13 +449,16 @@ export default function BrokerCreateListing() {
         {/* ── Step 5: Contact ── */}
         {step === 5 && (
           <div className="space-y-4">
+            <p className="text-xs text-gray-500 bg-cyan-50 border border-cyan-100 rounded-lg px-3 py-2">
+              This contact will be shown to buyers and tenants on the listing.
+            </p>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Contact Name <span className="text-red-400">*</span></label>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Your Name <span className="text-red-400">*</span></label>
               <input type="text" value={ownerName} onChange={(e) => setOwnerName(e.target.value)}
                 placeholder="Your name" className={inputClass} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5 flex items-center gap-1"><Phone className="w-3 h-3" />Phone <span className="text-red-400">*</span></label>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5 flex items-center gap-1"><Phone className="w-3 h-3" />Your Phone <span className="text-red-400">*</span></label>
               <input type="tel" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)}
                 placeholder="10-digit number" className={inputClass} />
             </div>

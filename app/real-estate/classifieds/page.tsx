@@ -13,9 +13,16 @@ import {
   PlusCircle,
   Building2,
   CheckCircle,
+  BadgeCheck,
 } from "lucide-react";
 import clsx from "clsx";
 import { createClient } from "@/lib/supabase/client";
+
+interface BrokerInfo {
+  name: string;
+  company_name: string | null;
+  rera_number: string | null;
+}
 
 interface Classified {
   id: string;
@@ -43,6 +50,8 @@ interface Classified {
   deposit: string | null;
   description: string | null;
   owner_consent: boolean;
+  broker_id: string | null;
+  broker: BrokerInfo | null;
   created_at: string;
 }
 
@@ -80,7 +89,7 @@ export default function ClassifiedsPage() {
   useEffect(() => {
     const sb = createClient();
     sb.from("classifieds")
-      .select("*")
+      .select("*, broker:brokers(name, company_name, rera_number)")
       .eq("status", "active")
       .order("created_at", { ascending: false })
       .then(({ data }) => {
@@ -106,13 +115,13 @@ export default function ClassifiedsPage() {
       {/* Hero */}
       <section className="bg-gradient-to-br from-brand-900 to-brand-800 text-white py-12 md:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <span className="tag-blue mb-4 inline-block">Owner Direct Listings</span>
+          <span className="tag-blue mb-4 inline-block">Property Listings</span>
           <h1 className="text-3xl md:text-4xl font-extrabold mt-3 mb-3">
             Property Classifieds
           </h1>
           <p className="text-brand-200 text-base mb-6 max-w-xl">
-            Verified owner listings in the Neopolis district — residential, retail &amp; office
-            space. No brokerage, direct contact.
+            Residential, retail &amp; office listings in the Neopolis district — from verified
+            owners and licensed brokers.
           </p>
           <div className="flex flex-wrap gap-3">
             <Link href="/auth/login?next=/dashboard/individual/post" className="btn-primary">
@@ -337,15 +346,28 @@ export default function ClassifiedsPage() {
 
                     <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-brand-100 text-brand-700 text-xs font-bold flex items-center justify-center shrink-0">
+                        <div className={clsx(
+                          "w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center shrink-0",
+                          l.broker ? "bg-cyan-100 text-cyan-700" : "bg-brand-100 text-brand-700"
+                        )}>
                           {l.owner_name.charAt(0).toUpperCase()}
                         </div>
                         <div>
                           <p className="text-xs font-semibold text-gray-700">{l.owner_name}</p>
-                          <div className="flex items-center gap-1">
-                            <CheckCircle className="w-3 h-3 text-green-500" />
-                            <p className="text-xs text-gray-400">Verified Owner</p>
-                          </div>
+                          {l.broker ? (
+                            <div className="flex items-center gap-1">
+                              <BadgeCheck className="w-3 h-3 text-cyan-500" />
+                              <p className="text-xs text-cyan-600 font-medium">
+                                {l.broker.company_name ?? "Licensed Broker"}
+                                {l.broker.rera_number ? ` · ${l.broker.rera_number}` : ""}
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1">
+                              <CheckCircle className="w-3 h-3 text-green-500" />
+                              <p className="text-xs text-gray-400">Verified Owner</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="flex gap-2">
