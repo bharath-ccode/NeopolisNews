@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   Building2, MapPin, ArrowLeft, ExternalLink,
   Tag, FileText, ChevronRight, CheckCircle,
+  Send, Loader2,
 } from "lucide-react";
 import { getProjectById, type Project } from "@/lib/projectsStore";
 import { getActiveAnnouncementsByProject, type Announcement } from "@/lib/announcementsStore";
@@ -308,16 +309,18 @@ export default function ProjectDetailPage() {
         </SectionWrapper>
       )}
 
-      {/* ── Contact ── */}
-      {project.contact && (
-        <section className="bg-brand-950 text-white">
-          <SectionWrapper tight>
-            <h2 className="text-lg font-extrabold mb-5">Contact & Enquiry</h2>
-            <div className="grid sm:grid-cols-2 gap-6">
-              <div className="space-y-3">
+      {/* ── Contact & Enquiry ── */}
+      <section className="bg-brand-950 text-white">
+        <SectionWrapper tight>
+          <h2 className="text-lg font-extrabold mb-5">Contact &amp; Enquiry</h2>
+          <div className="grid md:grid-cols-2 gap-8">
+
+            {/* Left — contact details */}
+            {project.contact && (
+              <div className="space-y-4">
                 {project.contact.projectOwner && (
                   <p className="text-brand-200 text-sm">
-                    <span className="text-brand-400 text-xs uppercase tracking-wide block">Project Owner</span>
+                    <span className="text-brand-400 text-xs uppercase tracking-wide block mb-0.5">Project Owner</span>
                     {project.contact.projectOwner}
                   </p>
                 )}
@@ -325,7 +328,7 @@ export default function ProjectDetailPage() {
                   <div key={i}>
                     <span className="text-brand-400 text-xs uppercase tracking-wide">{ph.role.replace("_", " ")}</span>
                     <a href={`tel:${ph.phoneNumber}`}
-                      className="block text-white font-semibold hover:text-brand-300 transition-colors">
+                      className="block text-white font-semibold hover:text-brand-300 transition-colors mt-0.5">
                       {ph.phoneNumber}
                     </a>
                   </div>
@@ -336,30 +339,112 @@ export default function ProjectDetailPage() {
                     {project.contact.email}
                   </a>
                 )}
+                <div className="flex flex-col gap-2 pt-1">
+                  {project.contact.website && (
+                    <a href={project.contact.website} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-brand-300 hover:text-white text-sm transition-colors">
+                      <ExternalLink className="w-4 h-4" /> Official Website
+                    </a>
+                  )}
+                  {[
+                    { url: project.contact.facebookUrl,  label: "Facebook"  },
+                    { url: project.contact.instagramUrl, label: "Instagram" },
+                    { url: project.contact.youtubeUrl,   label: "YouTube"   },
+                  ].filter(s => s.url).map(s => (
+                    <a key={s.label} href={s.url!} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-brand-300 hover:text-white text-sm transition-colors">
+                      <ExternalLink className="w-4 h-4" /> {s.label}
+                    </a>
+                  ))}
+                </div>
               </div>
-              <div className="flex flex-col gap-3">
-                {project.contact.website && (
-                  <a href={project.contact.website} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-brand-300 hover:text-white text-sm transition-colors">
-                    <ExternalLink className="w-4 h-4" /> Official Website
-                  </a>
-                )}
-                {[
-                  { url: project.contact.facebookUrl,  label: "Facebook"  },
-                  { url: project.contact.instagramUrl, label: "Instagram" },
-                  { url: project.contact.youtubeUrl,   label: "YouTube"   },
-                ].filter(s => s.url).map(s => (
-                  <a key={s.label} href={s.url!} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-brand-300 hover:text-white text-sm transition-colors">
-                    <ExternalLink className="w-4 h-4" /> {s.label}
-                  </a>
-                ))}
-              </div>
-            </div>
-          </SectionWrapper>
-        </section>
-      )}
+            )}
+
+            {/* Right — enquiry form */}
+            <ProjectEnquiryForm projectId={project.id} projectName={project.projectName} />
+          </div>
+        </SectionWrapper>
+      </section>
     </>
+  );
+}
+
+// ─── Project Enquiry Form ─────────────────────────────────────────────────────
+
+function ProjectEnquiryForm({ projectId, projectName }: { projectId: string; projectName: string }) {
+  const [form, setForm] = useState({ senderName: "", senderPhone: "", message: "" });
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const INPUT = "w-full bg-brand-900 border border-brand-700 text-white placeholder-brand-400 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400";
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/projects/${projectId}/enquire`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error ?? "Something went wrong."); return; }
+      setDone(true);
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (done) {
+    return (
+      <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
+        <CheckCircle className="w-10 h-10 text-green-400" />
+        <p className="font-bold text-white text-lg">Enquiry sent!</p>
+        <p className="text-brand-300 text-sm">The {projectName} team will contact you shortly.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <p className="text-white font-bold text-base mb-1">Send an Enquiry</p>
+      <p className="text-brand-300 text-sm mb-4">Interested in a unit? We&apos;ll get back to you within 24 hours.</p>
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <input
+          className={INPUT}
+          placeholder="Your name *"
+          value={form.senderName}
+          onChange={(e) => setForm({ ...form, senderName: e.target.value })}
+          required
+        />
+        <input
+          className={INPUT}
+          placeholder="Mobile number *"
+          type="tel"
+          value={form.senderPhone}
+          onChange={(e) => setForm({ ...form, senderPhone: e.target.value })}
+          required
+        />
+        <textarea
+          className={INPUT}
+          placeholder="Message — e.g. BHK preference, budget, timeline…"
+          rows={3}
+          value={form.message}
+          onChange={(e) => setForm({ ...form, message: e.target.value })}
+          required
+        />
+        {error && <p className="text-red-400 text-xs">{error}</p>}
+        <button type="submit" disabled={loading}
+          className="w-full flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-400 disabled:opacity-60 text-white font-semibold py-2.5 rounded-lg transition-colors text-sm">
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          {loading ? "Sending…" : "Send Enquiry"}
+        </button>
+      </form>
+    </div>
   );
 }
 
