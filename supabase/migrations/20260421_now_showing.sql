@@ -1,7 +1,7 @@
 -- now_showing: movies currently running at a cinema business
 create table if not exists now_showing (
   id              uuid primary key default gen_random_uuid(),
-  business_id     uuid not null references businesses(id) on delete cascade,
+  business_id     text not null references businesses(id) on delete cascade,
   title           text not null,
   poster_url      text,
   genres          text[] not null default '{}',
