@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { createAdminClient } from "@/lib/supabase/server";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function POST() {
+  const resend = new Resend(process.env.RESEND_API_KEY);
   const admin = createAdminClient();
 
   const [subRes, artRes, bizRes] = await Promise.all([
