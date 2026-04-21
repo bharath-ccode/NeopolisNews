@@ -13,6 +13,8 @@ import ProjectEnquiryForm from "./ProjectEnquiryForm";
 
 export const dynamic = "force-dynamic";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neopolis.news";
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const TIER_LABELS: Record<string, string> = {
@@ -66,7 +68,7 @@ export async function generateMetadata(
   const admin = createAdminClient();
   const { data } = await admin
     .from("projects")
-    .select("project_name, builders(builder_name), tier")
+    .select("project_name, builders(builder_name), tier, project_type, total_units, price_range_min, price_range_max")
     .eq("id", params.id)
     .single();
 
@@ -76,11 +78,30 @@ export async function generateMetadata(
   const builderRow = Array.isArray((data as any).builders)
     ? (data as any).builders[0]
     : (data as any).builders;
-  const builderName = builderRow?.builder_name ?? null;
+  const builderName: string | null = builderRow?.builder_name ?? null;
+  const tier  = TIER_LABELS[(data as any).tier ?? ""] ?? "";
+  const pType = TYPE_LABELS[(data as any).project_type ?? ""] ?? "Apartments";
+
+  const title = `${data.project_name}${builderName ? ` by ${builderName}` : ""} — ${tier ? `${tier} ` : ""}${pType} in Neopolis, Hyderabad | NeopolisNews`;
+
+  const description = [
+    `${data.project_name} is a${tier ? ` ${tier.toLowerCase()}` : ""} ${pType.toLowerCase()} project`,
+    builderName ? `by ${builderName}` : null,
+    "in the Neopolis district, Hyderabad, Telangana.",
+    (data as any).total_units ? `${(data as any).total_units} total units.` : null,
+  ].filter(Boolean).join(" ");
 
   return {
-    title: `${data.project_name}${builderName ? ` by ${builderName}` : ""} — NeopolisNews`,
-    description: `${TIER_LABELS[(data as any).tier] ?? ""} real estate project in Neopolis district, Hyderabad.`.trim(),
+    title,
+    description,
+    openGraph: {
+      title: `${data.project_name}${builderName ? ` by ${builderName}` : ""} | Neopolis`,
+      description,
+      url: `${SITE_URL}/real-estate/${params.id}`,
+      siteName: "NeopolisNews",
+      type: "website",
+    },
+    alternates: { canonical: `${SITE_URL}/real-estate/${params.id}` },
   };
 }
 
@@ -171,8 +192,50 @@ export default async function ProjectDetailPage({
     return max === null || total > max ? total : max;
   }, null);
 
+  const projectJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "RealEstateListing",
+    name: project.projectName,
+    description: [
+      project.projectName,
+      project.builderName ? `by ${project.builderName}` : null,
+      project.tier ? `— ${TIER_LABELS[project.tier]} project` : null,
+      "in Neopolis district, Hyderabad, Telangana, India.",
+    ].filter(Boolean).join(" "),
+    url: `${SITE_URL}/real-estate/${project.id}`,
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: "Neopolis, Hyderabad",
+      addressRegion: "Telangana",
+      addressCountry: "IN",
+    },
+    ...(project.contact?.email ? { email: project.contact.email } : {}),
+    ...(project.contact?.phones?.length
+      ? { telephone: project.contact.phones[0].phoneNumber }
+      : {}),
+    ...(project.contact?.website ? { url: project.contact.website } : {}),
+    ...(project.totalUnits ? { numberOfRooms: project.totalUnits } : {}),
+    ...(project.priceRangeMin
+      ? {
+          offers: {
+            "@type": "AggregateOffer",
+            priceCurrency: "INR",
+            lowPrice: project.priceRangeMin,
+            ...(project.priceRangeMax ? { highPrice: project.priceRangeMax } : {}),
+          },
+        }
+      : {}),
+    ...(project.builderName
+      ? { seller: { "@type": "Organization", name: project.builderName } }
+      : {}),
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(projectJsonLd) }}
+      />
       {/* ── Hero ── */}
       <section className="bg-gradient-to-br from-brand-900 to-brand-800 text-white py-10 md:py-14">
         <SectionWrapper tight>

@@ -57,21 +57,37 @@ interface BusinessRow {
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neopolis.news";
+
 export async function generateMetadata(
   { params }: { params: { id: string } }
 ): Promise<Metadata> {
   const supabase = createAdminClient();
   const { data } = await supabase
     .from("businesses")
-    .select("name, industry, description")
+    .select("name, industry, description, address, types")
     .eq("id", params.id)
     .single();
 
   if (!data) return { title: "Business Not Found" };
 
+  const types: string[] = data.types ?? [];
+  const typeLabel = types.length ? types[0] : data.industry;
+  const description =
+    data.description ??
+    `${data.name} is a ${typeLabel} located in the Neopolis district, Hyderabad. View contact details, hours, and more on NeopolisNews.`;
+
   return {
-    title: data.name,
-    description: data.description ?? `${data.name} — ${data.industry} in Neopolis`,
+    title: `${data.name} — ${typeLabel} in Neopolis, Hyderabad | NeopolisNews`,
+    description,
+    openGraph: {
+      title: `${data.name} | Neopolis, Hyderabad`,
+      description,
+      url: `${SITE_URL}/businesses/${params.id}`,
+      siteName: "NeopolisNews",
+      type: "website",
+    },
+    alternates: { canonical: `${SITE_URL}/businesses/${params.id}` },
   };
 }
 
@@ -109,8 +125,46 @@ export default async function BusinessProfilePage({
   const status = todayStatus(timings);
   const hasSocial = social.instagram || social.facebook || social.youtube;
 
+  const sameAs = [
+    social.instagram,
+    social.facebook,
+    social.youtube,
+  ].filter(Boolean);
+
+  const openingHoursSpecification = timings
+    .filter((t) => !t.closed)
+    .map((t) => ({
+      "@type": "OpeningHoursSpecification",
+      dayOfWeek: `https://schema.org/${t.day}`,
+      opens: t.open,
+      closes: t.close,
+    }));
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    name: b.name,
+    description: b.description ?? undefined,
+    url: `${SITE_URL}/businesses/${b.id}`,
+    ...(b.contact_phone ? { telephone: b.contact_phone } : {}),
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: b.address,
+      addressLocality: "Hyderabad",
+      addressRegion: "Telangana",
+      addressCountry: "IN",
+    },
+    ...(openingHoursSpecification.length ? { openingHoursSpecification } : {}),
+    ...(sameAs.length ? { sameAs } : {}),
+    ...(b.verified ? { hasCredential: "Verified by NeopolisNews" } : {}),
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <ViewTracker id={b.id} />
 
       {/* ── HERO ────────────────────────────────────────────────────────────── */}

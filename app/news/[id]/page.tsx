@@ -7,6 +7,8 @@ import { toArticle } from "@/lib/newsStore";
 
 export const dynamic = "force-dynamic";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neopolis.news";
+
 export async function generateMetadata(
   { params }: { params: { id: string } }
 ): Promise<Metadata> {
@@ -21,13 +23,17 @@ export async function generateMetadata(
   if (!data) return { title: "Article Not Found — NeopolisNews" };
 
   return {
-    title: `${data.title} — NeopolisNews`,
+    title: `${data.title} | NeopolisNews`,
     description: data.excerpt,
     openGraph: {
       title: data.title,
       description: data.excerpt,
-      ...(data.image_url ? { images: [data.image_url] } : {}),
+      url: `${SITE_URL}/news/${params.id}`,
+      siteName: "NeopolisNews",
+      type: "article",
+      ...(data.image_url ? { images: [{ url: data.image_url }] } : {}),
     },
+    alternates: { canonical: `${SITE_URL}/news/${params.id}` },
   };
 }
 
@@ -70,8 +76,38 @@ export default async function ArticlePage({ params }: { params: { id: string } }
     image_url: string | null;
   }[];
 
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: article.title,
+    description: article.excerpt,
+    articleBody: article.content,
+    datePublished: article.createdAt,
+    dateModified: article.updatedAt,
+    author: {
+      "@type": "Person",
+      name: article.author,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "NeopolisNews",
+      url: SITE_URL,
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `${SITE_URL}/news/${article.id}`,
+    },
+    ...(article.imageUrl
+      ? { image: [{ "@type": "ImageObject", url: article.imageUrl }] }
+      : {}),
+  };
+
   return (
     <div className="bg-white min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+      />
       {/* Hero */}
       <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white py-12 md:py-16">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
