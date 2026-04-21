@@ -18,17 +18,20 @@ import {
   Users,
   User,
   IndianRupee,
+  Video,
+  Loader2,
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import LeadForm from "@/components/LeadForm";
 
-type WellnessType = "spa" | "gym" | "studio" | "trainer";
+type WellnessType = "spa" | "gym" | "studio" | "trainer" | "sessions";
 
 const TABS: { id: WellnessType; label: string; icon: React.ElementType; color: string }[] = [
-  { id: "spa",     label: "Massage Spa", icon: Sparkles,  color: "bg-pink-50 text-pink-600"     },
-  { id: "gym",     label: "Gym",         icon: Dumbbell,  color: "bg-blue-50 text-blue-600"     },
-  { id: "studio",  label: "Studio",      icon: Music2,    color: "bg-green-50 text-green-600"   },
-  { id: "trainer", label: "Trainers",    icon: UserRound, color: "bg-amber-50 text-amber-600"   },
+  { id: "spa",      label: "Massage Spa",   icon: Sparkles,  color: "bg-pink-50 text-pink-600"     },
+  { id: "gym",      label: "Gym",           icon: Dumbbell,  color: "bg-blue-50 text-blue-600"     },
+  { id: "studio",   label: "Studio",        icon: Music2,    color: "bg-green-50 text-green-600"   },
+  { id: "trainer",  label: "Trainers",      icon: UserRound, color: "bg-amber-50 text-amber-600"   },
+  { id: "sessions", label: "Live Sessions", icon: Video,     color: "bg-purple-50 text-purple-600" },
 ];
 
 // ─── Business (Spa / Gym / Studio) ───────────────────────────────────────────
@@ -168,6 +171,64 @@ const TRAINERS: Trainer[] = [
     about: "Energetic Zumba & aerobics instructor. Focuses on fun, inclusive classes combining cardio dance and toning. Kids and adult batches available.",
   },
 ];
+
+// ─── Live Sessions ────────────────────────────────────────────────────────────
+
+interface LiveSession {
+  id: string;
+  trainer_name: string;
+  session_type: string;
+  language: string;
+  price_inr: number;
+  max_seats: number;
+  seats_taken: number;
+  platform_label: string;
+  platform: string;
+  start_date: string;
+  end_date: string;
+}
+
+const PLATFORM_COLOR: Record<string, string> = {
+  zoom:  "bg-blue-50 text-blue-700 border-blue-200",
+  meet:  "bg-green-50 text-green-700 border-green-200",
+  teams: "bg-indigo-50 text-indigo-700 border-indigo-200",
+  webex: "bg-red-50 text-red-700 border-red-200",
+  other: "bg-gray-50 text-gray-600 border-gray-200",
+};
+
+function SessionCard({ s }: { s: LiveSession }) {
+  const seatsLeft = s.max_seats - s.seats_taken;
+  return (
+    <Link href={`/wellness/sessions/${s.id}`}
+      className="card p-5 space-y-3 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 block">
+      <div className="flex items-start justify-between gap-2">
+        <span className="text-xs font-bold px-2.5 py-1 bg-purple-50 text-purple-700 border border-purple-200 rounded-full">{s.session_type}</span>
+        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${PLATFORM_COLOR[s.platform] ?? PLATFORM_COLOR.other}`}>{s.platform_label}</span>
+      </div>
+      <div>
+        <h3 className="font-bold text-gray-900 text-sm">{s.trainer_name}</h3>
+        <p className="text-xs text-gray-400 mt-0.5">{s.language}</p>
+      </div>
+      <p className="text-xs text-gray-500 flex items-center gap-1.5">
+        <Calendar className="w-3.5 h-3.5 text-gray-400" />
+        {new Date(s.start_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} –{" "}
+        {new Date(s.end_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+      </p>
+      <div className="flex items-center justify-between pt-1 border-t border-gray-100">
+        <div className="flex items-center gap-1 text-sm font-bold text-amber-700">
+          <IndianRupee className="w-3.5 h-3.5" />
+          <span>{s.price_inr.toLocaleString("en-IN")}<span className="text-xs text-gray-400 font-normal">/mo</span></span>
+        </div>
+        <span className={`text-xs font-semibold ${seatsLeft <= 3 ? "text-red-600" : "text-gray-500"}`}>
+          {seatsLeft > 0 ? `${seatsLeft} seats left` : "Full"}
+        </span>
+      </div>
+      <div className="flex items-center justify-center gap-2 w-full border border-purple-200 hover:border-purple-400 text-purple-700 text-xs font-semibold py-2 rounded-lg transition-colors">
+        <Video className="w-3.5 h-3.5" /> View &amp; Enroll
+      </div>
+    </Link>
+  );
+}
 
 // ─── Colours & icons ──────────────────────────────────────────────────────────
 
@@ -325,6 +386,8 @@ function WellnessContent() {
   const [active, setActive] = useState<WellnessType>(
     typeParam && VALID_TYPES.includes(typeParam) ? typeParam : "spa"
   );
+  const [liveSessions, setLiveSessions] = useState<LiveSession[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
 
   useEffect(() => {
     const t = searchParams.get("type") as WellnessType | null;
@@ -332,10 +395,22 @@ function WellnessContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
+  useEffect(() => {
+    if (active !== "sessions") return;
+    setSessionsLoading(true);
+    fetch("/api/wellness-sessions")
+      .then((r) => r.json())
+      .then((data) => { setLiveSessions(Array.isArray(data) ? data : []); })
+      .finally(() => setSessionsLoading(false));
+  }, [active]);
+
   const filteredBusinesses = BUSINESSES.filter((b) => b.type === (active as Business["type"]));
   const isTrainer = active === "trainer";
+  const isSessions = active === "sessions";
 
-  const count = isTrainer
+  const count = isSessions
+    ? liveSessions.length
+    : isTrainer
     ? TRAINERS.length
     : filteredBusinesses.length;
 
@@ -381,9 +456,11 @@ function WellnessContent() {
           <div className="flex gap-2 overflow-x-auto pb-0.5">
             {TABS.map((tab) => {
               const isActive = active === tab.id;
-              const c = tab.id === "trainer"
+              const c = tab.id === "sessions"
+                ? liveSessions.length
+                : tab.id === "trainer"
                 ? TRAINERS.length
-                : BUSINESSES.filter((b) => b.type === tab.id).length;
+                : BUSINESSES.filter((b) => b.type === (tab.id as Business["type"])).length;
               return (
                 <button
                   key={tab.id}
@@ -429,7 +506,20 @@ function WellnessContent() {
             )}
           </div>
 
-          {isTrainer ? (
+          {isSessions ? (
+            sessionsLoading ? (
+              <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-purple-500" /></div>
+            ) : liveSessions.length === 0 ? (
+              <div className="text-center py-16">
+                <Video className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+                <p className="text-sm text-gray-500">No live sessions at the moment. Check back soon.</p>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {liveSessions.map((s) => <SessionCard key={s.id} s={s} />)}
+              </div>
+            )
+          ) : isTrainer ? (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {TRAINERS.map((t) => <TrainerCard key={t.name} t={t} />)}
             </div>
