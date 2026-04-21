@@ -23,6 +23,7 @@ import {
   Sparkles,
   Tag,
   Search,
+  GraduationCap,
 } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "@/context/AuthContext";
@@ -75,6 +76,16 @@ const NAV_ITEMS = [
           { label: "Trainers",    href: "/health/wellness?type=trainer" },
         ],
       },
+    ],
+  },
+  {
+    label: "Education",
+    href: "/education",
+    icon: GraduationCap,
+    sub: [
+      { label: "Schools",           href: "/education?type=schools"  },
+      { label: "Day Care",          href: "/education?type=daycare"  },
+      { label: "Coaching & Tuition",href: "/education?type=coaching" },
     ],
   },
   {
