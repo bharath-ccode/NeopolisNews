@@ -201,35 +201,42 @@ export const TAXONOMY: Record<string, Record<string, string[]>> = {
   },
 
   "Services": {
-    "Education & Coaching": [
-      "Preschool",
-      "Tuition Centre",
-      "Skill Development",
-      "Language Classes",
-      "Music Academy",
-      "Art Classes",
+    "Moving": [
+      "Movers & Packers",
     ],
-    "Healthcare": [
-      "General Practice",
-      "Dental Clinic",
-      "Physiotherapy",
-      "Ophthalmology",
-      "Dermatology",
-      "Paediatrics",
+    "Party": [
+      "Party Planners",
+      "Catering",
+      "Makeup",
+      "Decoration",
+      "Photography",
+      "Cakes & Desserts",
     ],
-    "Financial Services": [
-      "Banking",
-      "Insurance",
-      "Investment Advisory",
-      "CA / Tax Filing",
-      "Loans & Mortgage",
+    "Home": [
+      "Cleaning",
+      "Home Repairs",
+      "Pest Control",
+      "Plumbing",
+      "Interior",
+      "Elevators",
+      "Air Conditioning",
+      "Dishwasher",
+      "Washing Machine",
+      "Dryer",
     ],
-    "Legal Services": [
-      "Civil Law",
-      "Criminal Law",
-      "Corporate Law",
-      "Real Estate Law",
-      "Family Law",
+    "Delivery": [
+      "Local Courier",
+      "Grocery Delivery",
+      "Medicine Delivery",
+      "Laundry",
+    ],
+    "Driving": [
+      "Monthly Driver",
+      "Hourly Driver",
+      "On-Demand Driver",
+      "School Drop",
+      "Airport Transfer",
+      "Outstation",
     ],
   },
 
@@ -261,20 +268,6 @@ export const TAXONOMY: Record<string, Record<string, string[]>> = {
     ],
   },
 
-  "Real Estate": {
-    "Developer": ["Residential", "Commercial", "Mixed-Use", "Township"],
-    "Broker / Agent": [
-      "Residential Sales",
-      "Commercial Leasing",
-      "Rental Specialist",
-    ],
-    "Interior Design": [
-      "Residential",
-      "Commercial",
-      "Hospitality",
-      "Retail Fitout",
-    ],
-  },
 };
 
 export function getIndustries(): string[] {
