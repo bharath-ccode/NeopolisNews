@@ -93,8 +93,10 @@ const NAV_ITEMS = [
     href: "/events",
     icon: CalendarDays,
     sub: [
-      { label: "Event Spaces",    href: "/events/spaces" },
-      { label: "Upcoming Events", href: "/events"        },
+      { label: "Convention Centres", href: "/events/spaces?sub=Convention+Centre" },
+      { label: "Banquet Halls",      href: "/events/spaces?sub=Banquet+Hall"      },
+      { label: "Outdoor Spaces",     href: "/events/spaces?sub=Outdoor+Space"     },
+      { label: "Upcoming Events",    href: "/events"                              },
     ],
   },
   {
