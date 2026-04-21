@@ -15,6 +15,8 @@ import {
   Youtube,
   Globe,
   Flag,
+  Film,
+  ExternalLink,
 } from "lucide-react";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import ViewTracker from "./ViewTracker";
@@ -34,6 +36,18 @@ interface SocialLinks {
   instagram?: string;
   facebook?: string;
   youtube?: string;
+}
+
+interface NowShowingItem {
+  id: string;
+  title: string;
+  poster_url: string | null;
+  genres: string[];
+  languages: string[];
+  formats: string[];
+  bms_url: string | null;
+  running_from: string;
+  running_until: string | null;
 }
 
 interface BusinessRow {
@@ -118,6 +132,16 @@ export default async function BusinessProfilePage({
     .single<BusinessRow>();
 
   if (!b) notFound();
+
+  let nowShowing: NowShowingItem[] = [];
+  if (b.industry === "Entertainment") {
+    const { data: movies } = await supabase
+      .from("now_showing")
+      .select("*")
+      .eq("business_id", params.id)
+      .order("running_from", { ascending: false });
+    nowShowing = movies ?? [];
+  }
 
   const social = b.social_links ?? {};
   const pictures = (b.pictures ?? []).slice(0, 2);
@@ -299,6 +323,62 @@ export default async function BusinessProfilePage({
                 />
               </div>
             ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── NOW SHOWING ─────────────────────────────────────────────────────── */}
+      {nowShowing.length > 0 && (
+        <section className="py-10 md:py-12 bg-white border-b border-gray-100">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6">
+            <div className="flex items-center gap-2 mb-6">
+              <Film className="w-5 h-5 text-brand-600" />
+              <h2 className="font-extrabold text-gray-900 text-xl">Now Showing</h2>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {nowShowing.map((m) => (
+                <div key={m.id} className="group">
+                  <div className="aspect-[2/3] rounded-xl overflow-hidden bg-gray-100 border border-gray-200 mb-2">
+                    {m.poster_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={m.poster_url}
+                        alt={m.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Film className="w-10 h-10 text-gray-300" />
+                      </div>
+                    )}
+                  </div>
+                  <p className="font-bold text-sm text-gray-900 truncate">{m.title}</p>
+                  {m.languages.length > 0 && (
+                    <p className="text-xs text-gray-500 mt-0.5 truncate">{m.languages.join(" · ")}</p>
+                  )}
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {m.formats.map((f) => (
+                      <span key={f} className="bg-gray-100 text-gray-600 text-[10px] font-bold px-1.5 py-0.5 rounded">{f}</span>
+                    ))}
+                  </div>
+                  {m.running_until && (
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      Until {new Date(m.running_until).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                    </p>
+                  )}
+                  {m.bms_url && (
+                    <a
+                      href={m.bms_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-red-600 hover:text-red-700 mt-1.5"
+                    >
+                      <ExternalLink className="w-3 h-3" /> Book Tickets
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       )}
