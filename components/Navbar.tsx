@@ -24,6 +24,7 @@ import {
   Tag,
   Search,
   GraduationCap,
+  Landmark,
 } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "@/context/AuthContext";
@@ -96,10 +97,17 @@ const NAV_ITEMS = [
     href: "/events",
     icon: CalendarDays,
     sub: [
-      { label: "Convention Centres", href: "/events/spaces?sub=Convention+Centre" },
-      { label: "Banquet Halls",      href: "/events/spaces?sub=Banquet+Hall"      },
-      { label: "Outdoor Spaces",     href: "/events/spaces?sub=Outdoor+Space"     },
-      { label: "Upcoming Events",    href: "/events"                              },
+      {
+        label: "Event Spaces",
+        href: "/events/spaces",
+        icon: Landmark,
+        children: [
+          { label: "Convention Centres", href: "/events/spaces?sub=Convention+Centre" },
+          { label: "Banquet Halls",      href: "/events/spaces?sub=Banquet+Hall"      },
+          { label: "Outdoor Spaces",     href: "/events/spaces?sub=Outdoor+Space"     },
+        ],
+      },
+      { label: "Upcoming Events", href: "/events" },
     ],
   },
   {
