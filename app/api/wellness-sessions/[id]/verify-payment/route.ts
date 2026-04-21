@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
-import { createHmac } from "crypto";
-
-const KEY_SECRET = process.env.RAZORPAY_KEY_SECRET ?? "";
+import { verifySignature } from "@/lib/razorpay";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const token = req.headers.get("Authorization")?.replace("Bearer ", "") ?? "";
@@ -20,11 +18,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!user) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
   // Verify Razorpay signature
-  const expected = createHmac("sha256", KEY_SECRET)
-    .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-    .digest("hex");
-
-  if (expected !== razorpay_signature)
+  if (!verifySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature))
     return NextResponse.json({ error: "Payment verification failed." }, { status: 400 });
 
   // Mark enrollment as paid
