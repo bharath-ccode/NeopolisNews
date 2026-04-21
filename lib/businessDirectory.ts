@@ -6,6 +6,16 @@
 // A business picks ONE industry, ONE OR MORE types, and any subtypes per type.
 
 export const TAXONOMY: Record<string, Record<string, string[]>> = {
+  "Entertainment": {
+    "Cinema": [
+      "Multiplex",
+      "IMAX",
+      "4DX",
+      "Dolby Atmos",
+      "Single Screen",
+    ],
+  },
+
   "Events": {
     "Event Spaces": [
       "Convention Centre",
