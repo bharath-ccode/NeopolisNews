@@ -67,6 +67,10 @@ export const TAXONOMY: Record<string, Record<string, string[]>> = {
   },
 
   "Health & Wellness": {
+    "Hospital": [
+      "Multi-Speciality Hospital",
+      "Single Speciality Hospital",
+    ],
     "Clinics": [
       "General Practice & Family Medicine",
       "Cardiology",
