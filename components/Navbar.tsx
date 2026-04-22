@@ -34,6 +34,17 @@ import WeatherWidget from "@/components/WeatherWidget";
 
 const NAV_ITEMS = [
   {
+    label: "News",
+    href: "/news",
+    icon: Newspaper,
+    sub: [
+      { label: "Construction Updates", href: "/news#construction"  },
+      { label: "New Launches",         href: "/news#launches"      },
+      { label: "Infrastructure",       href: "/news#infrastructure" },
+      { label: "Community",            href: "/news#community"     },
+    ],
+  },
+  {
     label: "Real Estate",
     href: "/real-estate",
     icon: Building2,
@@ -117,17 +128,6 @@ const NAV_ITEMS = [
       { label: "Restaurants & Cafes", href: "/directory#food"          },
       { label: "Entertainment",       href: "/directory#entertainment" },
       { label: "Fitness & Wellness",  href: "/directory#fitness"       },
-    ],
-  },
-  {
-    label: "News",
-    href: "/news",
-    icon: Newspaper,
-    sub: [
-      { label: "Construction Updates", href: "/news#construction" },
-      { label: "New Launches",         href: "/news#launches"     },
-      { label: "Infrastructure",       href: "/news#infrastructure"},
-      { label: "Community",            href: "/news#community"    },
     ],
   },
   {
