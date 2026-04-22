@@ -38,22 +38,20 @@ const NAV_ITEMS = [
     href: "/real-estate",
     icon: Building2,
     sub: [
-      { label: "Project Pages",         href: "/real-estate#projects"     },
-      { label: "Resale & Rentals",      href: "/real-estate/classifieds"  },
-      { label: "Price Trends",          href: "/real-estate#prices"       },
-      { label: "Construction Updates",  href: "/real-estate#construction" },
-      { label: "Floor Plans",           href: "/real-estate#floorplans"   },
-    ],
-  },
-  {
-    label: "Rentals & Resale",
-    href: "/rentals",
-    icon: Home,
-    sub: [
-      { label: "Residential Rentals", href: "/rentals#residential" },
-      { label: "Office Leasing",      href: "/rentals#office"      },
-      { label: "Retail Shops",        href: "/rentals#retail"      },
-      { label: "Resale Listings",     href: "/rentals#resale"      },
+      { label: "Project Pages",        href: "/real-estate#projects"     },
+      { label: "Price Trends",         href: "/real-estate#prices"       },
+      { label: "Construction Updates", href: "/real-estate#construction" },
+      {
+        label: "Resale & Rentals",
+        href: "/rentals",
+        icon: Home,
+        children: [
+          { label: "Residential Rentals", href: "/rentals#residential" },
+          { label: "Office Leasing",      href: "/rentals#office"      },
+          { label: "Retail Shops",        href: "/rentals#retail"      },
+          { label: "Resale Listings",     href: "/rentals#resale"      },
+        ],
+      },
     ],
   },
   {
