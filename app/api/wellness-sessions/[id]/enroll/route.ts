@@ -40,11 +40,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   );
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
 
-  // Upsert enrollment as pending
+  // Upsert enrollment as pending (store email for admin queries)
   await admin.from("session_enrollments").upsert(
     {
       session_id: params.id,
       user_id: user.id,
+      user_email: user.email ?? null,
       razorpay_order_id: result.order.id,
       payment_status: "pending",
       amount_inr: session.price_inr,

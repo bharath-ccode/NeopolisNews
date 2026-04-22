@@ -20,6 +20,7 @@ import {
   Home,
   Tag,
   UserCheck,
+  IndianRupee,
 } from "lucide-react";
 import clsx from "clsx";
 import { AdminAuthProvider, useAdminAuth } from "@/context/AdminAuthContext";
@@ -33,6 +34,7 @@ const NAV = [
   { href: "/admin/brokers",       icon: UserCheck,       label: "Brokers"       },
   { href: "/admin/classifieds",   icon: Home,            label: "Properties"    },
   { href: "/admin/ads",           icon: Tag,             label: "Classifieds"   },
+  { href: "/admin/payments",       icon: IndianRupee,     label: "Payments"      },
   { href: "/admin/analytics",     icon: BarChart3,       label: "Analytics"     },
   { href: "/admin/settings",      icon: Settings,        label: "Settings"      },
 ];
