@@ -120,17 +120,6 @@ const NAV_ITEMS = [
     ],
   },
   {
-    label: "Directory",
-    href: "/directory",
-    icon: ShoppingBag,
-    sub: [
-      { label: "Mall & Retail",       href: "/directory#mall"          },
-      { label: "Restaurants & Cafes", href: "/directory#food"          },
-      { label: "Entertainment",       href: "/directory#entertainment" },
-      { label: "Fitness & Wellness",  href: "/directory#fitness"       },
-    ],
-  },
-  {
     label: "Services",
     href: "/services",
     icon: Wrench,
