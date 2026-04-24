@@ -11,10 +11,14 @@ import {
   Phone,
   ArrowRight,
   CheckCircle,
-  Search,
+  Building2,
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import LeadForm from "@/components/LeadForm";
+import DirectorySearchBar from "@/components/DirectorySearchBar";
+import { createAdminClient } from "@/lib/supabase/server";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Commercial & Lifestyle Directory – NeopolisNews",
@@ -31,74 +35,14 @@ const CATEGORIES = [
   { id: "cafe", icon: Coffee, label: "Cafes & Quick Bites", count: 31, color: "bg-yellow-50 text-yellow-600" },
 ];
 
-const FEATURED_BRANDS = [
-  {
-    category: "Mall & Fashion",
-    catColor: "tag-blue",
-    name: "Zara – Neopolis Grand Mall",
-    floor: "Ground Floor, G-12",
-    hours: "10:00 AM – 10:00 PM",
-    rating: 4.5,
-    reviews: 210,
-    offer: "End of Season Sale — Up to 50% off",
-    sponsored: true,
-  },
-  {
-    category: "Restaurant",
-    catColor: "tag-orange",
-    name: "Barbeque Nation — Neopolis",
-    floor: "3rd Floor, F&B Zone",
-    hours: "12:00 PM – 11:00 PM",
-    rating: 4.3,
-    reviews: 892,
-    offer: "Live Grill Buffet — Weekday ₹799",
-    sponsored: true,
-  },
-  {
-    category: "Entertainment",
-    catColor: "tag-purple",
-    name: "PVR Cinemas — Neopolis (8 screens)",
-    floor: "4th & 5th Floor",
-    hours: "10:00 AM – 12:00 AM",
-    rating: 4.6,
-    reviews: 1400,
-    offer: "Tuesday Blockbuster — ₹99 all shows",
-    sponsored: true,
-  },
-  {
-    category: "Fitness",
-    catColor: "tag-green",
-    name: "Cult.fit Neopolis",
-    floor: "Podium Level, P-4",
-    hours: "5:30 AM – 10:30 PM",
-    rating: 4.4,
-    reviews: 342,
-    offer: "First month free with annual membership",
-    sponsored: false,
-  },
-  {
-    category: "Cafe",
-    catColor: "tag-orange",
-    name: "Starbucks Reserve — Neopolis",
-    floor: "Ground Floor, Lobby",
-    hours: "7:00 AM – 11:00 PM",
-    rating: 4.5,
-    reviews: 560,
-    offer: null,
-    sponsored: false,
-  },
-  {
-    category: "Beauty",
-    catColor: "tag-blue",
-    name: "Looks Salon & Spa",
-    floor: "2nd Floor, B-18",
-    hours: "9:00 AM – 9:00 PM",
-    rating: 4.2,
-    reviews: 187,
-    offer: "Bridal packages available — Book in advance",
-    sponsored: false,
-  },
-];
+interface FeaturedBusiness {
+  id: string;
+  name: string;
+  industry: string;
+  address: string;
+  logo: string | null;
+  contact_phone: string | null;
+}
 
 const UPCOMING_EVENTS = [
   {
@@ -163,7 +107,18 @@ const BUSINESS_PLANS = [
   },
 ];
 
-export default function DirectoryPage() {
+export default async function DirectoryPage() {
+  const admin = createAdminClient();
+  const { data: featuredBiz } = await admin
+    .from("businesses")
+    .select("id, name, industry, address, logo, contact_phone")
+    .eq("status", "active")
+    .eq("is_featured", true)
+    .order("name")
+    .limit(12);
+
+  const featured: FeaturedBusiness[] = featuredBiz ?? [];
+
   return (
     <>
       {/* ── Hero ── */}
@@ -179,21 +134,7 @@ export default function DirectoryPage() {
               Every store, restaurant, cinema, gym, and salon in the district
               — with hours, offers, and events, all in one place.
             </p>
-            {/* Search bar */}
-            <div className="flex gap-2 bg-white/10 backdrop-blur rounded-xl p-2 max-w-lg">
-              <div className="flex-1 flex items-center gap-2 bg-white rounded-lg px-3">
-                <Search className="w-4 h-4 text-gray-400 shrink-0" />
-                <input
-                  type="text"
-                  placeholder="Search brands, categories..."
-                  className="w-full py-2.5 text-gray-900 text-sm outline-none"
-                  readOnly
-                />
-              </div>
-              <button className="btn-primary py-2 px-4 rounded-lg text-sm shrink-0">
-                Search
-              </button>
-            </div>
+            <DirectorySearchBar />
           </div>
         </SectionWrapper>
       </section>
@@ -226,42 +167,42 @@ export default function DirectoryPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="section-heading">Featured Businesses</h2>
-            <p className="text-gray-500 text-sm mt-1">231 businesses listed · Updated weekly</p>
+            <p className="text-gray-500 text-sm mt-1">
+              {featured.length > 0 ? `${featured.length} featured · ` : ""}
+              <Link href="/businesses" className="text-purple-600 hover:underline">Browse all listings</Link>
+            </p>
           </div>
         </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {FEATURED_BRANDS.map((b) => (
-            <div key={b.name} className={`card p-5 relative ${b.sponsored ? "ring-2 ring-purple-300" : ""}`}>
-              {b.sponsored && (
-                <span className="absolute top-3 right-3 tag-purple text-xs">Ad</span>
-              )}
-              {/* Logo placeholder */}
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center mb-3">
-                <ShoppingBag className="w-6 h-6 text-purple-400" />
-              </div>
-              <span className={`${b.catColor} mb-2`}>{b.category}</span>
-              <h3 className="font-bold text-gray-900 text-sm mt-2 mb-1">{b.name}</h3>
-              <p className="text-xs text-gray-500 mb-1">{b.floor}</p>
-              <div className="flex items-center gap-1 mb-2">
-                <Clock className="w-3.5 h-3.5 text-gray-400" />
-                <span className="text-xs text-gray-500">{b.hours}</span>
-              </div>
-              <div className="flex items-center gap-1 mb-3">
-                <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
-                <span className="text-xs font-semibold text-gray-700">{b.rating}</span>
-                <span className="text-xs text-gray-400">({b.reviews} reviews)</span>
-              </div>
-              {b.offer && (
-                <div className="bg-orange-50 border border-orange-100 rounded-lg px-3 py-2 mb-3">
-                  <p className="text-xs text-orange-700 font-semibold">{b.offer}</p>
+        {featured.length === 0 ? (
+          <div className="text-center py-16 text-gray-400">
+            <Building2 className="w-10 h-10 mx-auto mb-3 opacity-30" />
+            <p className="text-sm">No featured businesses yet. Check back soon.</p>
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {featured.map((b) => (
+              <Link key={b.id} href={`/businesses/${b.id}`} className="card p-5 relative ring-2 ring-purple-300 hover:shadow-md transition-shadow block">
+                <span className="absolute top-3 right-3 tag-purple text-xs">Featured</span>
+                <div className="w-12 h-12 rounded-xl overflow-hidden bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center mb-3 shrink-0">
+                  {b.logo ? (
+                    <img src={b.logo} alt={b.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <Building2 className="w-6 h-6 text-purple-400" />
+                  )}
                 </div>
-              )}
-              <button className="flex items-center justify-center gap-2 w-full border border-gray-200 hover:border-purple-400 hover:text-purple-700 text-gray-600 text-xs font-semibold py-2 rounded-lg transition-colors">
-                <Phone className="w-3.5 h-3.5" /> Contact
-              </button>
-            </div>
-          ))}
-        </div>
+                <span className="tag-purple mb-2 text-xs">{b.industry}</span>
+                <h3 className="font-bold text-gray-900 text-sm mt-2 mb-1">{b.name}</h3>
+                <p className="text-xs text-gray-500 mb-3 line-clamp-1">{b.address}</p>
+                {b.contact_phone && (
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <Phone className="w-3.5 h-3.5" />
+                    <span>{b.contact_phone}</span>
+                  </div>
+                )}
+              </Link>
+            ))}
+          </div>
+        )}
       </SectionWrapper>
 
       {/* ── Events ── */}

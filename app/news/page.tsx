@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import LeadForm from "@/components/LeadForm";
+import InfrastructureSection from "@/components/InfrastructureSection";
+import { getPublishedArticles, Article, ArticleCategory } from "@/lib/newsStore";
 
 export const metadata = {
   title: "Local News & Updates – NeopolisNews",
@@ -19,94 +21,20 @@ export const metadata = {
     "Construction milestones, new launches, infrastructure updates, and community stories from the Neopolis urban district.",
 };
 
-const CATEGORIES = [
-  { id: "construction", icon: Camera, label: "Construction", count: 42, color: "bg-orange-50 text-orange-600" },
-  { id: "launches", icon: Zap, label: "New Launches", count: 18, color: "bg-green-50 text-green-600" },
-  { id: "infrastructure", icon: TrendingUp, label: "Infrastructure", count: 25, color: "bg-blue-50 text-blue-600" },
-  { id: "community", icon: Users, label: "Community", count: 31, color: "bg-purple-50 text-purple-600" },
+const CATEGORY_CONFIG: {
+  id: ArticleCategory;
+  icon: React.ElementType;
+  label: string;
+  color: string;
+  anchor: string;
+}[] = [
+  { id: "construction",   icon: Camera,      label: "Construction Updates", color: "bg-orange-50 text-orange-600", anchor: "construction"   },
+  { id: "launches",       icon: Zap,         label: "New Launches",         color: "bg-green-50 text-green-600",  anchor: "launches"       },
+  { id: "infrastructure", icon: TrendingUp,  label: "Infrastructure",       color: "bg-blue-50 text-blue-600",   anchor: "infrastructure" },
+  { id: "community",      icon: Users,       label: "Community",            color: "bg-purple-50 text-purple-600",anchor: "community"      },
 ];
 
-const FEATURED_ARTICLE = {
-  tag: "Infrastructure",
-  tagColor: "tag-blue",
-  title: "Metro Connectivity to Neopolis Confirmed — Phase 2 Station Announced by DMRC",
-  excerpt:
-    "The Delhi Metro Rail Corporation has officially confirmed a Phase 2 extension that will bring a metro station directly into the Neopolis district by mid-2028. The announcement is expected to push property values up by 15–25% over the next 24 months, according to real estate analysts.",
-  author: "NeopolisNews Staff",
-  date: "March 15, 2026",
-  readTime: "5 min read",
-  views: "8,421",
-  sponsored: false,
-};
-
-const ARTICLES = [
-  {
-    id: "a1",
-    tag: "Construction",
-    tagColor: "tag-orange",
-    title: "Apex Tower Reaches 18th Floor Slab — On Schedule for Dec 2026 Delivery",
-    excerpt: "Apex Realty confirms structural milestone. Tower A completes 18th floor slab cast; Tower B at 14th floor.",
-    date: "Mar 20, 2026",
-    readTime: "3 min",
-    views: "3,210",
-    sponsored: false,
-  },
-  {
-    id: "a2",
-    tag: "New Launch",
-    tagColor: "tag-green",
-    title: "Phase 3 Residential Towers Open for Pre-Bookings — Prices Start ₹85 Lakh",
-    excerpt: "SkyLine Corp opens Phase 3 pre-bookings with early-bird pricing. 120 ultra-luxury units launching.",
-    date: "Mar 10, 2026",
-    readTime: "4 min",
-    views: "5,820",
-    sponsored: true,
-  },
-  {
-    id: "a3",
-    tag: "Community",
-    tagColor: "tag-purple",
-    title: "Neopolis RWA Formed — First General Body Meeting Scheduled for April 5",
-    excerpt: "Residents of Neopolis Business Park and Apex Tower form a joint Residents Welfare Association.",
-    date: "Mar 8, 2026",
-    readTime: "2 min",
-    views: "2,100",
-    sponsored: false,
-  },
-  {
-    id: "a4",
-    tag: "Infrastructure",
-    tagColor: "tag-blue",
-    title: "6-Lane Arterial Road to Neopolis Gets NHAI Approval — Work Begins Q3 2026",
-    excerpt: "National Highways Authority of India approves the 14km arterial road connecting Neopolis to NH-48.",
-    date: "Mar 5, 2026",
-    readTime: "4 min",
-    views: "4,650",
-    sponsored: false,
-  },
-  {
-    id: "a5",
-    tag: "Construction",
-    tagColor: "tag-orange",
-    title: "Grand Mall Foundation Complete — Steel Frame Erection Begins Next Week",
-    excerpt: "Retail Spaces Ltd confirms completion of raft foundation for Neopolis Grand Mall's 5-level structure.",
-    date: "Mar 3, 2026",
-    readTime: "3 min",
-    views: "2,980",
-    sponsored: false,
-  },
-  {
-    id: "a6",
-    tag: "Community",
-    tagColor: "tag-purple",
-    title: "Neopolis Food Festival 2026 — Full Schedule & Participating Brands Revealed",
-    excerpt: "The inaugural Neopolis Food Festival will run April 5–7 with 60+ food brands, live music, and chef showdowns.",
-    date: "Feb 28, 2026",
-    readTime: "3 min",
-    views: "6,200",
-    sponsored: true,
-  },
-];
+const NON_INFRA_CATEGORIES: ArticleCategory[] = ["construction", "launches", "community"];
 
 const CONTENT_PACKAGES = [
   {
@@ -143,7 +71,58 @@ const CONTENT_PACKAGES = [
   },
 ];
 
-export default function NewsPage() {
+function ArticleCard({ article }: { article: Article }) {
+  return (
+    <Link href={`/news/${article.id}`} className="card p-5 relative block hover:shadow-md transition-shadow">
+      {article.sponsored && (
+        <span className="absolute top-3 right-3 bg-yellow-100 text-yellow-700 text-xs font-bold px-2 py-0.5 rounded-full">
+          Sponsored
+        </span>
+      )}
+      {article.imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={article.imageUrl}
+          alt={article.title}
+          className="h-36 w-full object-cover rounded-lg mb-4"
+        />
+      ) : (
+        <div className="h-36 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg mb-4 flex items-center justify-center">
+          <Newspaper className="w-8 h-8 text-gray-300" />
+        </div>
+      )}
+      <span className={`${article.tagColor} mb-2`}>{article.tag}</span>
+      <h3 className="font-bold text-gray-900 text-sm mt-2 mb-2 leading-snug">
+        {article.title}
+      </h3>
+      <p className="text-xs text-gray-500 leading-relaxed mb-3 line-clamp-2">
+        {article.excerpt}
+      </p>
+      <div className="flex items-center gap-3 text-xs text-gray-400">
+        <span>{article.date}</span>
+        <span className="flex items-center gap-1">
+          <Clock className="w-3 h-3" /> {article.readTime}
+        </span>
+        <span className="flex items-center gap-1">
+          <Eye className="w-3 h-3" /> {article.views.toLocaleString("en-IN")}
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+export default async function NewsPage() {
+  const allArticles = await getPublishedArticles();
+
+  // Group by category
+  const byCategory = (cat: ArticleCategory) =>
+    allArticles.filter((a) => a.category === cat);
+
+  const infraArticles = byCategory("infrastructure");
+
+  // Featured = most recent published article overall
+  const featured = allArticles[0] ?? null;
+
   return (
     <>
       {/* ── Hero ── */}
@@ -156,15 +135,17 @@ export default function NewsPage() {
               <span className="text-brand-400">Week</span>
             </h1>
             <p className="text-gray-300 text-lg mb-6">
-              Construction milestones, new launches, infrastructure news,
-              policy updates, and community stories — all hyper-local, all
-              verified.
+              Construction milestones, new launches, infrastructure news, policy
+              updates, and community stories — all hyper-local, all verified.
             </p>
             <div className="flex flex-wrap gap-3">
               <a href="#articles" className="btn-primary">
                 Read Latest
               </a>
-              <Link href="/advertise#content" className="btn-secondary border-gray-500 text-gray-300 hover:bg-gray-700">
+              <Link
+                href="/advertise#content"
+                className="btn-secondary border-gray-500 text-gray-300 hover:bg-gray-700"
+              >
                 Sponsored Content <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -172,100 +153,112 @@ export default function NewsPage() {
         </SectionWrapper>
       </section>
 
-      {/* ── Categories ── */}
+      {/* ── Category tabs ── */}
       <section className="bg-white border-b border-gray-100">
         <SectionWrapper tight>
           <div className="flex flex-wrap gap-3">
-            {CATEGORIES.map((c) => (
-              <a
-                key={c.id}
-                href={`#${c.id}`}
-                className="flex items-center gap-2 border border-gray-200 hover:border-brand-400 hover:text-brand-700 text-gray-600 rounded-full px-4 py-2 text-sm font-medium transition-colors"
-              >
-                <c.icon className="w-4 h-4" />
-                {c.label}
-                <span className="bg-gray-100 text-gray-500 text-xs px-1.5 py-0.5 rounded-full">
-                  {c.count}
-                </span>
-              </a>
-            ))}
+            {CATEGORY_CONFIG.map((c) => {
+              const count = byCategory(c.id).length;
+              return (
+                <a
+                  key={c.id}
+                  href={`#${c.anchor}`}
+                  className="flex items-center gap-2 border border-gray-200 hover:border-brand-400 hover:text-brand-700 text-gray-600 rounded-full px-4 py-2 text-sm font-medium transition-colors"
+                >
+                  <c.icon className="w-4 h-4" />
+                  {c.label}
+                  <span className="bg-gray-100 text-gray-500 text-xs px-1.5 py-0.5 rounded-full">
+                    {count}
+                  </span>
+                </a>
+              );
+            })}
           </div>
         </SectionWrapper>
       </section>
 
       {/* ── Featured Article ── */}
-      <SectionWrapper>
-        <div className="card overflow-hidden">
-          <div className="h-56 md:h-72 bg-gradient-to-br from-blue-100 to-brand-200 flex items-center justify-center">
-            <Newspaper className="w-16 h-16 text-brand-300" />
-          </div>
-          <div className="p-6 md:p-8">
-            <span className={`${FEATURED_ARTICLE.tagColor} mb-3`}>
-              {FEATURED_ARTICLE.tag}
-            </span>
-            <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 mt-2 mb-3 leading-snug">
-              {FEATURED_ARTICLE.title}
-            </h2>
-            <p className="text-gray-500 text-sm leading-relaxed mb-4">
-              {FEATURED_ARTICLE.excerpt}
-            </p>
-            <div className="flex flex-wrap items-center gap-4 text-xs text-gray-400 mb-4">
-              <span>{FEATURED_ARTICLE.author}</span>
-              <span className="flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5" /> {FEATURED_ARTICLE.readTime}
-              </span>
-              <span className="flex items-center gap-1">
-                <Eye className="w-3.5 h-3.5" /> {FEATURED_ARTICLE.views} views
-              </span>
-              <span>{FEATURED_ARTICLE.date}</span>
+      {featured && (
+        <SectionWrapper>
+          <Link href={`/news/${featured.id}`} className="card overflow-hidden block hover:shadow-md transition-shadow">
+            {featured.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={featured.imageUrl}
+                alt={featured.title}
+                className="h-56 md:h-72 w-full object-cover"
+              />
+            ) : (
+              <div className="h-56 md:h-72 bg-gradient-to-br from-blue-100 to-brand-200 flex items-center justify-center">
+                <Newspaper className="w-16 h-16 text-brand-300" />
+              </div>
+            )}
+            <div className="p-6 md:p-8">
+              <span className={`${featured.tagColor} mb-3`}>{featured.tag}</span>
+              <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 mt-2 mb-3 leading-snug">
+                {featured.title}
+              </h2>
+              <p className="text-gray-500 text-sm leading-relaxed mb-4">
+                {featured.excerpt}
+              </p>
+              <div className="flex flex-wrap items-center gap-4 text-xs text-gray-400">
+                <span>{featured.author}</span>
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5" /> {featured.readTime} read
+                </span>
+                <span className="flex items-center gap-1">
+                  <Eye className="w-3.5 h-3.5" />{" "}
+                  {featured.views.toLocaleString("en-IN")} views
+                </span>
+                <span>{featured.date}</span>
+              </div>
             </div>
-            <Link href="/news/metro-connectivity" className="btn-primary text-sm py-2">
-              Read Full Article <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-      </SectionWrapper>
+          </Link>
+        </SectionWrapper>
+      )}
 
-      {/* ── Article Grid ── */}
+      {/* ── Sections per category ── */}
       <section className="bg-gray-50" id="articles">
         <SectionWrapper>
-          <h2 className="section-heading mb-8">Latest Stories</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {ARTICLES.map((a) => (
-              <Link key={a.id} href={`/news/${a.id}`} className="card p-5 group relative">
-                {a.sponsored && (
-                  <span className="absolute top-3 right-3 bg-yellow-100 text-yellow-700 text-xs font-bold px-2 py-0.5 rounded-full">
-                    Sponsored
-                  </span>
-                )}
-                {/* Image placeholder */}
-                <div className="h-36 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg mb-4 flex items-center justify-center">
-                  <Newspaper className="w-8 h-8 text-gray-300" />
-                </div>
-                <span className={`${a.tagColor} mb-2`}>{a.tag}</span>
-                <h3 className="font-bold text-gray-900 text-sm mt-2 mb-2 leading-snug group-hover:text-brand-600 transition-colors">
-                  {a.title}
-                </h3>
-                <p className="text-xs text-gray-500 leading-relaxed mb-3 line-clamp-2">
-                  {a.excerpt}
-                </p>
-                <div className="flex items-center gap-3 text-xs text-gray-400">
-                  <span>{a.date}</span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" /> {a.readTime}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Eye className="w-3 h-3" /> {a.views}
+          {/* Non-infrastructure categories — standard card grid */}
+          {NON_INFRA_CATEGORIES.map((catId) => {
+            const cat = CATEGORY_CONFIG.find((c) => c.id === catId)!;
+            const articles = byCategory(catId);
+            if (articles.length === 0) return null;
+            return (
+              <div key={catId} id={cat.anchor} className="mb-12 last:mb-0">
+                <div className="flex items-center gap-3 mb-6">
+                  <div
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center ${cat.color}`}
+                  >
+                    <cat.icon className="w-4 h-4" />
+                  </div>
+                  <h2 className="section-heading !mb-0">{cat.label}</h2>
+                  <span className="text-xs text-gray-400 font-medium">
+                    {articles.length} article{articles.length !== 1 ? "s" : ""}
                   </span>
                 </div>
-              </Link>
-            ))}
-          </div>
-          <div className="text-center mt-8">
-            <button className="btn-secondary">
-              Load More Stories <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {articles.map((a) => (
+                    <ArticleCard key={a.id} article={a} />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Infrastructure — tile grid with click-to-detail + pagination */}
+          <InfrastructureSection articles={infraArticles} />
+
+          {allArticles.length === 0 && (
+            <div className="text-center py-20">
+              <Newspaper className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+              <p className="text-gray-400 font-medium">No articles published yet</p>
+              <p className="text-sm text-gray-300 mt-1">
+                Check back soon for updates from Neopolis.
+              </p>
+            </div>
+          )}
         </SectionWrapper>
       </section>
 
@@ -323,8 +316,8 @@ export default function NewsPage() {
                 Get the Weekly Neopolis Digest
               </h2>
               <p className="text-brand-300 text-sm mb-4">
-                Every Friday: construction updates, new listings, upcoming events,
-                and district news — delivered to your inbox.
+                Every Friday: construction updates, new listings, upcoming events, and
+                district news — delivered to your inbox.
               </p>
               <ul className="space-y-2 text-sm text-brand-200">
                 {[

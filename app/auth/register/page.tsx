@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   User,
   Building2,
   Mail,
-  Phone,
   Lock,
   Eye,
   EyeOff,
@@ -16,45 +15,54 @@ import {
   Loader2,
   CheckCircle,
   Briefcase,
+  MailCheck,
 } from "lucide-react";
-import { useAuth, UserType, RegisterData } from "@/context/AuthContext";
+import { useAuth, UserType } from "@/context/AuthContext";
 
-type Step = "type" | "details" | "verify";
+type Step = "type" | "details" | "done";
 
-const BUSINESS_CATEGORIES = [
-  "Real Estate Developer",
-  "Property Broker / Agent",
-  "Interior Design & Fit-Out",
-  "Retail / Fashion",
-  "Restaurant / F&B",
-  "Fitness & Wellness",
-  "IT / Corporate",
-  "Healthcare",
-  "Education",
-  "Financial Services",
-  "Legal Services",
-  "Other",
-];
+const Logo = () => (
+  <Link href="/" className="flex items-center gap-2 mb-8">
+    <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
+      <Building2 className="w-5 h-5 text-white" />
+    </div>
+    <span className="text-lg font-bold text-gray-900">
+      Neopolis<span className="text-brand-600">News</span>
+    </span>
+  </Link>
+);
+
+const ProgressBar = ({ current }: { current: Step }) => {
+  const steps: Step[] = ["type", "details", "done"];
+  return (
+    <div className="flex items-center gap-2 mb-6">
+      {steps.map((s, idx) => (
+        <div key={s} className="flex items-center gap-2">
+          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+            s === current ? "bg-brand-600 text-white" : steps.indexOf(current) > idx ? "bg-brand-200 text-brand-700" : "bg-gray-100 text-gray-400"
+          }`}>
+            {steps.indexOf(current) > idx ? <CheckCircle className="w-4 h-4" /> : idx + 1}
+          </div>
+          {idx < 2 && <div className="h-px w-8 bg-gray-200" />}
+        </div>
+      ))}
+    </div>
+  );
+};
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { register, loginWithGoogle } = useAuth();
+  const { signUp, loginWithGoogle } = useAuth();
 
   const [step, setStep] = useState<Step>("type");
   const [userType, setUserType] = useState<UserType>("individual");
 
-  // Shared
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [contactMethod, setContactMethod] = useState<"email" | "phone">("email");
-
-  // Business only
-  const [businessName, setBusinessName] = useState("");
-  const [businessCategory, setBusinessCategory] = useState("");
-  const [gstin, setGstin] = useState("");
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -62,34 +70,27 @@ export default function RegisterPage() {
   async function handleGoogle() {
     setLoading(true);
     await loginWithGoogle(userType);
-    router.push("/dashboard");
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleDetailsSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!name) { setError("Please enter your name."); return; }
-    if (contactMethod === "email" && !email) { setError("Please enter your email."); return; }
-    if (contactMethod === "phone" && !phone) { setError("Please enter your phone number."); return; }
-    if (userType === "business" && !businessName) { setError("Please enter your business name."); return; }
-    if (userType === "business" && !businessCategory) { setError("Please select a business category."); return; }
+    if (!name.trim()) { setError("Please enter your name."); return; }
+    if (!email) { setError("Please enter your email address."); return; }
+    if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
+    if (password !== confirmPassword) { setError("Passwords do not match."); return; }
 
     setLoading(true);
-    const data: RegisterData = {
-      userType,
-      name,
-      email: contactMethod === "email" ? email : undefined,
-      phone: contactMethod === "phone" ? `+91${phone}` : undefined,
-      password: password || undefined,
-      businessName: userType === "business" ? businessName : undefined,
-      businessCategory: userType === "business" ? businessCategory : undefined,
-      gstin: userType === "business" && gstin ? gstin : undefined,
-    };
     try {
-      await register(data);
-      router.push("/dashboard");
-    } catch {
-      setError("Registration failed. Please try again.");
+      await signUp(email, password, name.trim());
+      setStep("done");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Something went wrong.";
+      if (msg === "ALREADY_REGISTERED") {
+        setError("__already_registered__");
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -99,83 +100,50 @@ export default function RegisterPage() {
   if (step === "type") {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-12">
-        <Link href="/" className="flex items-center gap-2 mb-8">
-          <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
-            <Building2 className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-lg font-bold text-gray-900">
-            Neopolis<span className="text-brand-600">News</span>
-          </span>
-        </Link>
-
+        <Logo />
         <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-          <h1 className="text-2xl font-extrabold text-gray-900 mb-1">
-            Create your account
-          </h1>
+          <h1 className="text-2xl font-extrabold text-gray-900 mb-1">Create your account</h1>
           <p className="text-sm text-gray-500 mb-8">
             Already have an account?{" "}
-            <Link href="/auth/login" className="text-brand-600 font-semibold hover:underline">
-              Sign in
-            </Link>
+            <Link href="/auth/login" className="text-brand-600 font-semibold hover:underline">Sign in</Link>
           </p>
 
-          <p className="text-sm font-semibold text-gray-700 mb-4">
-            I am registering as a…
-          </p>
+          <p className="text-sm font-semibold text-gray-700 mb-4">I am registering as a…</p>
 
           <div className="grid grid-cols-2 gap-4 mb-8">
-            {/* Individual */}
             <button
               onClick={() => setUserType("individual")}
               className={`flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all ${
-                userType === "individual"
-                  ? "border-brand-500 bg-brand-50"
-                  : "border-gray-200 hover:border-gray-300"
+                userType === "individual" ? "border-brand-500 bg-brand-50" : "border-gray-200 hover:border-gray-300"
               }`}
             >
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
-                userType === "individual" ? "bg-brand-100" : "bg-gray-100"
-              }`}>
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${userType === "individual" ? "bg-brand-100" : "bg-gray-100"}`}>
                 <User className={`w-6 h-6 ${userType === "individual" ? "text-brand-600" : "text-gray-400"}`} />
               </div>
               <div className="text-center">
                 <p className="font-bold text-sm text-gray-900">Individual</p>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  Home owner / buyer / tenant
-                </p>
+                <p className="text-xs text-gray-400 mt-0.5">Resident / buyer / tenant</p>
               </div>
-              {userType === "individual" && (
-                <CheckCircle className="w-5 h-5 text-brand-600" />
-              )}
+              {userType === "individual" && <CheckCircle className="w-5 h-5 text-brand-600" />}
             </button>
 
-            {/* Business */}
             <button
               onClick={() => setUserType("business")}
               className={`flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all ${
-                userType === "business"
-                  ? "border-brand-500 bg-brand-50"
-                  : "border-gray-200 hover:border-gray-300"
+                userType === "business" ? "border-brand-500 bg-brand-50" : "border-gray-200 hover:border-gray-300"
               }`}
             >
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
-                userType === "business" ? "bg-brand-100" : "bg-gray-100"
-              }`}>
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${userType === "business" ? "bg-brand-100" : "bg-gray-100"}`}>
                 <Briefcase className={`w-6 h-6 ${userType === "business" ? "text-brand-600" : "text-gray-400"}`} />
               </div>
               <div className="text-center">
                 <p className="font-bold text-sm text-gray-900">Business</p>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  Developer / brand / broker
-                </p>
+                <p className="text-xs text-gray-400 mt-0.5">Restaurant / shop / salon…</p>
               </div>
-              {userType === "business" && (
-                <CheckCircle className="w-5 h-5 text-brand-600" />
-              )}
+              {userType === "business" && <CheckCircle className="w-5 h-5 text-brand-600" />}
             </button>
           </div>
 
-          {/* What you can do */}
           <div className="bg-gray-50 rounded-xl p-4 mb-6 text-sm text-gray-600">
             {userType === "individual" ? (
               <ul className="space-y-1.5">
@@ -187,7 +155,7 @@ export default function RegisterPage() {
               </ul>
             ) : (
               <ul className="space-y-1.5">
-                {["Post classifieds & listings", "Manage leads & enquiries", "Analytics dashboard", "Sponsored content & ads"].map((i) => (
+                {["Get listed in the business directory", "Show your hours & contact", "Post classifieds & offers", "Analytics dashboard"].map((i) => (
                   <li key={i} className="flex items-center gap-2 text-xs">
                     <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" /> {i}
                   </li>
@@ -197,7 +165,13 @@ export default function RegisterPage() {
           </div>
 
           <button
-            onClick={() => setStep("details")}
+            onClick={() => {
+              if (userType === "business") {
+                router.push("/register-business");
+              } else {
+                setStep("details");
+              }
+            }}
             className="btn-primary w-full justify-center"
           >
             Continue <ArrowRight className="w-4 h-4" />
@@ -207,43 +181,63 @@ export default function RegisterPage() {
     );
   }
 
+  // ── Step 3: Done — check your email ───────────────────────────────────────
+  if (step === "done") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-12">
+        <Logo />
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+          <div className="w-16 h-16 rounded-full bg-brand-50 flex items-center justify-center mx-auto mb-4">
+            <MailCheck className="w-8 h-8 text-brand-600" />
+          </div>
+          <h1 className="text-2xl font-extrabold text-gray-900 mb-2">Check your email</h1>
+          <p className="text-sm text-gray-500 mb-2">
+            We sent a verification link to
+          </p>
+          <p className="font-semibold text-gray-800 mb-6">{email}</p>
+          <p className="text-sm text-gray-400 mb-8">
+            Click the link in the email to verify your account and sign in.
+            The link expires in 24 hours.
+          </p>
+          <div className="space-y-3">
+            <Link href="/auth/login" className="btn-primary w-full justify-center">
+              Go to Sign In <ArrowRight className="w-4 h-4" />
+            </Link>
+            <p className="text-xs text-gray-400">
+              Wrong email?{" "}
+              <button
+                onClick={() => { setStep("details"); setError(""); }}
+                className="text-brand-600 font-semibold hover:underline"
+              >
+                Go back and change it
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // ── Step 2: Details ────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-12">
-      <Link href="/" className="flex items-center gap-2 mb-8">
-        <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
-          <Building2 className="w-5 h-5 text-white" />
-        </div>
-        <span className="text-lg font-bold text-gray-900">
-          Neopolis<span className="text-brand-600">News</span>
-        </span>
-      </Link>
-
+      <Logo />
       <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-        <button
-          onClick={() => setStep("type")}
-          className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mb-4"
-        >
+        <button onClick={() => { setStep("type"); setError(""); }} className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mb-4">
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
+        <ProgressBar current="details" />
 
-        <div className="flex items-center gap-2 mb-1">
-          <h1 className="text-2xl font-extrabold text-gray-900">
-            {userType === "individual" ? "Your details" : "Business details"}
-          </h1>
-          <span className={`badge ${userType === "individual" ? "tag-blue" : "tag-purple"}`}>
-            {userType === "individual" ? "Individual" : "Business"}
-          </span>
-        </div>
+        <h1 className="text-2xl font-extrabold text-gray-900 mb-1">Your details</h1>
         <p className="text-sm text-gray-500 mb-6">
-          Fill in your details to create your account.
+          We&apos;ll send a verification link to your email.
         </p>
 
         {/* Google shortcut */}
         <button
           onClick={handleGoogle}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-lg py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors mb-4"
+          className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-lg py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors mb-4 disabled:opacity-60"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -260,16 +254,24 @@ export default function RegisterPage() {
           <div className="flex-1 h-px bg-gray-100" />
         </div>
 
-        {error && (
+        {error === "__already_registered__" ? (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-4">
+            <p className="text-sm font-semibold text-amber-800 mb-1">Account already exists</p>
+            <p className="text-xs text-amber-700 mb-2">
+              An account for <span className="font-semibold">{email}</span> already exists.
+            </p>
+            <Link href={`/auth/login`} className="text-xs font-semibold text-brand-600 hover:underline">
+              Sign in instead →
+            </Link>
+          </div>
+        ) : error ? (
           <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-4">{error}</p>
-        )}
+        ) : null}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleDetailsSubmit} className="space-y-4">
           {/* Name */}
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5">
-              {userType === "individual" ? "Full name" : "Contact person name"}
-            </label>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5">Full name</label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -283,107 +285,25 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* Business fields */}
-          {userType === "business" && (
-            <>
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Business name</label>
-                <div className="relative">
-                  <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    value={businessName}
-                    onChange={(e) => setBusinessName(e.target.value)}
-                    placeholder="Your company / brand name"
-                    required
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Business category</label>
-                <select
-                  value={businessCategory}
-                  onChange={(e) => setBusinessCategory(e.target.value)}
-                  required
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                >
-                  <option value="">Select category…</option>
-                  {BUSINESS_CATEGORIES.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5">
-                  GSTIN <span className="font-normal text-gray-400">(optional)</span>
-                </label>
-                <input
-                  type="text"
-                  value={gstin}
-                  onChange={(e) => setGstin(e.target.value.toUpperCase())}
-                  placeholder="22AAAAA0000A1Z5"
-                  maxLength={15}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-              </div>
-            </>
-          )}
-
-          {/* Contact method */}
+          {/* Email */}
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-2">
-              Sign in with
-            </label>
-            <div className="flex gap-2 mb-3">
-              {(["email", "phone"] as const).map((m) => (
-                <button
-                  type="button"
-                  key={m}
-                  onClick={() => setContactMethod(m)}
-                  className={`flex-1 py-2 rounded-lg border text-xs font-semibold transition-colors ${
-                    contactMethod === m
-                      ? "bg-brand-50 border-brand-400 text-brand-700"
-                      : "border-gray-200 text-gray-400 hover:border-gray-300"
-                  }`}
-                >
-                  {m === "email" ? <><Mail className="w-3.5 h-3.5 inline mr-1" />Email</> : <><Phone className="w-3.5 h-3.5 inline mr-1" />Phone</>}
-                </button>
-              ))}
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5">Email address</label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
             </div>
-
-            {contactMethod === "email" ? (
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  required
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-              </div>
-            ) : (
-              <div className="flex">
-                <span className="flex items-center px-3 border border-r-0 border-gray-200 rounded-l-lg bg-gray-50 text-sm text-gray-500">+91</span>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                  placeholder="9900000000"
-                  required
-                  className="flex-1 px-3 py-2.5 border border-gray-200 rounded-r-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-              </div>
-            )}
           </div>
 
           {/* Password */}
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5">
-              Password <span className="font-normal text-gray-400">(optional — or use OTP to login)</span>
-            </label>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5">Password</label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -391,21 +311,44 @@ export default function RegisterPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Min 8 characters"
+                required
                 className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>
 
+          {/* Confirm Password */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5">Confirm password</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type={showConfirm ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Re-enter your password"
+                required
+                className={`w-full pl-10 pr-10 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 ${
+                  confirmPassword && confirmPassword !== password
+                    ? "border-red-300 bg-red-50"
+                    : "border-gray-200"
+                }`}
+              />
+              <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {confirmPassword && confirmPassword !== password && (
+              <p className="text-xs text-red-500 mt-1">Passwords do not match.</p>
+            )}
+          </div>
+
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (!!confirmPassword && confirmPassword !== password)}
             className="btn-primary w-full justify-center"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
