@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
       .from("businesses")
       .select("id, name, industry, address, verified, logo")
       .eq("status", "active")
-      .or(`name.ilike.${p},description.ilike.${p},industry.ilike.${p}`)
+      .or(`name.ilike.${p},description.ilike.${p},industry.ilike.${p},address.ilike.${p}`)
       .limit(6),
 
     admin
