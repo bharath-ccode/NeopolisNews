@@ -134,7 +134,7 @@ const NAV_ITEMS = [
   {
     label: "Deals",
     href: "/deals",
-    icon: Sparkles,
+    icon: ShoppingBag,
   },
   {
     label: "Classifieds",
