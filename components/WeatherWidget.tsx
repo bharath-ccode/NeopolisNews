@@ -89,10 +89,12 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
   const [weather, setWeather] = useState<ReturnType<typeof buildWeatherData>>(() =>
     buildWeatherData(HOURLY_TEMPS, HOURLY_FEELS, HOURLY_CODES, HOURLY_PRECIP, HOURLY_WIND, 38)
   );
-  const [aqi, setAqi]         = useState<number | null>(null);
-  const [open, setOpen]       = useState(false);
-  const panelRef              = useRef<HTMLDivElement>(null);
-  const btnRef                = useRef<HTMLButtonElement>(null);
+  const [aqi, setAqi]           = useState<number | null>(null);
+  const [open, setOpen]         = useState(false);
+  const panelRef                = useRef<HTMLDivElement>(null);
+  const btnRef                  = useRef<HTMLButtonElement>(null);
+  const hourScrollRef           = useRef<HTMLDivElement>(null);
+  const nowHourRef              = useRef<HTMLDivElement>(null);
 
   // Try to fetch live data in background; silently fall back on error
   useEffect(() => {
@@ -151,6 +153,18 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
+  }, [open]);
+
+  // Scroll hourly strip to current hour when panel opens
+  useEffect(() => {
+    if (!open) return;
+    const frame = requestAnimationFrame(() => {
+      const container = hourScrollRef.current;
+      const el = nowHourRef.current;
+      if (!container || !el) return;
+      container.scrollLeft = el.offsetLeft - container.offsetWidth / 2 + el.offsetWidth / 2;
+    });
+    return () => cancelAnimationFrame(frame);
   }, [open]);
 
   const { current, hourly, daily } = weather;
@@ -227,7 +241,7 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
             <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">
               Hourly forecast
             </p>
-            <div className="overflow-x-auto">
+            <div ref={hourScrollRef} className="overflow-x-auto">
               <div className="flex gap-1" style={{ width: "max-content" }}>
                 {hourly.time.map((t, i) => {
                   const h     = parseInt(t.split("T")[1], 10);
@@ -238,6 +252,7 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
                   return (
                     <div
                       key={t}
+                      ref={isNow ? nowHourRef : null}
                       className={`flex flex-col items-center gap-1 px-2.5 py-2 rounded-xl min-w-[50px] ${
                         isNow ? "bg-brand-600 text-white" : "hover:bg-gray-50 text-gray-700"
                       }`}
