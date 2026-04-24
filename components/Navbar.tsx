@@ -132,6 +132,11 @@ const NAV_ITEMS = [
     ],
   },
   {
+    label: "Deals",
+    href: "/deals",
+    icon: Sparkles,
+  },
+  {
     label: "Classifieds",
     href: "/classifieds",
     icon: Tag,
