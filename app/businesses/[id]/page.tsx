@@ -17,6 +17,7 @@ import {
   Flag,
   Film,
   ExternalLink,
+  Tag,
 } from "lucide-react";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import ViewTracker from "./ViewTracker";
@@ -36,6 +37,17 @@ interface SocialLinks {
   instagram?: string;
   facebook?: string;
   youtube?: string;
+}
+
+interface BusinessOffer {
+  id: string;
+  name: string;
+  description: string | null;
+  discount_percent: number | null;
+  discount_label: string | null;
+  start_date: string;
+  end_date: string;
+  image_url: string | null;
 }
 
 interface NowShowingItem {
@@ -142,6 +154,17 @@ export default async function BusinessProfilePage({
       .order("running_from", { ascending: false });
     nowShowing = movies ?? [];
   }
+
+  const today = new Date().toISOString().split("T")[0];
+  const { data: activeOffers } = await supabase
+    .from("business_offers")
+    .select("id, name, description, discount_percent, discount_label, start_date, end_date, image_url")
+    .eq("business_id", params.id)
+    .eq("status", "active")
+    .lte("start_date", today)
+    .gte("end_date", today)
+    .order("end_date", { ascending: true });
+  const offers: BusinessOffer[] = activeOffers ?? [];
 
   const social = b.social_links ?? {};
   const pictures = (b.pictures ?? []).slice(0, 2);
@@ -378,6 +401,56 @@ export default async function BusinessProfilePage({
                   )}
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── ACTIVE OFFERS ───────────────────────────────────────────────────── */}
+      {offers.length > 0 && (
+        <section className="py-8 md:py-10 bg-orange-50 border-b border-orange-100">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6">
+            <div className="flex items-center gap-2 mb-5">
+              <Tag className="w-5 h-5 text-orange-600" />
+              <h2 className="font-extrabold text-gray-900 text-xl">Current Deals</h2>
+              <span className="ml-1 bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded-full border border-orange-200">
+                {offers.length} active
+              </span>
+            </div>
+            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {offers.map((offer) => {
+                const discountLabel = offer.discount_percent
+                  ? `${offer.discount_percent}% OFF`
+                  : offer.discount_label ?? "Special Offer";
+                const end = new Date(offer.end_date);
+                return (
+                  <div key={offer.id} className="bg-white rounded-2xl border border-orange-100 overflow-hidden shadow-sm">
+                    {offer.image_url && (
+                      <div className="h-36 overflow-hidden">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={offer.image_url}
+                          alt={offer.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    <div className="p-4">
+                      <span className="inline-block bg-orange-600 text-white text-xs font-extrabold px-2.5 py-1 rounded-full mb-2">
+                        {discountLabel}
+                      </span>
+                      <p className="font-bold text-gray-900 text-sm leading-snug">{offer.name}</p>
+                      {offer.description && (
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{offer.description}</p>
+                      )}
+                      <p className="text-[11px] text-gray-400 mt-2 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        Valid until {end.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>
