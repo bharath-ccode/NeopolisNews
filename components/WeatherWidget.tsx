@@ -4,12 +4,12 @@ import { useState, useEffect, useRef } from "react";
 import { Wind, Droplets, Thermometer, X, ChevronDown, PersonStanding, Leaf } from "lucide-react";
 
 function getAqiInfo(aqi: number) {
-  if (aqi <= 50)  return { label: "Good",                          color: "bg-green-100",  textColor: "text-green-700",  advice: "Great day for a walk!" };
-  if (aqi <= 100) return { label: "Moderate",                      color: "bg-yellow-100", textColor: "text-yellow-700", advice: "Fine for most people outdoors." };
-  if (aqi <= 150) return { label: "Unhealthy for Sensitive Groups", color: "bg-orange-100", textColor: "text-orange-700", advice: "Sensitive groups should limit outdoor walks." };
-  if (aqi <= 200) return { label: "Unhealthy",                     color: "bg-red-100",    textColor: "text-red-700",    advice: "Limit prolonged outdoor activity." };
-  if (aqi <= 300) return { label: "Very Unhealthy",                color: "bg-purple-100", textColor: "text-purple-700", advice: "Avoid outdoor walks today." };
-  return           { label: "Hazardous",                           color: "bg-rose-100",   textColor: "text-rose-800",   advice: "Stay indoors — air is hazardous." };
+  if (aqi <= 50)  return { label: "Good",                           badgeBg: "bg-green-500",   badgeText: "text-white",        numBg: "bg-green-100",   numText: "text-green-700",  advice: "Great day for a walk!" };
+  if (aqi <= 100) return { label: "Moderate",                       badgeBg: "bg-yellow-400",  badgeText: "text-yellow-900",   numBg: "bg-yellow-100",  numText: "text-yellow-700", advice: "Fine for most people outdoors." };
+  if (aqi <= 150) return { label: "Unhealthy for Sensitive Groups", badgeBg: "bg-orange-500",  badgeText: "text-white",        numBg: "bg-orange-100",  numText: "text-orange-700", advice: "Sensitive groups should limit outdoor walks." };
+  if (aqi <= 200) return { label: "Unhealthy",                      badgeBg: "bg-red-500",     badgeText: "text-white",        numBg: "bg-red-100",     numText: "text-red-700",    advice: "Limit prolonged outdoor activity." };
+  if (aqi <= 300) return { label: "Very Unhealthy",                 badgeBg: "bg-red-800",     badgeText: "text-white",        numBg: "bg-red-200",     numText: "text-red-900",    advice: "Avoid outdoor walks today." };
+  return           { label: "Hazardous",                            badgeBg: "bg-rose-950",    badgeText: "text-white",        numBg: "bg-rose-200",    numText: "text-rose-950",   advice: "Stay indoors — air is hazardous." };
 }
 
 // Kokapet, Hyderabad — typical April weather (used until live data loads)
@@ -308,16 +308,18 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
                 Air Quality
               </p>
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Leaf className="w-4 h-4 text-brand-400 shrink-0" />
+                <div className="flex items-center gap-2.5">
+                  <div className={`flex items-center justify-center w-11 h-11 rounded-xl font-black text-lg ${aqiInfo.numBg} ${aqiInfo.numText}`}>
+                    {aqi}
+                  </div>
                   <div>
                     <p className="text-xs text-gray-400">AQI · Kokapet</p>
-                    <p className="text-sm font-bold text-gray-800">{aqi}</p>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${aqiInfo.badgeBg} ${aqiInfo.badgeText}`}>
+                      {aqiInfo.label}
+                    </span>
                   </div>
                 </div>
-                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${aqiInfo.color} ${aqiInfo.textColor}`}>
-                  {aqiInfo.label}
-                </span>
+                <Leaf className={`w-5 h-5 shrink-0 ${aqiInfo.numText}`} />
               </div>
               <div className="flex items-start gap-2 rounded-lg bg-gray-50 px-3 py-2">
                 <PersonStanding className="w-4 h-4 text-brand-500 shrink-0 mt-0.5" />
