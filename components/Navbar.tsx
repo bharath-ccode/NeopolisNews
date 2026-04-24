@@ -25,6 +25,7 @@ import {
   Search,
   GraduationCap,
   Landmark,
+  Bell,
 } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "@/context/AuthContext";
@@ -42,6 +43,18 @@ const NAV_ITEMS = [
       { label: "New Launches",         href: "/news#launches"      },
       { label: "Infrastructure",       href: "/news#infrastructure" },
       { label: "Community",            href: "/news#community"     },
+    ],
+  },
+  {
+    label: "Announcements",
+    href: "/announcements",
+    icon: Bell,
+    sub: [
+      { label: "Grand Openings",  href: "/announcements?type=opening"     },
+      { label: "New Arrivals",    href: "/announcements?type=new_arrival" },
+      { label: "We're Hiring",    href: "/announcements?type=hiring"      },
+      { label: "Community News",  href: "/announcements?type=community"   },
+      { label: "Notices",         href: "/announcements?type=notice"      },
     ],
   },
   {
