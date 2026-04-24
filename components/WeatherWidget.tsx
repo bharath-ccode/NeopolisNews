@@ -158,13 +158,15 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
   // Scroll hourly strip to current hour when panel opens
   useEffect(() => {
     if (!open) return;
-    const frame = requestAnimationFrame(() => {
+    const t = setTimeout(() => {
       const container = hourScrollRef.current;
       const el = nowHourRef.current;
       if (!container || !el) return;
-      container.scrollLeft = el.offsetLeft - container.offsetWidth / 2 + el.offsetWidth / 2;
-    });
-    return () => cancelAnimationFrame(frame);
+      const elRect = el.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      container.scrollLeft += elRect.left - containerRect.left - (container.offsetWidth / 2 - el.offsetWidth / 2);
+    }, 0);
+    return () => clearTimeout(t);
   }, [open]);
 
   const { current, hourly, daily } = weather;
