@@ -11,7 +11,12 @@ function Icon({ emoji, focused }: { emoji: string; focused: boolean }) {
 
 export default function TabLayout() {
   return (
-    <Tabs screenOptions={{ headerShown: false }}>
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarPosition: "bottom",
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
