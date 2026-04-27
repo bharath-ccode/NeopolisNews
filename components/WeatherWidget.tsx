@@ -107,8 +107,7 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
       "&timezone=Asia%2FKolkata&forecast_days=4";
 
     const aqiUrl =
-      "https://air-quality-api.open-meteo.com/v1/air-quality" +
-      "?latitude=17.4065&longitude=78.3772&current=us_aqi";
+      "https://api.waqi.info/feed/geo:17.4126;78.3338/?token=demo";
 
     fetch(weatherUrl)
       .then((r) => r.json())
@@ -128,9 +127,14 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
       })
       .catch(() => {/* keep mock data */});
 
+    // WAQI uses real CPCB/TSPCB monitoring station data — matches weather.com / AccuWeather
     fetch(aqiUrl)
       .then((r) => r.json())
-      .then((j) => { if (j?.current?.us_aqi != null) setAqi(j.current.us_aqi); })
+      .then((j) => {
+        if (j?.status === "ok" && j?.data?.aqi != null) {
+          setAqi(Number(j.data.aqi));
+        }
+      })
       .catch(() => {/* silently fail */});
   }, []);
 
