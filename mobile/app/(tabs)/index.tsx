@@ -1,13 +1,69 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, RefreshControl, ActivityIndicator, Image,
+  Modal, FlatList,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "@/lib/colors";
 import { useAuth } from "@/context/AuthContext";
 
 const API = process.env.EXPO_PUBLIC_API_URL ?? "https://neopolis.news";
+
+// ─── Weather helpers ──────────────────────────────────────────────────────────
+function wEmoji(code: number, hour: number) {
+  const night = hour < 6 || hour >= 19;
+  if (code === 0) return night ? "🌙" : "☀️";
+  if (code === 1) return night ? "🌙" : "🌤️";
+  if (code === 2) return "⛅";
+  if (code === 3) return "☁️";
+  if (code === 45 || code === 48) return "🌫️";
+  if (code >= 51 && code <= 65) return "🌧️";
+  if (code >= 71 && code <= 77) return "❄️";
+  if (code >= 80 && code <= 82) return "🌦️";
+  if (code === 95) return "⛈️";
+  return "🌡️";
+}
+function wLabel(code: number) {
+  if (code === 0) return "Clear sky";
+  if (code === 1) return "Mostly clear";
+  if (code === 2) return "Partly cloudy";
+  if (code === 3) return "Overcast";
+  if (code === 45 || code === 48) return "Foggy";
+  if (code >= 51 && code <= 55) return "Drizzle";
+  if (code >= 61 && code <= 65) return "Rain";
+  if (code >= 71 && code <= 77) return "Snow";
+  if (code >= 80 && code <= 82) return "Showers";
+  if (code === 95) return "Thunderstorm";
+  return "—";
+}
+function aqiBg(aqi: number) {
+  if (aqi <= 50)  return "#16a34a";
+  if (aqi <= 100) return "#d97706";
+  if (aqi <= 150) return "#ea580c";
+  if (aqi <= 200) return "#dc2626";
+  if (aqi <= 300) return "#991b1b";
+  return "#450a0a";
+}
+function fmt12(iso: string) {
+  const h = parseInt(iso.split("T")[1], 10);
+  if (h === 0) return "12 AM";
+  if (h < 12) return `${h} AM`;
+  if (h === 12) return "12 PM";
+  return `${h - 12} PM`;
+}
+
+interface WxState {
+  temp: number | null;
+  feelsLike: number | null;
+  emoji: string;
+  label: string;
+  humidity: number | null;
+  wind: number | null;
+  aqi: number | null;
+}
+interface HourItem { time: string; temp: number; emoji: string; rain: number; isNow: boolean; }
+// ─────────────────────────────────────────────────────────────────────────────
 
 type FeedFilter = "All" | "Deals" | "Buzz" | "News" | "Health";
 
@@ -48,7 +104,10 @@ export default function HomeScreen() {
   const [feed, setFeed]           = useState<FeedItem[]>([]);
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [weather, setWeather]     = useState("32°C · Partly Cloudy");
+  const [wx, setWx]               = useState<WxState>({ temp: null, feelsLike: null, emoji: "🌤️", label: "Kokapet", humidity: null, wind: null, aqi: null });
+  const [hourly, setHourly]       = useState<HourItem[]>([]);
+  const [wxOpen, setWxOpen]       = useState(false);
+  const hourListRef               = useRef<FlatList<HourItem>>(null);
 
   const firstName = user?.user_metadata?.name?.split(" ")[0] ?? "there";
 
@@ -147,6 +206,53 @@ export default function HomeScreen() {
 
   useEffect(() => { loadFeed(); }, [loadFeed]);
 
+  useEffect(() => {
+    const wxUrl =
+      "https://api.open-meteo.com/v1/forecast" +
+      "?latitude=17.4126&longitude=78.3338" +
+      "&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m" +
+      "&hourly=temperature_2m,weather_code,precipitation_probability" +
+      "&timezone=Asia%2FKolkata&forecast_days=2";
+
+    fetch(wxUrl).then(r => r.json()).then(j => {
+      if (!j?.current) return;
+      const nowH = new Date().getHours();
+      const code  = j.current.weather_code as number;
+      setWx({
+        temp:      Math.round(j.current.temperature_2m),
+        feelsLike: Math.round(j.current.apparent_temperature),
+        emoji:     wEmoji(code, nowH),
+        label:     wLabel(code),
+        humidity:  j.current.relative_humidity_2m,
+        wind:      Math.round(j.current.wind_speed_10m),
+        aqi:       null,
+      });
+      if (j?.hourly) {
+        const today = new Date().toISOString().split("T")[0];
+        const items: HourItem[] = (j.hourly.time as string[])
+          .filter((t: string) => t.startsWith(today))
+          .map((t: string, i: number) => {
+            const h = parseInt(t.split("T")[1], 10);
+            return {
+              time:  t,
+              temp:  Math.round(j.hourly.temperature_2m[i]),
+              emoji: wEmoji(j.hourly.weather_code[i] as number, h),
+              rain:  j.hourly.precipitation_probability[i] as number,
+              isNow: h === nowH,
+            };
+          });
+        setHourly(items);
+      }
+    }).catch(() => {});
+
+    fetch("https://api.waqi.info/feed/geo:17.4126;78.3338/?token=demo")
+      .then(r => r.json())
+      .then(j => {
+        if (j?.status === "ok" && j?.data?.aqi != null)
+          setWx(prev => ({ ...prev, aqi: Number(j.data.aqi) }));
+      }).catch(() => {});
+  }, []);
+
   function onRefresh() {
     setRefreshing(true);
     loadFeed();
@@ -170,9 +276,15 @@ export default function HomeScreen() {
           <Text style={s.greeting}>Hi {firstName} 👋</Text>
           <Text style={s.location}>📍 Neopolis</Text>
         </View>
-        <View style={s.weatherBadge}>
-          <Text style={s.weatherText}>⛅ {weather}</Text>
-        </View>
+        <TouchableOpacity style={s.weatherBadge} onPress={() => setWxOpen(true)} activeOpacity={0.75}>
+          <Text style={s.weatherEmoji}>{wx.emoji}</Text>
+          <Text style={s.weatherTemp}>{wx.temp !== null ? `${wx.temp}°` : "—"}</Text>
+          {wx.aqi !== null && (
+            <View style={[s.aqiBadge, { backgroundColor: aqiBg(wx.aqi) }]}>
+              <Text style={s.aqiText}>AQI {wx.aqi}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
       </View>
 
       {/* Search */}
@@ -237,6 +349,95 @@ export default function HomeScreen() {
         )}
         <View style={{ height: 24 }} />
       </ScrollView>
+
+      {/* Weather detail modal */}
+      <Modal visible={wxOpen} animationType="slide" transparent onRequestClose={() => setWxOpen(false)}>
+        <View style={s.modalOverlay}>
+          <TouchableOpacity style={StyleSheet.absoluteFillObject as object} onPress={() => setWxOpen(false)} />
+          <View style={s.modalPanel}>
+            {/* Header */}
+            <View style={s.modalHeader}>
+              <View>
+                <Text style={s.modalLocation}>Today · Kokapet, Hyderabad</Text>
+                <View style={s.modalTempRow}>
+                  <Text style={s.modalTemp}>{wx.temp !== null ? `${wx.temp}°` : "—"}</Text>
+                  <Text style={s.modalEmojiLg}>{wx.emoji}</Text>
+                </View>
+                <Text style={s.modalLabel}>{wx.label}</Text>
+              </View>
+              <TouchableOpacity onPress={() => setWxOpen(false)} style={s.modalClose}>
+                <Text style={s.modalCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Stats */}
+            <View style={s.modalStats}>
+              {wx.feelsLike !== null && (
+                <View style={s.statItem}>
+                  <Text style={s.statIcon}>🌡️</Text>
+                  <Text style={s.statVal}>Feels {wx.feelsLike}°</Text>
+                </View>
+              )}
+              {wx.humidity !== null && (
+                <View style={s.statItem}>
+                  <Text style={s.statIcon}>💧</Text>
+                  <Text style={s.statVal}>{wx.humidity}% humidity</Text>
+                </View>
+              )}
+              {wx.wind !== null && (
+                <View style={s.statItem}>
+                  <Text style={s.statIcon}>💨</Text>
+                  <Text style={s.statVal}>{wx.wind} km/h</Text>
+                </View>
+              )}
+            </View>
+
+            {/* AQI */}
+            {wx.aqi !== null && (
+              <View style={[s.aqiRow, { backgroundColor: aqiBg(wx.aqi) + "22" }]}>
+                <View style={[s.aqiTile, { backgroundColor: aqiBg(wx.aqi) }]}>
+                  <Text style={s.aqiTileNum}>{wx.aqi}</Text>
+                </View>
+                <View>
+                  <Text style={s.aqiRowLabel}>Air Quality Index · Kokapet</Text>
+                  <Text style={[s.aqiRowVal, { color: aqiBg(wx.aqi) }]}>
+                    {wx.aqi <= 50 ? "Good" : wx.aqi <= 100 ? "Moderate" : wx.aqi <= 150 ? "Sensitive Groups" : wx.aqi <= 200 ? "Unhealthy" : wx.aqi <= 300 ? "Very Unhealthy" : "Hazardous"}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* Hourly */}
+            {hourly.length > 0 && (
+              <View style={s.hourlyWrap}>
+                <Text style={s.hourlyTitle}>Hourly forecast</Text>
+                <FlatList
+                  ref={hourListRef}
+                  data={hourly}
+                  keyExtractor={i => i.time}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  onLayout={() => {
+                    const idx = hourly.findIndex(h => h.isNow);
+                    if (idx > 0) hourListRef.current?.scrollToIndex({ index: idx, viewPosition: 0.5, animated: false });
+                  }}
+                  getItemLayout={(_, index) => ({ length: 60, offset: 60 * index, index })}
+                  renderItem={({ item }) => (
+                    <View style={[s.hourCell, item.isNow && s.hourCellNow]}>
+                      <Text style={[s.hourTime, item.isNow && s.hourTimeNow]}>{fmt12(item.time)}</Text>
+                      <Text style={s.hourEmoji}>{item.emoji}</Text>
+                      <Text style={[s.hourTemp, item.isNow && s.hourTempNow]}>{item.temp}°</Text>
+                      {item.rain > 0 && <Text style={[s.hourRain, item.isNow && { color: "#93c5fd" }]}>{item.rain}%</Text>}
+                    </View>
+                  )}
+                />
+              </View>
+            )}
+
+            <Text style={s.modalFooter}>Kokapet · Open-Meteo · WAQI</Text>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -309,16 +510,89 @@ const s = StyleSheet.create({
     marginTop: 2,
   },
   weatherBadge: {
+    flexDirection:   "row",
+    alignItems:      "center",
+    gap:             6,
     backgroundColor: "rgba(255,255,255,0.1)",
     borderRadius:    100,
-    paddingHorizontal: 12,
-    paddingVertical:  6,
+    paddingHorizontal: 10,
+    paddingVertical:   5,
   },
-  weatherText: {
-    color:    colors.white,
-    fontSize: 12,
-    fontWeight: "600",
+  weatherEmoji: { fontSize: 14 },
+  weatherTemp:  { color: colors.white, fontSize: 13, fontWeight: "700" },
+  aqiBadge: {
+    borderRadius: 100,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
   },
+  aqiText: { color: colors.white, fontSize: 10, fontWeight: "800" },
+
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  modalPanel: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: "hidden",
+  },
+  modalHeader: {
+    flexDirection:  "row",
+    justifyContent: "space-between",
+    alignItems:     "flex-start",
+    padding: 20,
+    backgroundColor: colors.brand[950],
+  },
+  modalLocation: { color: colors.brand[300], fontSize: 11, fontWeight: "600", marginBottom: 4, letterSpacing: 0.5 },
+  modalTempRow:  { flexDirection: "row", alignItems: "flex-end", gap: 8 },
+  modalTemp:     { color: colors.white, fontSize: 52, fontWeight: "900", lineHeight: 56 },
+  modalEmojiLg:  { fontSize: 36, marginBottom: 4 },
+  modalLabel:    { color: "rgba(255,255,255,0.8)", fontSize: 14, marginTop: 2 },
+  modalClose:    { padding: 8, backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 100 },
+  modalCloseText:{ color: colors.white, fontSize: 14 },
+  modalStats: {
+    flexDirection: "row",
+    gap: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.brand[900],
+  },
+  statItem:  { flexDirection: "row", alignItems: "center", gap: 4 },
+  statIcon:  { fontSize: 12 },
+  statVal:   { color: "rgba(255,255,255,0.7)", fontSize: 12 },
+  aqiRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    margin: 12,
+    padding: 12,
+    borderRadius: 14,
+  },
+  aqiTile: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  aqiTileNum:  { color: colors.white, fontSize: 16, fontWeight: "900" },
+  aqiRowLabel: { fontSize: 11, color: colors.gray[500] },
+  aqiRowVal:   { fontSize: 13, fontWeight: "700" },
+  hourlyWrap:  { paddingHorizontal: 12, paddingBottom: 4 },
+  hourlyTitle: { fontSize: 11, fontWeight: "700", color: colors.gray[400], letterSpacing: 0.5, marginBottom: 8, textTransform: "uppercase" },
+  hourCell: {
+    width: 56,
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    borderRadius: 12,
+  },
+  hourCellNow: { backgroundColor: colors.brand[600] },
+  hourTime:    { fontSize: 10, color: colors.gray[400], fontWeight: "600" },
+  hourTimeNow: { color: colors.brand[200] },
+  hourEmoji:   { fontSize: 18 },
+  hourTemp:    { fontSize: 13, fontWeight: "700", color: colors.gray[800] },
+  hourTempNow: { color: colors.white },
+  hourRain:    { fontSize: 10, color: "#60a5fa" },
+  modalFooter: { textAlign: "center", fontSize: 10, color: colors.gray[300], paddingVertical: 10 },
   searchWrap: {
     flexDirection:   "row",
     alignItems:      "center",
