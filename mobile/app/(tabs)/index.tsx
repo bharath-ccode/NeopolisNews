@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, RefreshControl, ActivityIndicator, Image,
+  RefreshControl, ActivityIndicator, Image,
   Modal, FlatList,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -63,6 +63,7 @@ interface WxState {
   aqi: number | null;
 }
 interface HourItem { time: string; temp: number; emoji: string; rain: number; isNow: boolean; }
+interface DayItem  { date: string; maxTemp: number; minTemp: number; emoji: string; label: string; }
 // ─────────────────────────────────────────────────────────────────────────────
 
 type FeedFilter = "Deals" | "Buzz" | "News" | "Health";
@@ -100,12 +101,12 @@ function timeAgo(dateStr: string) {
 export default function HomeScreen() {
   const { user } = useAuth();
   const [filter, setFilter]       = useState<FeedFilter | null>(null);
-  const [search, setSearch]       = useState("");
   const [feed, setFeed]           = useState<FeedItem[]>([]);
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [wx, setWx]               = useState<WxState>({ temp: null, feelsLike: null, emoji: "🌤️", label: "Kokapet", humidity: null, wind: null, aqi: null });
   const [hourly, setHourly]       = useState<HourItem[]>([]);
+  const [daily, setDaily]         = useState<DayItem[]>([]);
   const [wxOpen, setWxOpen]       = useState(false);
   const hourListRef               = useRef<FlatList<HourItem>>(null);
 
@@ -212,7 +213,8 @@ export default function HomeScreen() {
       "?latitude=17.4126&longitude=78.3338" +
       "&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m" +
       "&hourly=temperature_2m,weather_code,precipitation_probability" +
-      "&timezone=Asia%2FKolkata&forecast_days=2";
+      "&daily=weather_code,temperature_2m_max,temperature_2m_min" +
+      "&timezone=Asia%2FKolkata&forecast_days=4";
 
     fetch(wxUrl).then(r => r.json()).then(j => {
       if (!j?.current) return;
@@ -243,6 +245,20 @@ export default function HomeScreen() {
           });
         setHourly(items);
       }
+      if (j?.daily?.time) {
+        const today = new Date().toISOString().split("T")[0];
+        const items: DayItem[] = (j.daily.time as string[])
+          .map((date: string, i: number) => ({
+            date,
+            maxTemp: Math.round(j.daily.temperature_2m_max[i]),
+            minTemp: Math.round(j.daily.temperature_2m_min[i]),
+            emoji:   wEmoji(j.daily.weather_code[i] as number, 12),
+            label:   wLabel(j.daily.weather_code[i] as number),
+          }))
+          .filter(d => d.date > today)
+          .slice(0, 3);
+        setDaily(items);
+      }
     }).catch(() => {});
 
     fetch("https://api.waqi.info/feed/geo:17.4126;78.3338/?token=demo")
@@ -265,9 +281,7 @@ export default function HomeScreen() {
     if (filter === "News")   return item.kind === "news";
     if (filter === "Health") return item.kind === "wellness";
     return true;
-  }).filter((item) =>
-    !search || item.title.toLowerCase().includes(search.toLowerCase())
-  );
+  });
 
   return (
     <SafeAreaView style={s.root}>
@@ -286,19 +300,6 @@ export default function HomeScreen() {
             </View>
           )}
         </TouchableOpacity>
-      </View>
-
-      {/* Search */}
-      <View style={s.searchWrap}>
-        <Text style={s.searchIcon}>🔍</Text>
-        <TextInput
-          style={s.searchInput}
-          placeholder="Search deals, news, businesses…"
-          placeholderTextColor={colors.gray[500]}
-          value={search}
-          onChangeText={setSearch}
-          returnKeyType="search"
-        />
       </View>
 
       {/* Filter pills */}
@@ -356,6 +357,7 @@ export default function HomeScreen() {
         <View style={s.modalOverlay}>
           <TouchableOpacity style={StyleSheet.absoluteFillObject as object} onPress={() => setWxOpen(false)} />
           <View style={s.modalPanel}>
+            <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
             {/* Header */}
             <View style={s.modalHeader}>
               <View>
@@ -435,7 +437,28 @@ export default function HomeScreen() {
               </View>
             )}
 
+            {/* 3-day forecast */}
+            {daily.length > 0 && (
+              <View style={s.dailyWrap}>
+                <Text style={s.dailyTitle}>Next 3 Days</Text>
+                {daily.map(d => (
+                  <View key={d.date} style={s.dayRow}>
+                    <Text style={s.dayName}>
+                      {new Date(d.date).toLocaleDateString("en-IN", { weekday: "short" })}
+                    </Text>
+                    <Text style={s.dayEmoji}>{d.emoji}</Text>
+                    <Text style={s.dayLabel} numberOfLines={1}>{d.label}</Text>
+                    <View style={s.dayTemps}>
+                      <Text style={s.dayMax}>{d.maxTemp}°</Text>
+                      <Text style={s.dayMin}>{d.minTemp}°</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+
             <Text style={s.modalFooter}>Kokapet · Open-Meteo · WAQI</Text>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -594,28 +617,17 @@ const s = StyleSheet.create({
   hourTempNow: { color: colors.white },
   hourRain:    { fontSize: 10, color: "#60a5fa" },
   modalFooter: { textAlign: "center", fontSize: 10, color: colors.gray[300], paddingVertical: 10 },
-  searchWrap: {
-    flexDirection:   "row",
-    alignItems:      "center",
-    backgroundColor: colors.brand[900],
-    marginHorizontal: 12,
-    marginTop:       10,
-    marginBottom:     4,
-    borderRadius:    14,
-    paddingHorizontal: 14,
-    paddingVertical:  10,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
-  },
-  searchIcon: {
-    fontSize: 16,
-    marginRight: 8,
-  },
-  searchInput: {
-    flex:     1,
-    color:    colors.white,
-    fontSize: 14,
-  },
+
+  // 3-day forecast
+  dailyWrap:  { paddingHorizontal: 16, paddingVertical: 8, borderTopWidth: 1, borderTopColor: colors.gray[100] },
+  dailyTitle: { fontSize: 11, fontWeight: "700", color: colors.gray[400], textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 },
+  dayRow:     { flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.gray[50] },
+  dayName:    { width: 36, fontSize: 13, fontWeight: "700", color: colors.gray[700] },
+  dayEmoji:   { fontSize: 20, marginHorizontal: 8 },
+  dayLabel:   { flex: 1, fontSize: 13, color: colors.gray[500] },
+  dayTemps:   { flexDirection: "row", gap: 6, alignItems: "center" },
+  dayMax:     { fontSize: 14, fontWeight: "700", color: colors.gray[800] },
+  dayMin:     { fontSize: 13, color: colors.gray[400] },
   pillsScroll: {
     backgroundColor: colors.brand[950],
     paddingBottom:    8,
