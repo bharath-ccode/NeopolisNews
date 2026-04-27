@@ -341,7 +341,7 @@ export default function HomeScreen() {
           <View style={s.emptyWrap}>
             <Text style={s.emptyEmoji}>🏙️</Text>
             <Text style={s.emptyText}>
-              {search ? "No results found" : "Nothing here yet — check back soon"}
+              Nothing here yet — check back soon
             </Text>
           </View>
         ) : (
