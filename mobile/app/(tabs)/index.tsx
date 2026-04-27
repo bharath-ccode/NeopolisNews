@@ -237,93 +237,99 @@ export default function HomeScreen() {
         <View style={{ height: 32 }} />
       </ScrollView>
 
-      {/* ── Weather modal ───────────────────────────────────────────────── */}
-      <Modal visible={wxOpen} animationType="slide" transparent onRequestClose={() => setWxOpen(false)}>
-        <View style={s.modalOverlay}>
-          <TouchableOpacity style={StyleSheet.absoluteFillObject as object} onPress={() => setWxOpen(false)} />
-          <View style={s.modalPanel}>
-            <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
-              <View style={s.modalHeader}>
-                <View>
-                  <Text style={s.modalLocation}>Today · Kokapet, Hyderabad</Text>
-                  <View style={s.modalTempRow}>
-                    <Text style={s.modalTemp}>{wx.temp !== null ? `${wx.temp}°` : "—"}</Text>
-                    <Text style={s.modalEmojiLg}>{wx.emoji}</Text>
-                  </View>
-                  <Text style={s.modalLabel}>{wx.label}</Text>
+      {/* ── Weather modal — full screen, matches web layout ──────────────── */}
+      <Modal visible={wxOpen} animationType="slide" transparent={false} onRequestClose={() => setWxOpen(false)}>
+        <SafeAreaView style={s.wxScreen}>
+          {/* Dark header */}
+          <View style={s.wxHeader}>
+            <View style={s.wxHeaderTop}>
+              <Text style={s.wxLocation}>Today · Kokapet, Hyderabad</Text>
+              <TouchableOpacity onPress={() => setWxOpen(false)} style={s.wxClose}>
+                <Text style={s.wxCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={s.wxTempRow}>
+              <Text style={s.wxTemp}>{wx.temp !== null ? `${wx.temp}°` : "—"}</Text>
+              <Text style={s.wxEmojiLg}>{wx.emoji}</Text>
+            </View>
+            <Text style={s.wxLabel}>{wx.label}</Text>
+            <View style={s.wxStats}>
+              {wx.feelsLike !== null && <StatItem icon="🌡️" label={`Feels ${wx.feelsLike}°`} />}
+              {wx.humidity  !== null && <StatItem icon="💧" label={`${wx.humidity}% humidity`} />}
+              {wx.wind      !== null && <StatItem icon="💨" label={`${wx.wind} km/h`} />}
+            </View>
+          </View>
+
+          {/* Scrollable white body */}
+          <ScrollView style={s.wxBody} showsVerticalScrollIndicator={false}>
+
+            {/* Hourly */}
+            {hourly.length > 0 && (
+              <View style={s.hourlyWrap}>
+                <Text style={s.sectionLabel}>Hourly Forecast</Text>
+                <FlatList
+                  ref={hourListRef}
+                  data={hourly}
+                  keyExtractor={i => i.time}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  onLayout={() => {
+                    const idx = hourly.findIndex(h => h.isNow);
+                    if (idx > 0) hourListRef.current?.scrollToIndex({ index: idx, viewPosition: 0.5, animated: false });
+                  }}
+                  getItemLayout={(_, index) => ({ length: 60, offset: 60 * index, index })}
+                  renderItem={({ item }) => (
+                    <View style={[s.hourCell, item.isNow && s.hourCellNow]}>
+                      <Text style={[s.hourTime, item.isNow && s.hourTimeNow]}>{fmt12(item.time)}</Text>
+                      <Text style={s.hourEmoji}>{item.emoji}</Text>
+                      <Text style={[s.hourTemp, item.isNow && s.hourTempNow]}>{item.temp}°</Text>
+                      {item.rain > 0 && <Text style={[s.hourRain, item.isNow && { color: "#93c5fd" }]}>{item.rain}%</Text>}
+                    </View>
+                  )}
+                />
+              </View>
+            )}
+
+            {/* 3-day */}
+            {daily.length > 0 && (
+              <View style={s.dailyWrap}>
+                <Text style={s.sectionLabel}>Next 3 Days</Text>
+                <View style={s.dailyGrid}>
+                  {daily.map(d => (
+                    <View key={d.date} style={s.dayCard}>
+                      <Text style={s.dayName}>{new Date(d.date).toLocaleDateString("en-IN", { weekday: "short" })}</Text>
+                      <Text style={s.dayEmoji}>{d.emoji}</Text>
+                      <Text style={s.dayLabel} numberOfLines={1}>{d.label}</Text>
+                      <Text style={s.dayMax}>{d.maxTemp}°</Text>
+                      <Text style={s.dayMin}>{d.minTemp}°</Text>
+                    </View>
+                  ))}
                 </View>
-                <TouchableOpacity onPress={() => setWxOpen(false)} style={s.modalClose}>
-                  <Text style={s.modalCloseText}>✕</Text>
-                </TouchableOpacity>
               </View>
+            )}
 
-              <View style={s.modalStats}>
-                {wx.feelsLike !== null && <StatItem icon="🌡️" label={`Feels ${wx.feelsLike}°`} />}
-                {wx.humidity  !== null && <StatItem icon="💧" label={`${wx.humidity}% humidity`} />}
-                {wx.wind      !== null && <StatItem icon="💨" label={`${wx.wind} km/h`} />}
-              </View>
-
-              {wx.aqi !== null && (
-                <View style={[s.aqiRow, { backgroundColor: aqiBg(wx.aqi) + "22" }]}>
+            {/* AQI */}
+            {wx.aqi !== null && (
+              <View style={s.dailyWrap}>
+                <Text style={s.sectionLabel}>Air Quality</Text>
+                <View style={[s.aqiRow, { backgroundColor: aqiBg(wx.aqi) + "18" }]}>
                   <View style={[s.aqiTile, { backgroundColor: aqiBg(wx.aqi) }]}>
                     <Text style={s.aqiTileNum}>{wx.aqi}</Text>
                   </View>
                   <View>
-                    <Text style={s.aqiRowLabel}>Air Quality Index · Kokapet</Text>
+                    <Text style={s.aqiRowLabel}>AQI · Kokapet</Text>
                     <Text style={[s.aqiRowVal, { color: aqiBg(wx.aqi) }]}>
-                      {wx.aqi <= 50 ? "Good" : wx.aqi <= 100 ? "Moderate" : wx.aqi <= 150 ? "Sensitive Groups" : wx.aqi <= 200 ? "Unhealthy" : wx.aqi <= 300 ? "Very Unhealthy" : "Hazardous"}
+                      {wx.aqi <= 50 ? "Good" : wx.aqi <= 100 ? "Moderate" : wx.aqi <= 150 ? "Unhealthy for Sensitive Groups" : wx.aqi <= 200 ? "Unhealthy" : wx.aqi <= 300 ? "Very Unhealthy" : "Hazardous"}
                     </Text>
                   </View>
                 </View>
-              )}
+              </View>
+            )}
 
-              {hourly.length > 0 && (
-                <View style={s.hourlyWrap}>
-                  <Text style={s.hourlyTitle}>Hourly forecast</Text>
-                  <FlatList
-                    ref={hourListRef}
-                    data={hourly}
-                    keyExtractor={i => i.time}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    onLayout={() => {
-                      const idx = hourly.findIndex(h => h.isNow);
-                      if (idx > 0) hourListRef.current?.scrollToIndex({ index: idx, viewPosition: 0.5, animated: false });
-                    }}
-                    getItemLayout={(_, index) => ({ length: 60, offset: 60 * index, index })}
-                    renderItem={({ item }) => (
-                      <View style={[s.hourCell, item.isNow && s.hourCellNow]}>
-                        <Text style={[s.hourTime, item.isNow && s.hourTimeNow]}>{fmt12(item.time)}</Text>
-                        <Text style={s.hourEmoji}>{item.emoji}</Text>
-                        <Text style={[s.hourTemp, item.isNow && s.hourTempNow]}>{item.temp}°</Text>
-                        {item.rain > 0 && <Text style={[s.hourRain, item.isNow && { color: "#93c5fd" }]}>{item.rain}%</Text>}
-                      </View>
-                    )}
-                  />
-                </View>
-              )}
-
-              {daily.length > 0 && (
-                <View style={s.dailyWrap}>
-                  <Text style={s.dailyTitle}>Next 3 Days</Text>
-                  {daily.map(d => (
-                    <View key={d.date} style={s.dayRow}>
-                      <Text style={s.dayName}>{new Date(d.date).toLocaleDateString("en-IN", { weekday: "short" })}</Text>
-                      <Text style={s.dayEmoji}>{d.emoji}</Text>
-                      <Text style={s.dayLabel} numberOfLines={1}>{d.label}</Text>
-                      <View style={s.dayTemps}>
-                        <Text style={s.dayMax}>{d.maxTemp}°</Text>
-                        <Text style={s.dayMin}>{d.minTemp}°</Text>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              )}
-
-              <Text style={s.modalFooter}>Kokapet · Open-Meteo · WAQI</Text>
-            </ScrollView>
-          </View>
-        </View>
+            <Text style={s.modalFooter}>Kokapet · Open-Meteo · WAQI</Text>
+            <View style={{ height: 24 }} />
+          </ScrollView>
+        </SafeAreaView>
       </Modal>
     </SafeAreaView>
   );
@@ -498,7 +504,24 @@ const s = StyleSheet.create({
   bizName:          { fontSize: 12, fontWeight: "600", color: colors.gray[600] },
   verified:         { fontSize: 11, color: colors.brand[500], fontWeight: "700" },
 
-  // Weather modal
+  // Full-screen weather modal
+  wxScreen:     { flex: 1, backgroundColor: colors.brand[950] },
+  wxHeader:     { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20 },
+  wxHeaderTop:  { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+  wxLocation:   { color: colors.brand[300], fontSize: 11, fontWeight: "600", letterSpacing: 0.5 },
+  wxClose:      { padding: 8, backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 100 },
+  wxCloseText:  { color: colors.white, fontSize: 14 },
+  wxTempRow:    { flexDirection: "row", alignItems: "flex-end", gap: 8, marginBottom: 4 },
+  wxTemp:       { color: colors.white, fontSize: 56, fontWeight: "900", lineHeight: 60 },
+  wxEmojiLg:    { fontSize: 40, marginBottom: 4 },
+  wxLabel:      { color: "rgba(255,255,255,0.8)", fontSize: 14, marginBottom: 12 },
+  wxStats:      { flexDirection: "row", gap: 16 },
+  wxBody:       { flex: 1, backgroundColor: colors.white },
+  sectionLabel: { fontSize: 11, fontWeight: "700", color: colors.gray[400], textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 },
+  dailyGrid:    { flexDirection: "row", gap: 8 },
+  dayCard:      { flex: 1, backgroundColor: colors.gray[50], borderRadius: 12, padding: 10, alignItems: "center", gap: 4 },
+
+  // Legacy modal styles (kept for statItem/statIcon/statVal usage)
   modalOverlay:  { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
   modalPanel:    { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: "hidden", maxHeight: "85%" },
   modalHeader:   { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", padding: 20, backgroundColor: colors.brand[950] },
