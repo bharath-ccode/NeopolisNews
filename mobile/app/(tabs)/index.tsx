@@ -65,7 +65,7 @@ interface WxState {
 interface HourItem { time: string; temp: number; emoji: string; rain: number; isNow: boolean; }
 // ─────────────────────────────────────────────────────────────────────────────
 
-type FeedFilter = "All" | "Deals" | "Buzz" | "News" | "Health";
+type FeedFilter = "Deals" | "Buzz" | "News" | "Health";
 
 interface FeedItem {
   id:      string;
@@ -80,7 +80,7 @@ interface FeedItem {
   meta?:   string;
 }
 
-const FILTER_PILLS: FeedFilter[] = ["All", "Deals", "Buzz", "News", "Health"];
+const FILTER_PILLS: FeedFilter[] = ["Deals", "Buzz", "News", "Health"];
 
 const KIND_META = {
   deal:     { label: "DEAL",     bg: colors.orange[600]   },
@@ -99,7 +99,7 @@ function timeAgo(dateStr: string) {
 
 export default function HomeScreen() {
   const { user } = useAuth();
-  const [filter, setFilter]       = useState<FeedFilter>("All");
+  const [filter, setFilter]       = useState<FeedFilter | null>(null);
   const [search, setSearch]       = useState("");
   const [feed, setFeed]           = useState<FeedItem[]>([]);
   const [loading, setLoading]     = useState(true);
@@ -259,6 +259,7 @@ export default function HomeScreen() {
   }
 
   const filtered = feed.filter((item) => {
+    if (!filter)             return true;
     if (filter === "Deals")  return item.kind === "deal";
     if (filter === "Buzz")   return item.kind === "buzz";
     if (filter === "News")   return item.kind === "news";
@@ -310,7 +311,7 @@ export default function HomeScreen() {
         {FILTER_PILLS.map((f) => (
           <TouchableOpacity
             key={f}
-            onPress={() => setFilter(f)}
+            onPress={() => setFilter(filter === f ? null : f)}
             style={[s.pill, filter === f && s.pillActive]}
             activeOpacity={0.7}
           >
@@ -620,9 +621,10 @@ const s = StyleSheet.create({
     paddingBottom:    8,
   },
   pillsContent: {
+    flexDirection:     "row",
+    alignItems:        "center",
     paddingHorizontal: 12,
     paddingVertical:    8,
-    gap: 8,
   },
   pill: {
     paddingHorizontal: 16,
@@ -631,6 +633,7 @@ const s = StyleSheet.create({
     backgroundColor:  "rgba(255,255,255,0.08)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)",
+    marginRight: 8,
   },
   pillActive: {
     backgroundColor: colors.brand[500],
