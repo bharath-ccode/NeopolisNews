@@ -5,6 +5,7 @@ import {
   Modal, FlatList,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { colors } from "@/lib/colors";
 import { useAuth } from "@/context/AuthContext";
 
@@ -52,44 +53,6 @@ function fmt12(iso: string) {
   if (h === 12) return "12 PM";
   return `${h - 12} PM`;
 }
-
-interface WxState {
-  temp: number | null;
-  feelsLike: number | null;
-  emoji: string;
-  label: string;
-  humidity: number | null;
-  wind: number | null;
-  aqi: number | null;
-}
-interface HourItem { time: string; temp: number; emoji: string; rain: number; isNow: boolean; }
-interface DayItem  { date: string; maxTemp: number; minTemp: number; emoji: string; label: string; }
-// ─────────────────────────────────────────────────────────────────────────────
-
-type FeedFilter = "Deals" | "Buzz" | "News" | "Health";
-
-interface FeedItem {
-  id:      string;
-  kind:    "deal" | "buzz" | "news" | "wellness";
-  title:   string;
-  sub:     string;
-  badge:   string;
-  badgeColor: string;
-  image?:  string;
-  biz?:    string;
-  bizLogo?:string;
-  meta?:   string;
-}
-
-const FILTER_PILLS: FeedFilter[] = ["Deals", "Buzz", "News", "Health"];
-
-const KIND_META = {
-  deal:     { label: "DEAL",     bg: colors.orange[600]   },
-  buzz:     { label: "BUZZ",     bg: colors.brand[600]    },
-  news:     { label: "NEWS",     bg: colors.gray[700]     },
-  wellness: { label: "WELLNESS", bg: "#7c3aed"            },
-};
-
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
   const h = Math.floor(diff / 3600000);
@@ -98,114 +61,78 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
+interface WxState {
+  temp: number | null; feelsLike: number | null;
+  emoji: string; label: string;
+  humidity: number | null; wind: number | null; aqi: number | null;
+}
+interface HourItem { time: string; temp: number; emoji: string; rain: number; isNow: boolean; }
+interface DayItem  { date: string; maxTemp: number; minTemp: number; emoji: string; label: string; }
+
+interface Deal {
+  id: string; name: string; description: string | null;
+  discount_percent: number | null; discount_label: string | null;
+  end_date: string; image_url: string | null;
+  businesses: { name: string; logo: string | null; verified: boolean } | null;
+}
+interface Announcement {
+  id: string; title: string; body: string; type: string;
+  image_url: string | null; created_at: string;
+  businesses: { name: string; logo: string | null } | null;
+}
+interface NewsItem {
+  id: string; title: string; excerpt: string | null;
+  date: string | null; tag: string | null; tag_color: string | null; image: string | null;
+}
+
+const ANNOUNCE_COLOR: Record<string, string> = {
+  opening: colors.green[600], hiring: colors.purple[600],
+  new_arrival: "#2563eb", notice: colors.amber[600], community: "#db2777",
+};
+const ANNOUNCE_LABEL: Record<string, string> = {
+  opening: "OPENING", hiring: "HIRING", new_arrival: "NEW", notice: "NOTICE", community: "COMMUNITY",
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function HomeScreen() {
-  const { user } = useAuth();
-  const [filter, setFilter]       = useState<FeedFilter | null>(null);
-  const [feed, setFeed]           = useState<FeedItem[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [wx, setWx]               = useState<WxState>({ temp: null, feelsLike: null, emoji: "🌤️", label: "Kokapet", humidity: null, wind: null, aqi: null });
-  const [hourly, setHourly]       = useState<HourItem[]>([]);
-  const [daily, setDaily]         = useState<DayItem[]>([]);
-  const [wxOpen, setWxOpen]       = useState(false);
-  const hourListRef               = useRef<FlatList<HourItem>>(null);
+  const { user }  = useAuth();
+  const router    = useRouter();
+
+  const [deals, setDeals]                 = useState<Deal[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [news, setNews]                   = useState<NewsItem[]>([]);
+  const [loading, setLoading]             = useState(true);
+  const [refreshing, setRefreshing]       = useState(false);
+
+  const [wx, setWx]       = useState<WxState>({ temp: null, feelsLike: null, emoji: "🌤️", label: "Kokapet", humidity: null, wind: null, aqi: null });
+  const [hourly, setHourly] = useState<HourItem[]>([]);
+  const [daily, setDaily]   = useState<DayItem[]>([]);
+  const [wxOpen, setWxOpen] = useState(false);
+  const hourListRef         = useRef<FlatList<HourItem>>(null);
 
   const firstName = user?.user_metadata?.name?.split(" ")[0] ?? "there";
 
-  const loadFeed = useCallback(async () => {
+  const loadData = useCallback(async () => {
     try {
       const [dealsRes, buzzRes, newsRes] = await Promise.all([
-        fetch(`${API}/api/deals`).then((r) => r.json()),
-        fetch(`${API}/api/announcements`).then((r) => r.json()),
-        fetch(`${API}/api/news?limit=10`).then((r) => r.json()),
+        fetch(`${API}/api/deals`).then(r => r.json()),
+        fetch(`${API}/api/announcements`).then(r => r.json()),
+        fetch(`${API}/api/news?limit=5`).then(r => r.json()),
       ]);
-
-      const items: FeedItem[] = [];
-
-      // Deals
-      (Array.isArray(dealsRes) ? dealsRes : []).slice(0, 6).forEach((d: any) => {
-        items.push({
-          id:        `deal-${d.id}`,
-          kind:      "deal",
-          title:     d.name,
-          sub:       d.description ?? "",
-          badge:     d.discount_percent ? `${d.discount_percent}% OFF` : d.discount_label ?? "Offer",
-          badgeColor: colors.orange[600],
-          image:     d.image_url ?? undefined,
-          biz:       d.businesses?.name,
-          bizLogo:   d.businesses?.logo ?? undefined,
-          meta:      `Until ${new Date(d.end_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`,
-        });
-      });
-
-      // Buzz / announcements
-      const TYPE_COLORS: Record<string, string> = {
-        opening: colors.green[600], hiring: colors.purple[600],
-        new_arrival: "#2563eb",     notice: colors.amber[600],
-        community: "#db2777",
-      };
-      const TYPE_LABELS: Record<string, string> = {
-        opening: "OPENING", hiring: "HIRING", new_arrival: "NEW",
-        notice: "NOTICE",  community: "COMMUNITY",
-      };
-      (Array.isArray(buzzRes) ? buzzRes : []).slice(0, 6).forEach((b: any) => {
-        items.push({
-          id:        `buzz-${b.id}`,
-          kind:      "buzz",
-          title:     b.title,
-          sub:       b.body,
-          badge:     TYPE_LABELS[b.type] ?? "BUZZ",
-          badgeColor: TYPE_COLORS[b.type] ?? colors.brand[600],
-          image:     b.image_url ?? undefined,
-          biz:       b.businesses?.name,
-          bizLogo:   b.businesses?.logo ?? undefined,
-          meta:      timeAgo(b.created_at),
-        });
-      });
-
-      // News articles
+      setDeals(Array.isArray(dealsRes) ? dealsRes.slice(0, 2) : []);
+      setAnnouncements(Array.isArray(buzzRes) ? buzzRes.slice(0, 2) : []);
       const articles = Array.isArray(newsRes) ? newsRes : (newsRes?.articles ?? []);
-      articles.slice(0, 6).forEach((a: any) => {
-        items.push({
-          id:        `news-${a.id}`,
-          kind:      "news",
-          title:     a.title,
-          sub:       a.excerpt ?? "",
-          badge:     a.tag ?? "NEWS",
-          badgeColor: colors.gray[700],
-          image:     a.image ?? undefined,
-          meta:      a.date ? new Date(a.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "",
-        });
-      });
-
-      // Sort: interleave by type for variety
-      const sorted = items.sort((a, b) => {
-        const order = { deal: 0, buzz: 1, wellness: 2, news: 3 };
-        return (order[a.kind] ?? 3) - (order[b.kind] ?? 3);
-      });
-
-      // Interleave more naturally
-      const deals   = sorted.filter((i) => i.kind === "deal");
-      const buzzes  = sorted.filter((i) => i.kind === "buzz");
-      const news    = sorted.filter((i) => i.kind === "news");
-      const mixed: FeedItem[] = [];
-      const maxLen = Math.max(deals.length, buzzes.length, news.length);
-      for (let i = 0; i < maxLen; i++) {
-        if (deals[i])  mixed.push(deals[i]);
-        if (buzzes[i]) mixed.push(buzzes[i]);
-        if (news[i])   mixed.push(news[i]);
-      }
-      setFeed(mixed);
+      setNews(articles.slice(0, 2));
     } catch {
-      // network unavailable in this env — show placeholder feed
-      setFeed([]);
+      // keep empty arrays
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   }, []);
 
-  useEffect(() => { loadFeed(); }, [loadFeed]);
+  useEffect(() => { loadData(); }, [loadData]);
 
   useEffect(() => {
     const wxUrl =
@@ -219,69 +146,43 @@ export default function HomeScreen() {
     fetch(wxUrl).then(r => r.json()).then(j => {
       if (!j?.current) return;
       const nowH = new Date().getHours();
-      const code  = j.current.weather_code as number;
+      const code = j.current.weather_code as number;
       setWx({
-        temp:      Math.round(j.current.temperature_2m),
+        temp: Math.round(j.current.temperature_2m),
         feelsLike: Math.round(j.current.apparent_temperature),
-        emoji:     wEmoji(code, nowH),
-        label:     wLabel(code),
-        humidity:  j.current.relative_humidity_2m,
-        wind:      Math.round(j.current.wind_speed_10m),
-        aqi:       null,
+        emoji: wEmoji(code, nowH), label: wLabel(code),
+        humidity: j.current.relative_humidity_2m,
+        wind: Math.round(j.current.wind_speed_10m), aqi: null,
       });
       if (j?.hourly) {
         const today = new Date().toISOString().split("T")[0];
-        const items: HourItem[] = (j.hourly.time as string[])
+        setHourly((j.hourly.time as string[])
           .filter((t: string) => t.startsWith(today))
           .map((t: string, i: number) => {
             const h = parseInt(t.split("T")[1], 10);
-            return {
-              time:  t,
-              temp:  Math.round(j.hourly.temperature_2m[i]),
+            return { time: t, temp: Math.round(j.hourly.temperature_2m[i]),
               emoji: wEmoji(j.hourly.weather_code[i] as number, h),
-              rain:  j.hourly.precipitation_probability[i] as number,
-              isNow: h === nowH,
-            };
-          });
-        setHourly(items);
+              rain: j.hourly.precipitation_probability[i] as number, isNow: h === nowH };
+          }));
       }
       if (j?.daily?.time) {
         const today = new Date().toISOString().split("T")[0];
-        const items: DayItem[] = (j.daily.time as string[])
+        setDaily((j.daily.time as string[])
           .map((date: string, i: number) => ({
-            date,
-            maxTemp: Math.round(j.daily.temperature_2m_max[i]),
+            date, maxTemp: Math.round(j.daily.temperature_2m_max[i]),
             minTemp: Math.round(j.daily.temperature_2m_min[i]),
-            emoji:   wEmoji(j.daily.weather_code[i] as number, 12),
-            label:   wLabel(j.daily.weather_code[i] as number),
+            emoji: wEmoji(j.daily.weather_code[i] as number, 12),
+            label: wLabel(j.daily.weather_code[i] as number),
           }))
-          .filter(d => d.date > today)
-          .slice(0, 3);
-        setDaily(items);
+          .filter(d => d.date > today).slice(0, 3));
       }
     }).catch(() => {});
 
     fetch("https://api.waqi.info/feed/geo:17.4126;78.3338/?token=demo")
       .then(r => r.json())
-      .then(j => {
-        if (j?.status === "ok" && j?.data?.aqi != null)
-          setWx(prev => ({ ...prev, aqi: Number(j.data.aqi) }));
-      }).catch(() => {});
+      .then(j => { if (j?.status === "ok" && j?.data?.aqi != null) setWx(prev => ({ ...prev, aqi: Number(j.data.aqi) })); })
+      .catch(() => {});
   }, []);
-
-  function onRefresh() {
-    setRefreshing(true);
-    loadFeed();
-  }
-
-  const filtered = feed.filter((item) => {
-    if (!filter)             return true;
-    if (filter === "Deals")  return item.kind === "deal";
-    if (filter === "Buzz")   return item.kind === "buzz";
-    if (filter === "News")   return item.kind === "news";
-    if (filter === "Health") return item.kind === "wellness";
-    return true;
-  });
 
   return (
     <SafeAreaView style={s.root}>
@@ -302,162 +203,124 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Filter pills */}
+      {/* Sections */}
       <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={s.pillsScroll}
-        contentContainerStyle={s.pillsContent}
-      >
-        {FILTER_PILLS.map((f) => (
-          <TouchableOpacity
-            key={f}
-            onPress={() => setFilter(filter === f ? null : f)}
-            style={[s.pill, filter === f && s.pillActive]}
-            activeOpacity={0.7}
-          >
-            <Text style={[s.pillText, filter === f && s.pillTextActive]}>{f}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Feed */}
-      <ScrollView
-        style={s.feed}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.brand[300]}
-          />
-        }
+        contentContainerStyle={s.scrollContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadData(); }} tintColor={colors.brand[300]} />}
       >
         {loading ? (
           <View style={s.loadingWrap}>
-            <ActivityIndicator color={colors.brand[300]} size="large" />
-          </View>
-        ) : filtered.length === 0 ? (
-          <View style={s.emptyWrap}>
-            <Text style={s.emptyEmoji}>🏙️</Text>
-            <Text style={s.emptyText}>
-              Nothing here yet — check back soon
-            </Text>
+            <ActivityIndicator color={colors.brand[400]} size="large" />
           </View>
         ) : (
-          filtered.map((item) => (
-            <FeedCard key={item.id} item={item} />
-          ))
+          <>
+            {/* ── Deals ───────────────────────────────────────────────── */}
+            <SectionHeader title="🛍️ Local Deals" onSeeAll={() => router.push("/(tabs)/deals")} />
+            {deals.length === 0 ? (
+              <EmptyRow text="No active deals right now" />
+            ) : deals.map(d => <DealCard key={d.id} deal={d} />)}
+
+            {/* ── Announcements ───────────────────────────────────────── */}
+            <SectionHeader title="📢 Announcements" />
+            {announcements.length === 0 ? (
+              <EmptyRow text="No announcements yet" />
+            ) : announcements.map(a => <AnnouncementCard key={a.id} item={a} />)}
+
+            {/* ── News ────────────────────────────────────────────────── */}
+            <SectionHeader title="📰 News" />
+            {news.length === 0 ? (
+              <EmptyRow text="No news articles yet" />
+            ) : news.map(n => <NewsCard key={n.id} item={n} />)}
+          </>
         )}
-        <View style={{ height: 24 }} />
+        <View style={{ height: 32 }} />
       </ScrollView>
 
-      {/* Weather detail modal */}
+      {/* ── Weather modal ───────────────────────────────────────────────── */}
       <Modal visible={wxOpen} animationType="slide" transparent onRequestClose={() => setWxOpen(false)}>
         <View style={s.modalOverlay}>
           <TouchableOpacity style={StyleSheet.absoluteFillObject as object} onPress={() => setWxOpen(false)} />
           <View style={s.modalPanel}>
             <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
-            {/* Header */}
-            <View style={s.modalHeader}>
-              <View>
-                <Text style={s.modalLocation}>Today · Kokapet, Hyderabad</Text>
-                <View style={s.modalTempRow}>
-                  <Text style={s.modalTemp}>{wx.temp !== null ? `${wx.temp}°` : "—"}</Text>
-                  <Text style={s.modalEmojiLg}>{wx.emoji}</Text>
-                </View>
-                <Text style={s.modalLabel}>{wx.label}</Text>
-              </View>
-              <TouchableOpacity onPress={() => setWxOpen(false)} style={s.modalClose}>
-                <Text style={s.modalCloseText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Stats */}
-            <View style={s.modalStats}>
-              {wx.feelsLike !== null && (
-                <View style={s.statItem}>
-                  <Text style={s.statIcon}>🌡️</Text>
-                  <Text style={s.statVal}>Feels {wx.feelsLike}°</Text>
-                </View>
-              )}
-              {wx.humidity !== null && (
-                <View style={s.statItem}>
-                  <Text style={s.statIcon}>💧</Text>
-                  <Text style={s.statVal}>{wx.humidity}% humidity</Text>
-                </View>
-              )}
-              {wx.wind !== null && (
-                <View style={s.statItem}>
-                  <Text style={s.statIcon}>💨</Text>
-                  <Text style={s.statVal}>{wx.wind} km/h</Text>
-                </View>
-              )}
-            </View>
-
-            {/* AQI */}
-            {wx.aqi !== null && (
-              <View style={[s.aqiRow, { backgroundColor: aqiBg(wx.aqi) + "22" }]}>
-                <View style={[s.aqiTile, { backgroundColor: aqiBg(wx.aqi) }]}>
-                  <Text style={s.aqiTileNum}>{wx.aqi}</Text>
-                </View>
+              <View style={s.modalHeader}>
                 <View>
-                  <Text style={s.aqiRowLabel}>Air Quality Index · Kokapet</Text>
-                  <Text style={[s.aqiRowVal, { color: aqiBg(wx.aqi) }]}>
-                    {wx.aqi <= 50 ? "Good" : wx.aqi <= 100 ? "Moderate" : wx.aqi <= 150 ? "Sensitive Groups" : wx.aqi <= 200 ? "Unhealthy" : wx.aqi <= 300 ? "Very Unhealthy" : "Hazardous"}
-                  </Text>
-                </View>
-              </View>
-            )}
-
-            {/* Hourly */}
-            {hourly.length > 0 && (
-              <View style={s.hourlyWrap}>
-                <Text style={s.hourlyTitle}>Hourly forecast</Text>
-                <FlatList
-                  ref={hourListRef}
-                  data={hourly}
-                  keyExtractor={i => i.time}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  onLayout={() => {
-                    const idx = hourly.findIndex(h => h.isNow);
-                    if (idx > 0) hourListRef.current?.scrollToIndex({ index: idx, viewPosition: 0.5, animated: false });
-                  }}
-                  getItemLayout={(_, index) => ({ length: 60, offset: 60 * index, index })}
-                  renderItem={({ item }) => (
-                    <View style={[s.hourCell, item.isNow && s.hourCellNow]}>
-                      <Text style={[s.hourTime, item.isNow && s.hourTimeNow]}>{fmt12(item.time)}</Text>
-                      <Text style={s.hourEmoji}>{item.emoji}</Text>
-                      <Text style={[s.hourTemp, item.isNow && s.hourTempNow]}>{item.temp}°</Text>
-                      {item.rain > 0 && <Text style={[s.hourRain, item.isNow && { color: "#93c5fd" }]}>{item.rain}%</Text>}
-                    </View>
-                  )}
-                />
-              </View>
-            )}
-
-            {/* 3-day forecast */}
-            {daily.length > 0 && (
-              <View style={s.dailyWrap}>
-                <Text style={s.dailyTitle}>Next 3 Days</Text>
-                {daily.map(d => (
-                  <View key={d.date} style={s.dayRow}>
-                    <Text style={s.dayName}>
-                      {new Date(d.date).toLocaleDateString("en-IN", { weekday: "short" })}
-                    </Text>
-                    <Text style={s.dayEmoji}>{d.emoji}</Text>
-                    <Text style={s.dayLabel} numberOfLines={1}>{d.label}</Text>
-                    <View style={s.dayTemps}>
-                      <Text style={s.dayMax}>{d.maxTemp}°</Text>
-                      <Text style={s.dayMin}>{d.minTemp}°</Text>
-                    </View>
+                  <Text style={s.modalLocation}>Today · Kokapet, Hyderabad</Text>
+                  <View style={s.modalTempRow}>
+                    <Text style={s.modalTemp}>{wx.temp !== null ? `${wx.temp}°` : "—"}</Text>
+                    <Text style={s.modalEmojiLg}>{wx.emoji}</Text>
                   </View>
-                ))}
+                  <Text style={s.modalLabel}>{wx.label}</Text>
+                </View>
+                <TouchableOpacity onPress={() => setWxOpen(false)} style={s.modalClose}>
+                  <Text style={s.modalCloseText}>✕</Text>
+                </TouchableOpacity>
               </View>
-            )}
 
-            <Text style={s.modalFooter}>Kokapet · Open-Meteo · WAQI</Text>
+              <View style={s.modalStats}>
+                {wx.feelsLike !== null && <StatItem icon="🌡️" label={`Feels ${wx.feelsLike}°`} />}
+                {wx.humidity  !== null && <StatItem icon="💧" label={`${wx.humidity}% humidity`} />}
+                {wx.wind      !== null && <StatItem icon="💨" label={`${wx.wind} km/h`} />}
+              </View>
+
+              {wx.aqi !== null && (
+                <View style={[s.aqiRow, { backgroundColor: aqiBg(wx.aqi) + "22" }]}>
+                  <View style={[s.aqiTile, { backgroundColor: aqiBg(wx.aqi) }]}>
+                    <Text style={s.aqiTileNum}>{wx.aqi}</Text>
+                  </View>
+                  <View>
+                    <Text style={s.aqiRowLabel}>Air Quality Index · Kokapet</Text>
+                    <Text style={[s.aqiRowVal, { color: aqiBg(wx.aqi) }]}>
+                      {wx.aqi <= 50 ? "Good" : wx.aqi <= 100 ? "Moderate" : wx.aqi <= 150 ? "Sensitive Groups" : wx.aqi <= 200 ? "Unhealthy" : wx.aqi <= 300 ? "Very Unhealthy" : "Hazardous"}
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {hourly.length > 0 && (
+                <View style={s.hourlyWrap}>
+                  <Text style={s.hourlyTitle}>Hourly forecast</Text>
+                  <FlatList
+                    ref={hourListRef}
+                    data={hourly}
+                    keyExtractor={i => i.time}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    onLayout={() => {
+                      const idx = hourly.findIndex(h => h.isNow);
+                      if (idx > 0) hourListRef.current?.scrollToIndex({ index: idx, viewPosition: 0.5, animated: false });
+                    }}
+                    getItemLayout={(_, index) => ({ length: 60, offset: 60 * index, index })}
+                    renderItem={({ item }) => (
+                      <View style={[s.hourCell, item.isNow && s.hourCellNow]}>
+                        <Text style={[s.hourTime, item.isNow && s.hourTimeNow]}>{fmt12(item.time)}</Text>
+                        <Text style={s.hourEmoji}>{item.emoji}</Text>
+                        <Text style={[s.hourTemp, item.isNow && s.hourTempNow]}>{item.temp}°</Text>
+                        {item.rain > 0 && <Text style={[s.hourRain, item.isNow && { color: "#93c5fd" }]}>{item.rain}%</Text>}
+                      </View>
+                    )}
+                  />
+                </View>
+              )}
+
+              {daily.length > 0 && (
+                <View style={s.dailyWrap}>
+                  <Text style={s.dailyTitle}>Next 3 Days</Text>
+                  {daily.map(d => (
+                    <View key={d.date} style={s.dayRow}>
+                      <Text style={s.dayName}>{new Date(d.date).toLocaleDateString("en-IN", { weekday: "short" })}</Text>
+                      <Text style={s.dayEmoji}>{d.emoji}</Text>
+                      <Text style={s.dayLabel} numberOfLines={1}>{d.label}</Text>
+                      <View style={s.dayTemps}>
+                        <Text style={s.dayMax}>{d.maxTemp}°</Text>
+                        <Text style={s.dayMin}>{d.minTemp}°</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              <Text style={s.modalFooter}>Kokapet · Open-Meteo · WAQI</Text>
             </ScrollView>
           </View>
         </View>
@@ -466,43 +329,57 @@ export default function HomeScreen() {
   );
 }
 
-function FeedCard({ item }: { item: FeedItem }) {
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll?: () => void }) {
   return (
-    <TouchableOpacity style={s.card} activeOpacity={0.75}>
-      {item.image && (
-        <Image
-          source={{ uri: item.image }}
-          style={s.cardImage}
-          resizeMode="cover"
-        />
+    <View style={s.sectionHeader}>
+      <Text style={s.sectionTitle}>{title}</Text>
+      {onSeeAll && (
+        <TouchableOpacity onPress={onSeeAll} activeOpacity={0.7}>
+          <Text style={s.seeAll}>See all →</Text>
+        </TouchableOpacity>
       )}
+    </View>
+  );
+}
+
+function EmptyRow({ text }: { text: string }) {
+  return (
+    <View style={s.emptyRow}>
+      <Text style={s.emptyRowText}>{text}</Text>
+    </View>
+  );
+}
+
+function StatItem({ icon, label }: { icon: string; label: string }) {
+  return (
+    <View style={s.statItem}>
+      <Text style={s.statIcon}>{icon}</Text>
+      <Text style={s.statVal}>{label}</Text>
+    </View>
+  );
+}
+
+function DealCard({ deal }: { deal: Deal }) {
+  const badge = deal.discount_percent ? `${deal.discount_percent}% OFF` : (deal.discount_label ?? "Offer");
+  return (
+    <TouchableOpacity style={s.card} activeOpacity={0.8}>
+      {deal.image_url && <Image source={{ uri: deal.image_url }} style={s.cardImg} resizeMode="cover" />}
       <View style={s.cardBody}>
-        {/* Badge row */}
-        <View style={s.cardBadgeRow}>
-          <View style={[s.cardBadge, { backgroundColor: item.badgeColor }]}>
-            <Text style={s.cardBadgeText}>{item.badge}</Text>
+        <View style={s.cardTopRow}>
+          <View style={[s.badge, { backgroundColor: colors.orange[600] }]}>
+            <Text style={s.badgeText}>{badge}</Text>
           </View>
-          {item.meta ? (
-            <Text style={s.cardMeta}>{item.meta}</Text>
-          ) : null}
+          <Text style={s.cardMeta}>Until {new Date(deal.end_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</Text>
         </View>
-
-        <Text style={s.cardTitle} numberOfLines={2}>{item.title}</Text>
-        {item.sub ? (
-          <Text style={s.cardSub} numberOfLines={2}>{item.sub}</Text>
-        ) : null}
-
-        {/* Business row */}
-        {item.biz && (
+        <Text style={s.cardTitle} numberOfLines={2}>{deal.name}</Text>
+        {deal.description ? <Text style={s.cardSub} numberOfLines={2}>{deal.description}</Text> : null}
+        {deal.businesses && (
           <View style={s.bizRow}>
-            {item.bizLogo ? (
-              <Image source={{ uri: item.bizLogo }} style={s.bizLogo} />
-            ) : (
-              <View style={s.bizLogoPlaceholder}>
-                <Text style={{ fontSize: 10 }}>🏪</Text>
-              </View>
-            )}
-            <Text style={s.bizName}>{item.biz}</Text>
+            <BizLogo logo={deal.businesses.logo} />
+            <Text style={s.bizName}>{deal.businesses.name}</Text>
+            {deal.businesses.verified && <Text style={s.verified}>✓</Text>}
           </View>
         )}
       </View>
@@ -510,66 +387,121 @@ function FeedCard({ item }: { item: FeedItem }) {
   );
 }
 
+function AnnouncementCard({ item }: { item: Announcement }) {
+  const bg    = ANNOUNCE_COLOR[item.type] ?? colors.brand[600];
+  const label = ANNOUNCE_LABEL[item.type] ?? "BUZZ";
+  return (
+    <TouchableOpacity style={s.card} activeOpacity={0.8}>
+      {item.image_url && <Image source={{ uri: item.image_url }} style={s.cardImg} resizeMode="cover" />}
+      <View style={s.cardBody}>
+        <View style={s.cardTopRow}>
+          <View style={[s.badge, { backgroundColor: bg }]}>
+            <Text style={s.badgeText}>{label}</Text>
+          </View>
+          <Text style={s.cardMeta}>{timeAgo(item.created_at)}</Text>
+        </View>
+        <Text style={s.cardTitle} numberOfLines={2}>{item.title}</Text>
+        <Text style={s.cardSub} numberOfLines={2}>{item.body}</Text>
+        {item.businesses && (
+          <View style={s.bizRow}>
+            <BizLogo logo={item.businesses.logo} />
+            <Text style={s.bizName}>{item.businesses.name}</Text>
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+function NewsCard({ item }: { item: NewsItem }) {
+  return (
+    <TouchableOpacity style={s.card} activeOpacity={0.8}>
+      {item.image && <Image source={{ uri: item.image }} style={s.cardImg} resizeMode="cover" />}
+      <View style={s.cardBody}>
+        <View style={s.cardTopRow}>
+          {item.tag && (
+            <View style={[s.badge, { backgroundColor: item.tag_color ?? colors.gray[700] }]}>
+              <Text style={s.badgeText}>{item.tag}</Text>
+            </View>
+          )}
+          {item.date && <Text style={s.cardMeta}>{new Date(item.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</Text>}
+        </View>
+        <Text style={s.cardTitle} numberOfLines={2}>{item.title}</Text>
+        {item.excerpt ? <Text style={s.cardSub} numberOfLines={2}>{item.excerpt}</Text> : null}
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+function BizLogo({ logo }: { logo: string | null }) {
+  return logo ? (
+    <Image source={{ uri: logo }} style={s.bizLogo} resizeMode="cover" />
+  ) : (
+    <View style={s.bizLogoPlaceholder}><Text style={{ fontSize: 10 }}>🏪</Text></View>
+  );
+}
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.gray[50],
-  },
+  root:          { flex: 1, backgroundColor: colors.gray[50] },
+  scrollContent: { paddingBottom: 16 },
+
   topBar: {
-    flexDirection:   "row",
-    justifyContent:  "space-between",
-    alignItems:      "center",
-    paddingHorizontal: 16,
-    paddingVertical:  12,
-    backgroundColor: colors.brand[950],
+    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+    paddingHorizontal: 16, paddingVertical: 12, backgroundColor: colors.brand[950],
   },
-  greeting: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  location: {
-    color: colors.brand[400],
-    fontSize: 12,
-    marginTop: 2,
-  },
+  greeting: { color: colors.white, fontSize: 16, fontWeight: "700" },
+  location: { color: colors.brand[400], fontSize: 12, marginTop: 2 },
+
   weatherBadge: {
-    flexDirection:   "row",
-    alignItems:      "center",
-    gap:             6,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    borderRadius:    100,
-    paddingHorizontal: 10,
-    paddingVertical:   5,
+    flexDirection: "row", alignItems: "center", gap: 6,
+    backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 100,
+    paddingHorizontal: 10, paddingVertical: 5,
   },
   weatherEmoji: { fontSize: 14 },
   weatherTemp:  { color: colors.white, fontSize: 13, fontWeight: "700" },
-  aqiBadge: {
-    borderRadius: 100,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  aqiText: { color: colors.white, fontSize: 10, fontWeight: "800" },
+  aqiBadge:     { borderRadius: 100, paddingHorizontal: 6, paddingVertical: 2 },
+  aqiText:      { color: colors.white, fontSize: 10, fontWeight: "800" },
 
-  // Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
+  loadingWrap: { paddingTop: 80, alignItems: "center" },
+
+  // Sections
+  sectionHeader: {
+    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+    paddingHorizontal: 16, paddingTop: 20, paddingBottom: 10,
   },
-  modalPanel: {
-    backgroundColor: colors.white,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    overflow: "hidden",
+  sectionTitle: { fontSize: 16, fontWeight: "800", color: colors.gray[900] },
+  seeAll:       { fontSize: 13, fontWeight: "600", color: colors.brand[500] },
+
+  emptyRow: { marginHorizontal: 16, marginBottom: 4, padding: 14, backgroundColor: colors.white, borderRadius: 12 },
+  emptyRowText: { fontSize: 13, color: colors.gray[400], textAlign: "center" },
+
+  // Cards
+  card: {
+    backgroundColor: colors.white, borderRadius: 16,
+    marginHorizontal: 16, marginBottom: 10, overflow: "hidden",
+    shadowColor: colors.black, shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07, shadowRadius: 6, elevation: 3,
   },
-  modalHeader: {
-    flexDirection:  "row",
-    justifyContent: "space-between",
-    alignItems:     "flex-start",
-    padding: 20,
-    backgroundColor: colors.brand[950],
-  },
+  cardImg:    { width: "100%", height: 160 },
+  cardBody:   { padding: 12 },
+  cardTopRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 7 },
+  badge:      { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  badgeText:  { color: colors.white, fontSize: 10, fontWeight: "800", letterSpacing: 0.3 },
+  cardMeta:   { fontSize: 11, color: colors.gray[400] },
+  cardTitle:  { fontSize: 15, fontWeight: "700", color: colors.gray[900], lineHeight: 21, marginBottom: 3 },
+  cardSub:    { fontSize: 13, color: colors.gray[500], lineHeight: 18 },
+
+  bizRow:           { flexDirection: "row", alignItems: "center", gap: 7, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.gray[100] },
+  bizLogo:          { width: 22, height: 22, borderRadius: 6 },
+  bizLogoPlaceholder:{ width: 22, height: 22, borderRadius: 6, backgroundColor: colors.gray[100], alignItems: "center", justifyContent: "center" },
+  bizName:          { fontSize: 12, fontWeight: "600", color: colors.gray[600] },
+  verified:         { fontSize: 11, color: colors.brand[500], fontWeight: "700" },
+
+  // Weather modal
+  modalOverlay:  { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
+  modalPanel:    { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: "hidden", maxHeight: "85%" },
+  modalHeader:   { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", padding: 20, backgroundColor: colors.brand[950] },
   modalLocation: { color: colors.brand[300], fontSize: 11, fontWeight: "600", marginBottom: 4, letterSpacing: 0.5 },
   modalTempRow:  { flexDirection: "row", alignItems: "flex-end", gap: 8 },
   modalTemp:     { color: colors.white, fontSize: 52, fontWeight: "900", lineHeight: 56 },
@@ -577,38 +509,20 @@ const s = StyleSheet.create({
   modalLabel:    { color: "rgba(255,255,255,0.8)", fontSize: 14, marginTop: 2 },
   modalClose:    { padding: 8, backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 100 },
   modalCloseText:{ color: colors.white, fontSize: 14 },
-  modalStats: {
-    flexDirection: "row",
-    gap: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: colors.brand[900],
-  },
-  statItem:  { flexDirection: "row", alignItems: "center", gap: 4 },
-  statIcon:  { fontSize: 12 },
-  statVal:   { color: "rgba(255,255,255,0.7)", fontSize: 12 },
-  aqiRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    margin: 12,
-    padding: 12,
-    borderRadius: 14,
-  },
-  aqiTile: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  aqiTileNum:  { color: colors.white, fontSize: 16, fontWeight: "900" },
-  aqiRowLabel: { fontSize: 11, color: colors.gray[500] },
-  aqiRowVal:   { fontSize: 13, fontWeight: "700" },
+  modalStats:    { flexDirection: "row", gap: 16, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: colors.brand[900] },
+  statItem:      { flexDirection: "row", alignItems: "center", gap: 4 },
+  statIcon:      { fontSize: 12 },
+  statVal:       { color: "rgba(255,255,255,0.7)", fontSize: 12 },
+
+  aqiRow:     { flexDirection: "row", alignItems: "center", gap: 12, margin: 12, padding: 12, borderRadius: 14 },
+  aqiTile:    { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  aqiTileNum: { color: colors.white, fontSize: 16, fontWeight: "900" },
+  aqiRowLabel:{ fontSize: 11, color: colors.gray[500] },
+  aqiRowVal:  { fontSize: 13, fontWeight: "700" },
+
   hourlyWrap:  { paddingHorizontal: 12, paddingBottom: 4 },
-  hourlyTitle: { fontSize: 11, fontWeight: "700", color: colors.gray[400], letterSpacing: 0.5, marginBottom: 8, textTransform: "uppercase" },
-  hourCell: {
-    width: 56,
-    alignItems: "center",
-    gap: 4,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    borderRadius: 12,
-  },
+  hourlyTitle: { fontSize: 11, fontWeight: "700", color: colors.gray[400], textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 },
+  hourCell:    { width: 56, alignItems: "center", gap: 4, paddingVertical: 8, paddingHorizontal: 4, borderRadius: 12 },
   hourCellNow: { backgroundColor: colors.brand[600] },
   hourTime:    { fontSize: 10, color: colors.gray[400], fontWeight: "600" },
   hourTimeNow: { color: colors.brand[200] },
@@ -616,9 +530,7 @@ const s = StyleSheet.create({
   hourTemp:    { fontSize: 13, fontWeight: "700", color: colors.gray[800] },
   hourTempNow: { color: colors.white },
   hourRain:    { fontSize: 10, color: "#60a5fa" },
-  modalFooter: { textAlign: "center", fontSize: 10, color: colors.gray[300], paddingVertical: 10 },
 
-  // 3-day forecast
   dailyWrap:  { paddingHorizontal: 16, paddingVertical: 8, borderTopWidth: 1, borderTopColor: colors.gray[100] },
   dailyTitle: { fontSize: 11, fontWeight: "700", color: colors.gray[400], textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 },
   dayRow:     { flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.gray[50] },
@@ -628,135 +540,6 @@ const s = StyleSheet.create({
   dayTemps:   { flexDirection: "row", gap: 6, alignItems: "center" },
   dayMax:     { fontSize: 14, fontWeight: "700", color: colors.gray[800] },
   dayMin:     { fontSize: 13, color: colors.gray[400] },
-  pillsScroll: {
-    backgroundColor: colors.brand[950],
-    paddingBottom:    8,
-  },
-  pillsContent: {
-    flexDirection:     "row",
-    alignItems:        "center",
-    paddingHorizontal: 12,
-    paddingVertical:    8,
-  },
-  pill: {
-    paddingHorizontal: 16,
-    paddingVertical:    7,
-    borderRadius:      100,
-    backgroundColor:  "rgba(255,255,255,0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-    marginRight: 8,
-  },
-  pillActive: {
-    backgroundColor: colors.brand[500],
-    borderColor:     colors.brand[400],
-  },
-  pillText: {
-    color:      colors.brand[400],
-    fontSize:   13,
-    fontWeight: "600",
-  },
-  pillTextActive: {
-    color: colors.white,
-  },
-  feed: {
-    flex: 1,
-    paddingTop: 8,
-    paddingHorizontal: 12,
-  },
-  loadingWrap: {
-    paddingTop: 60,
-    alignItems: "center",
-  },
-  emptyWrap: {
-    paddingTop: 80,
-    alignItems: "center",
-    gap: 12,
-  },
-  emptyEmoji: {
-    fontSize: 48,
-  },
-  emptyText: {
-    color:     colors.gray[400],
-    fontSize:  14,
-    textAlign: "center",
-  },
-  card: {
-    backgroundColor: colors.white,
-    borderRadius:    16,
-    marginBottom:    12,
-    overflow:        "hidden",
-    shadowColor:     colors.black,
-    shadowOffset:    { width: 0, height: 1 },
-    shadowOpacity:   0.06,
-    shadowRadius:    4,
-    elevation:       2,
-  },
-  cardImage: {
-    width:  "100%",
-    height: 160,
-  },
-  cardBody: {
-    padding: 14,
-  },
-  cardBadgeRow: {
-    flexDirection:  "row",
-    alignItems:     "center",
-    gap:            8,
-    marginBottom:   8,
-  },
-  cardBadge: {
-    paddingHorizontal: 8,
-    paddingVertical:   3,
-    borderRadius:      6,
-  },
-  cardBadgeText: {
-    color:      colors.white,
-    fontSize:   10,
-    fontWeight: "800",
-    letterSpacing: 0.5,
-  },
-  cardMeta: {
-    color:    colors.gray[400],
-    fontSize: 11,
-  },
-  cardTitle: {
-    color:      colors.gray[900],
-    fontSize:   15,
-    fontWeight: "700",
-    lineHeight: 21,
-    marginBottom: 4,
-  },
-  cardSub: {
-    color:    colors.gray[500],
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  bizRow: {
-    flexDirection: "row",
-    alignItems:    "center",
-    gap:            8,
-    marginTop:      10,
-    paddingTop:     10,
-    borderTopWidth: 1,
-    borderTopColor: colors.gray[100],
-  },
-  bizLogo: {
-    width:        24,
-    height:       24,
-    borderRadius: 6,
-  },
-  bizLogoPlaceholder: {
-    width:           24,
-    height:          24,
-    borderRadius:     6,
-    backgroundColor: colors.gray[100],
-    alignItems:      "center",
-    justifyContent:  "center",
-  },
-  bizName: {
-    color:      colors.gray[600],
-    fontSize:   12,
-    fontWeight: "600",
-  },
+
+  modalFooter: { textAlign: "center", fontSize: 10, color: colors.gray[300], paddingVertical: 10 },
 });
