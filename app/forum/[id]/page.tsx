@@ -63,13 +63,11 @@ export default function ForumThreadPage() {
   const [notFound,   setNotFound]   = useState(false);
 
   const [replyBody,  setReplyBody]  = useState("");
-  const [replyName,  setReplyName]  = useState(user?.name ?? "");
   const [sending,    setSending]    = useState(false);
   const [replyError, setReplyError] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Admin recategorize state
-  const { user: authUser } = useAuth();
   const isAdmin = false; // replace with admin context check if available
   const [editCat,     setEditCat]     = useState(false);
   const [newIndustry, setNewIndustry] = useState("");
@@ -95,8 +93,8 @@ export default function ForumThreadPage() {
 
   async function submitReply(e: React.FormEvent) {
     e.preventDefault();
-    if (!replyName.trim() || !replyBody.trim()) {
-      setReplyError("Please enter your name and reply.");
+    if (!replyBody.trim()) {
+      setReplyError("Please write a reply before posting.");
       return;
     }
     setSending(true);
@@ -104,7 +102,11 @@ export default function ForumThreadPage() {
     const res = await fetch(`/api/forum/${id}/reply`, {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ author_name: replyName.trim(), body: replyBody.trim(), user_id: user?.id ?? null }),
+      body:    JSON.stringify({
+        author_name: user!.name ?? user!.email ?? "Resident",
+        body:        replyBody.trim(),
+        user_id:     user!.id,
+      }),
     });
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
@@ -271,22 +273,30 @@ export default function ForumThreadPage() {
           <div className="text-center text-sm text-gray-500 bg-white rounded-2xl py-6 border border-gray-100">
             This thread has been closed.
           </div>
+        ) : !user ? (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 text-center">
+            <MessageSquare size={28} className="mx-auto text-brand-200 mb-3" />
+            <p className="font-semibold text-gray-700 mb-1">Sign in to reply</p>
+            <p className="text-sm text-gray-400 mb-4">Join the conversation — it only takes a moment.</p>
+            <Link
+              href={`/auth/login?next=/forum/${id}`}
+              className="inline-block bg-brand-700 hover:bg-brand-800 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition-colors"
+            >
+              Sign in
+            </Link>
+          </div>
         ) : (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
               <MessageSquare size={16} className="text-brand-500" /> Add your reply
             </h3>
-            <form onSubmit={submitReply} className="space-y-4">
-              <div>
-                <input
-                  type="text"
-                  value={replyName}
-                  onChange={e => setReplyName(e.target.value)}
-                  placeholder="Your name"
-                  maxLength={60}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
-                />
+            <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 rounded-xl px-4 py-2.5 mb-4">
+              <div className="w-6 h-6 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-xs uppercase">
+                {(user.name ?? user.email ?? "R").charAt(0)}
               </div>
+              Replying as <span className="font-semibold text-gray-800">{user.name ?? user.email}</span>
+            </div>
+            <form onSubmit={submitReply} className="space-y-4">
               <div>
                 <textarea
                   value={replyBody}
