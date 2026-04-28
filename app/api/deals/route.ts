@@ -5,7 +5,9 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const admin = createAdminClient();
-  const today = new Date().toISOString().split("T")[0];
+  // Use IST (UTC+5:30) so deals don't vanish before midnight Hyderabad time
+  const istNow = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+  const today = istNow.toISOString().split("T")[0];
 
   const { data, error } = await admin
     .from("business_offers")
