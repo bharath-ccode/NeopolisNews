@@ -218,8 +218,18 @@ function UserMenu() {
 
   const dashboardHref =
     user.userType === "individual" ? "/dashboard/individual" : "/dashboard/business";
-  const displayName =
-    user.userType === "business" ? user.businessName ?? user.name : user.name;
+
+  const isIndividual  = user.userType === "individual";
+  const screenName    = isIndividual ? user.screen_name : undefined;
+  const displayName   = isIndividual
+    ? (user.businessName ?? user.name)  // won't hit — kept for type safety
+    : (user.businessName ?? user.name);
+  // What shows in the nav button
+  const buttonLabel   = isIndividual
+    ? (screenName ? `@${screenName}` : user.name.split(" ")[0])
+    : (user.businessName ?? user.name).split(" ")[0];
+  // Avatar initial
+  const avatarChar    = (screenName ?? displayName).charAt(0).toUpperCase();
 
   return (
     <div className="relative" ref={ref}>
@@ -228,21 +238,28 @@ function UserMenu() {
         className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors"
       >
         <div className="w-7 h-7 rounded-full bg-brand-100 text-brand-700 font-bold text-xs flex items-center justify-center">
-          {displayName.charAt(0).toUpperCase()}
+          {avatarChar}
         </div>
-        <span className="text-sm font-semibold text-gray-700 max-w-[100px] truncate">
-          {displayName.split(" ")[0]}
+        <span className="text-sm font-semibold text-gray-700 max-w-[120px] truncate">
+          {buttonLabel}
         </span>
         <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl border border-gray-100 shadow-lg py-1 z-50">
+        <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl border border-gray-100 shadow-lg py-1 z-50">
           <div className="px-4 py-2.5 border-b border-gray-50">
-            <p className="text-xs font-semibold text-gray-900 truncate">{displayName}</p>
-            <p className="text-xs text-gray-400 truncate">{user.email ?? user.phone}</p>
-            <span className={`badge mt-1 ${user.userType === "individual" ? "tag-blue" : "tag-purple"}`}>
-              {user.userType === "individual" ? (
+            {isIndividual && screenName ? (
+              <>
+                <p className="text-sm font-bold text-brand-700 truncate">@{screenName}</p>
+                <p className="text-xs text-gray-500 truncate">{user.name}</p>
+              </>
+            ) : (
+              <p className="text-xs font-semibold text-gray-900 truncate">{displayName}</p>
+            )}
+            <p className="text-xs text-gray-400 truncate mt-0.5">{user.email ?? user.phone}</p>
+            <span className={`badge mt-1 ${isIndividual ? "tag-blue" : "tag-purple"}`}>
+              {isIndividual ? (
                 <><User className="w-3 h-3" /> Individual</>
               ) : (
                 <><Briefcase className="w-3 h-3" /> Business</>
