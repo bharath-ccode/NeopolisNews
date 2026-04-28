@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Building2, Mail, Phone, MapPin } from "lucide-react";
+import FooterSubscribe from "./FooterSubscribe";
 
 const FOOTER_LINKS = {
   "Real Estate": [
@@ -32,7 +33,7 @@ export default function Footer() {
   return (
     <footer className="bg-brand-950 text-brand-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 mb-10">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-8 mb-10">
           {/* Brand */}
           <div className="col-span-2">
             <Link href="/" className="flex items-center gap-2 mb-4">
@@ -70,6 +71,11 @@ export default function Footer() {
             </div>
           </div>
 
+          {/* Subscribe */}
+          <div className="col-span-2 lg:col-span-1">
+            <FooterSubscribe />
+          </div>
+
           {/* Link columns */}
           {Object.entries(FOOTER_LINKS).map(([heading, links]) => (
             <div key={heading}>
@@ -95,15 +101,10 @@ export default function Footer() {
         <div className="border-t border-brand-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-brand-400">
           <p>© 2026 NeopolisNews. All rights reserved.</p>
           <div className="flex gap-4">
-            <Link href="/privacy" className="hover:text-white">
-              Privacy Policy
-            </Link>
-            <Link href="/terms" className="hover:text-white">
-              Terms of Use
-            </Link>
-            <Link href="/advertise" className="hover:text-white">
-              Advertise
-            </Link>
+            <Link href="/privacy" className="hover:text-white">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-white">Terms of Use</Link>
+            <Link href="/cookies" className="hover:text-white">Cookies</Link>
+            <Link href="/advertise" className="hover:text-white">Advertise</Link>
           </div>
         </div>
       </div>
