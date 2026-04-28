@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, ChevronRight, MessageSquare, Clock, Send } from "lucide-react";
+import { ArrowLeft, ChevronRight, MessageSquare, Clock, Send, AtSign } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { getIndustries, getTypes } from "@/lib/businessDirectory";
 
@@ -103,7 +103,7 @@ export default function ForumThreadPage() {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
       body:    JSON.stringify({
-        author_name: user!.name ?? user!.email ?? "Resident",
+        author_name: user!.screen_name,
         body:        replyBody.trim(),
         user_id:     user!.id,
       }),
@@ -285,6 +285,20 @@ export default function ForumThreadPage() {
               Sign in
             </Link>
           </div>
+        ) : !user.screen_name ? (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 text-center">
+            <AtSign size={28} className="mx-auto text-amber-400 mb-3" />
+            <p className="font-semibold text-gray-700 mb-1">Choose a screen name to reply</p>
+            <p className="text-sm text-gray-400 mb-4">
+              Pick an anonymous screen name so the community can know you — your real identity stays private.
+            </p>
+            <Link
+              href="/dashboard/individual/profile"
+              className="inline-block bg-brand-700 hover:bg-brand-800 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition-colors"
+            >
+              Set screen name →
+            </Link>
+          </div>
         ) : (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -292,9 +306,9 @@ export default function ForumThreadPage() {
             </h3>
             <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 rounded-xl px-4 py-2.5 mb-4">
               <div className="w-6 h-6 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-xs uppercase">
-                {(user.name ?? user.email ?? "R").charAt(0)}
+                {user.screen_name.charAt(0)}
               </div>
-              Replying as <span className="font-semibold text-gray-800">{user.name ?? user.email}</span>
+              Replying as <span className="font-semibold text-gray-800">@{user.screen_name}</span>
             </div>
             <form onSubmit={submitReply} className="space-y-4">
               <div>

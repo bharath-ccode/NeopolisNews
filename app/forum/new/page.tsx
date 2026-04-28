@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ChevronDown } from "lucide-react";
+import { ArrowLeft, ChevronDown, AtSign } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { getIndustries, getTypes } from "@/lib/businessDirectory";
 
@@ -35,6 +35,38 @@ export default function NewForumPostPage() {
     );
   }
 
+  if (!user.screen_name) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-brand-950 text-white px-4 py-6">
+          <div className="max-w-2xl mx-auto">
+            <Link href="/forum" className="inline-flex items-center gap-1.5 text-brand-300 hover:text-white text-sm font-medium mb-4 transition-colors">
+              <ArrowLeft size={15} /> Back to Forum
+            </Link>
+            <h1 className="text-2xl font-extrabold">Ask the Community</h1>
+          </div>
+        </div>
+        <div className="max-w-2xl mx-auto px-4 py-12 text-center">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 space-y-4">
+            <div className="w-14 h-14 mx-auto rounded-full bg-amber-100 flex items-center justify-center">
+              <AtSign className="w-7 h-7 text-amber-600" />
+            </div>
+            <h2 className="text-lg font-extrabold text-gray-900">Choose a screen name first</h2>
+            <p className="text-sm text-gray-500 max-w-sm mx-auto">
+              Before posting, pick a screen name so the community can know you — without revealing your real identity.
+            </p>
+            <Link
+              href="/dashboard/individual/profile"
+              className="inline-block mt-2 bg-brand-700 hover:bg-brand-800 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition-colors"
+            >
+              Set screen name in Profile →
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim() || !body.trim()) {
@@ -48,7 +80,7 @@ export default function NewForumPostPage() {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
       body:    JSON.stringify({
-        author_name: user!.name ?? user!.email ?? "Resident",
+        author_name: user?.screen_name ?? "",
         title:       title.trim(),
         body:        body.trim(),
         industry:    industry || null,
@@ -88,9 +120,9 @@ export default function NewForumPostPage() {
           {/* Posting as */}
           <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 rounded-xl px-4 py-2.5">
             <div className="w-7 h-7 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-xs uppercase">
-              {(user.name ?? user.email ?? "R").charAt(0)}
+              {user.screen_name!.charAt(0)}
             </div>
-            Posting as <span className="font-semibold text-gray-800">{user.name ?? user.email}</span>
+            Posting as <span className="font-semibold text-gray-800">@{user.screen_name}</span>
           </div>
 
           {/* Title */}
