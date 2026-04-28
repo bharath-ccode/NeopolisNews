@@ -10,6 +10,7 @@ import {
   TrendingUp,
   ArrowRight,
   CheckCircle,
+  AtSign,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase/client";
@@ -46,10 +47,36 @@ export default function IndividualDashboard() {
 
   return (
     <div className="space-y-6 max-w-5xl">
+      {/* Screen name prompt — shown until user sets one */}
+      {!user?.screen_name && (
+        <div className="flex items-start gap-4 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4">
+          <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+            <AtSign className="w-5 h-5 text-amber-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-amber-900 text-sm">Choose your screen name</p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              Your screen name is how you appear in forum posts and business reviews — your real name stays private.
+            </p>
+          </div>
+          <Link
+            href="/dashboard/individual/profile"
+            className="shrink-0 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            Set now →
+          </Link>
+        </div>
+      )}
+
       {/* Greeting */}
       <div>
         <h2 className="text-xl font-extrabold text-gray-900">
-          Good {getGreeting()}, {firstName}!
+          Good {getGreeting()},{" "}
+          {user?.screen_name ? (
+            <span className="text-brand-600">@{user.screen_name}</span>
+          ) : (
+            firstName
+          )}!
         </h2>
         <p className="text-sm text-gray-400 mt-0.5">
           Here&apos;s a snapshot of your activity on NeopolisNews.

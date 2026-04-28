@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Star, Send, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import Link from "next/link";
+import { Star, Send, Loader2, ChevronDown, ChevronUp, LogIn, AtSign } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 interface Review {
   id: string;
@@ -51,13 +53,15 @@ function avgRating(reviews: Review[]) {
 }
 
 export default function ReviewSection({ businessId }: { businessId: string }) {
+  const { user } = useAuth();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
-  const [form, setForm] = useState({ author_name: "", rating: 0, comment: "" });
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
 
   useEffect(() => {
     fetch(`/api/businesses/${businessId}/reviews`)
@@ -68,21 +72,22 @@ export default function ReviewSection({ businessId }: { businessId: string }) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (form.rating === 0) { setSubmitError("Please choose a star rating."); return; }
+    if (rating === 0) { setSubmitError("Please choose a star rating."); return; }
     setSubmitting(true);
     setSubmitError(null);
     try {
       const res = await fetch(`/api/businesses/${businessId}/reviews`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ author_name: user?.screen_name ?? "", rating, comment }),
       });
       const data = await res.json();
       if (!res.ok) { setSubmitError(data.error ?? "Something went wrong."); return; }
       setReviews((prev) => [data, ...prev]);
       setSubmitted(true);
       setShowForm(false);
-      setForm({ author_name: "", rating: 0, comment: "" });
+      setRating(0);
+      setComment("");
     } catch {
       setSubmitError("Network error. Please try again.");
     } finally {
@@ -92,6 +97,85 @@ export default function ReviewSection({ businessId }: { businessId: string }) {
 
   const avg = avgRating(reviews);
   const count = reviews.length;
+
+  function WriteReviewButton() {
+    if (submitted) return null;
+    return (
+      <button
+        onClick={() => setShowForm((s) => !s)}
+        className="flex items-center gap-1.5 text-sm font-semibold text-brand-600 hover:text-brand-700 transition-colors"
+      >
+        {showForm ? <><ChevronUp className="w-4 h-4" /> Cancel</> : <><Star className="w-4 h-4" /> Write a Review</>}
+      </button>
+    );
+  }
+
+  function ReviewFormArea() {
+    if (!showForm) return null;
+
+    if (!user) {
+      return (
+        <div className="mb-6 p-4 bg-gray-50 rounded-xl flex items-center gap-3">
+          <LogIn className="w-5 h-5 text-gray-400 shrink-0" />
+          <p className="text-sm text-gray-600 flex-1">
+            You need to be signed in to write a review.
+          </p>
+          <Link
+            href="/auth/login"
+            className="shrink-0 text-xs font-bold bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            Sign in
+          </Link>
+        </div>
+      );
+    }
+
+    if (!user.screen_name) {
+      return (
+        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-3">
+          <AtSign className="w-5 h-5 text-amber-500 shrink-0" />
+          <p className="text-sm text-amber-800 flex-1">
+            You need a screen name to write reviews — it keeps your real identity private.
+          </p>
+          <Link
+            href="/dashboard/individual/profile"
+            className="shrink-0 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            Set now
+          </Link>
+        </div>
+      );
+    }
+
+    return (
+      <form onSubmit={handleSubmit} className="mb-6 p-4 bg-gray-50 rounded-xl space-y-3">
+        <div className="flex items-center gap-2 text-xs text-brand-700 font-semibold">
+          <AtSign className="w-3.5 h-3.5" />
+          Reviewing as @{user.screen_name}
+        </div>
+        <div>
+          <p className="text-xs font-semibold text-gray-600 mb-1.5">Your rating *</p>
+          <StarRow value={rating} interactive onChange={setRating} />
+        </div>
+        <textarea
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-400"
+          placeholder="Share your experience (optional)"
+          rows={3}
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+        />
+        {submitError && <p className="text-red-500 text-xs">{submitError}</p>}
+        <button
+          type="submit"
+          disabled={submitting}
+          className="btn-primary text-sm disabled:opacity-60"
+        >
+          {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          {submitting ? "Submitting…" : "Submit Review"}
+        </button>
+      </form>
+    );
+  }
 
   return (
     <div className="card p-6 mt-5">
@@ -107,48 +191,10 @@ export default function ReviewSection({ businessId }: { businessId: string }) {
             </div>
           )}
         </div>
-        {!submitted && (
-          <button
-            onClick={() => setShowForm((s) => !s)}
-            className="flex items-center gap-1.5 text-sm font-semibold text-brand-600 hover:text-brand-700 transition-colors"
-          >
-            {showForm ? <><ChevronUp className="w-4 h-4" /> Cancel</> : <><Star className="w-4 h-4" /> Write a Review</>}
-          </button>
-        )}
+        <WriteReviewButton />
       </div>
 
-      {/* Write review form */}
-      {showForm && (
-        <form onSubmit={handleSubmit} className="mb-6 p-4 bg-gray-50 rounded-xl space-y-3">
-          <div>
-            <p className="text-xs font-semibold text-gray-600 mb-1.5">Your rating *</p>
-            <StarRow value={form.rating} interactive onChange={(v) => setForm({ ...form, rating: v })} />
-          </div>
-          <input
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-400"
-            placeholder="Your name *"
-            value={form.author_name}
-            onChange={(e) => setForm({ ...form, author_name: e.target.value })}
-            required
-          />
-          <textarea
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-400"
-            placeholder="Share your experience (optional)"
-            rows={3}
-            value={form.comment}
-            onChange={(e) => setForm({ ...form, comment: e.target.value })}
-          />
-          {submitError && <p className="text-red-500 text-xs">{submitError}</p>}
-          <button
-            type="submit"
-            disabled={submitting}
-            className="btn-primary text-sm disabled:opacity-60"
-          >
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            {submitting ? "Submitting…" : "Submit Review"}
-          </button>
-        </form>
-      )}
+      <ReviewFormArea />
 
       {/* Submitted confirmation */}
       {submitted && (
@@ -172,7 +218,7 @@ export default function ReviewSection({ businessId }: { businessId: string }) {
             <div key={r.id} className="border-b border-gray-50 pb-4 last:border-0 last:pb-0">
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold text-sm text-gray-900">{r.author_name}</span>
+                  <span className="font-semibold text-sm text-gray-900">@{r.author_name}</span>
                   <StarRow value={r.rating} />
                 </div>
                 <span className="text-xs text-gray-400">
