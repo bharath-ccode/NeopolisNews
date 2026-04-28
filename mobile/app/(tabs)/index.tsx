@@ -38,14 +38,15 @@ function wLabel(code: number) {
   if (code === 95) return "Thunderstorm";
   return "—";
 }
-function aqiBg(aqi: number) {
-  if (aqi <= 50)  return "#16a34a";
-  if (aqi <= 100) return "#d97706";
-  if (aqi <= 150) return "#ea580c";
-  if (aqi <= 200) return "#dc2626";
-  if (aqi <= 300) return "#991b1b";
-  return "#450a0a";
+function aqiInfo(aqi: number) {
+  if (aqi <= 50)  return { color: "#16a34a", label: "Good",                           advice: "Great day for a walk!" };
+  if (aqi <= 100) return { color: "#d97706", label: "Moderate",                       advice: "Fine for most people outdoors." };
+  if (aqi <= 150) return { color: "#ea580c", label: "Unhealthy for Sensitive Groups", advice: "Sensitive groups should limit outdoor walks." };
+  if (aqi <= 200) return { color: "#dc2626", label: "Unhealthy",                      advice: "Limit prolonged outdoor activity." };
+  if (aqi <= 300) return { color: "#991b1b", label: "Very Unhealthy",                 advice: "Avoid outdoor walks today." };
+  return           { color: "#450a0a", label: "Hazardous",                            advice: "Stay indoors — air is hazardous." };
 }
+function aqiBg(aqi: number) { return aqiInfo(aqi).color; }
 function fmt12(iso: string) {
   const h = parseInt(iso.split("T")[1], 10);
   if (h === 0) return "12 AM";
@@ -181,9 +182,12 @@ export default function HomeScreen() {
       }
     }).catch(() => {});
 
-    fetch("https://api.waqi.info/feed/geo:17.4126;78.3338/?token=demo")
+    fetch(
+      "https://air-quality-api.open-meteo.com/v1/air-quality" +
+      "?latitude=17.4126&longitude=78.3338&current=us_aqi&timezone=Asia%2FKolkata"
+    )
       .then(r => r.json())
-      .then(j => { if (j?.status === "ok" && j?.data?.aqi != null) setWx(prev => ({ ...prev, aqi: Number(j.data.aqi) })); })
+      .then(j => { if (j?.current?.us_aqi != null) setWx(prev => ({ ...prev, aqi: Number(j.current.us_aqi) })); })
       .catch(() => {});
   }, []);
 
@@ -311,23 +315,31 @@ export default function HomeScreen() {
               </View>
             )}
 
-            {/* AQI */}
-            {wx.aqi !== null && (
-              <View style={s.dailyWrap}>
-                <Text style={s.sectionLabel}>Air Quality</Text>
-                <View style={[s.aqiRow, { backgroundColor: aqiBg(wx.aqi) + "18" }]}>
-                  <View style={[s.aqiTile, { backgroundColor: aqiBg(wx.aqi) }]}>
-                    <Text style={s.aqiTileNum}>{wx.aqi}</Text>
+            {/* AQI + Walking advice */}
+            {wx.aqi !== null && (() => {
+              const info = aqiInfo(wx.aqi!);
+              return (
+                <View style={s.dailyWrap}>
+                  <Text style={s.sectionLabel}>Air Quality</Text>
+                  <View style={[s.aqiRow, { backgroundColor: info.color + "18" }]}>
+                    <View style={[s.aqiTile, { backgroundColor: info.color }]}>
+                      <Text style={s.aqiTileNum}>{wx.aqi}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.aqiRowLabel}>AQI · Kokapet</Text>
+                      <Text style={[s.aqiRowVal, { color: info.color }]}>{info.label}</Text>
+                    </View>
                   </View>
-                  <View>
-                    <Text style={s.aqiRowLabel}>AQI · Kokapet</Text>
-                    <Text style={[s.aqiRowVal, { color: aqiBg(wx.aqi) }]}>
-                      {wx.aqi <= 50 ? "Good" : wx.aqi <= 100 ? "Moderate" : wx.aqi <= 150 ? "Unhealthy for Sensitive Groups" : wx.aqi <= 200 ? "Unhealthy" : wx.aqi <= 300 ? "Very Unhealthy" : "Hazardous"}
-                    </Text>
+                  <View style={s.walkRow}>
+                    <Text style={s.walkIcon}>🚶</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.walkTitle}>Walking Advice</Text>
+                      <Text style={s.walkAdvice}>{info.advice}</Text>
+                    </View>
                   </View>
                 </View>
-              </View>
-            )}
+              );
+            })()}
 
             <Text style={s.modalFooter}>Kokapet · Open-Meteo · WAQI</Text>
             <View style={{ height: 24 }} />
@@ -540,11 +552,15 @@ const s = StyleSheet.create({
   statIcon:      { fontSize: 12 },
   statVal:       { color: "rgba(255,255,255,0.7)", fontSize: 12 },
 
-  aqiRow:     { flexDirection: "row", alignItems: "center", gap: 12, margin: 12, padding: 12, borderRadius: 14 },
+  aqiRow:     { flexDirection: "row", alignItems: "center", gap: 12, padding: 12, borderRadius: 14, marginBottom: 8 },
   aqiTile:    { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   aqiTileNum: { color: colors.white, fontSize: 16, fontWeight: "900" },
   aqiRowLabel:{ fontSize: 11, color: colors.gray[500] },
   aqiRowVal:  { fontSize: 13, fontWeight: "700" },
+  walkRow:    { flexDirection: "row", alignItems: "flex-start", gap: 10, backgroundColor: colors.gray[50], borderRadius: 12, padding: 12 },
+  walkIcon:   { fontSize: 18, marginTop: 1 },
+  walkTitle:  { fontSize: 12, fontWeight: "700", color: colors.gray[700], marginBottom: 2 },
+  walkAdvice: { fontSize: 12, color: colors.gray[500], lineHeight: 17 },
 
   hourlyWrap:  { paddingHorizontal: 12, paddingBottom: 4 },
   hourlyTitle: { fontSize: 11, fontWeight: "700", color: colors.gray[400], textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 },
