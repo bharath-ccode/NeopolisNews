@@ -23,6 +23,9 @@ export interface BusinessHours {
 export interface User {
   id: string;
   name: string;
+  screen_name?: string;
+  age?: number;
+  gender?: string;
   email?: string;
   phone?: string;
   userType: UserType;
@@ -42,6 +45,9 @@ export interface User {
 
 export interface ProfileUpdate {
   name?: string;
+  screen_name?: string;
+  age?: number;
+  gender?: string;
   phone?: string;
   location?: string;
 }
@@ -92,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loadProfile = useCallback(async (authUser: SupabaseUser) => {
     const { data } = await supabase
       .from("user_profiles")
-      .select("name, phone, avatar_url, location")
+      .select("name, screen_name, age, gender, phone, avatar_url, location")
       .eq("user_id", authUser.id)
       .maybeSingle();
 
@@ -110,6 +116,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser({
       id: authUser.id,
       name: data?.name || meta?.name || authUser.email?.split("@")[0] || "User",
+      screen_name: data?.screen_name ?? undefined,
+      age: data?.age ?? undefined,
+      gender: data?.gender ?? undefined,
       email: authUser.email ?? undefined,
       phone: authUser.phone ?? data?.phone ?? undefined,
       userType: "individual",
