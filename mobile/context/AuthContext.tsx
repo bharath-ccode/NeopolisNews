@@ -10,14 +10,25 @@ export interface UserProfile {
   avatar_url:  string | null;
 }
 
+export interface ProfileUpdate {
+  name?:        string;
+  screen_name?: string;
+  age?:         number;
+  gender?:      string;
+  phone?:       string;
+  location?:    string;
+}
+
 interface AuthContextValue {
-  session:  Session | null;
-  user:     User | null;
-  profile:  UserProfile | null;
-  loading:  boolean;
-  signUp:   (email: string, password: string, name: string) => Promise<string | null>;
-  signIn:   (email: string, password: string) => Promise<string | null>;
-  signOut:  () => Promise<void>;
+  session:       Session | null;
+  user:          User | null;
+  profile:       UserProfile | null;
+  loading:       boolean;
+  signUp:        (email: string, password: string, name: string) => Promise<string | null>;
+  signIn:        (email: string, password: string) => Promise<string | null>;
+  signOut:       () => Promise<void>;
+  updateProfile: (updates: ProfileUpdate) => Promise<void>;
+  changePassword:(newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -77,6 +88,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfile(null);
   }
 
+  async function updateProfile(updates: ProfileUpdate): Promise<void> {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) throw new Error("Not authenticated");
+    const { error } = await supabase
+      .from("user_profiles")
+      .update(updates)
+      .eq("user_id", authUser.id);
+    if (error) throw new Error(error.message);
+    setProfile(prev => prev ? { ...prev, ...updates } : prev);
+  }
+
+  async function changePassword(newPassword: string): Promise<void> {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw new Error(error.message);
+  }
+
   return (
     <AuthContext.Provider value={{
       session,
@@ -86,6 +113,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signUp,
       signIn,
       signOut,
+      updateProfile,
+      changePassword,
     }}>
       {children}
     </AuthContext.Provider>
