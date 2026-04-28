@@ -139,19 +139,6 @@ const NAV_ITEMS = [
     icon: ShoppingBag,
   },
   {
-    label: "Forum",
-    href: "/forum",
-    icon: MessageSquare,
-    sub: [
-      { label: "All Topics",         href: "/forum" },
-      { label: "Education",          href: "/forum?industry=Education" },
-      { label: "Health & Wellness",  href: "/forum?industry=Health+%26+Wellness" },
-      { label: "Services",           href: "/forum?industry=Services" },
-      { label: "Food & Beverages",   href: "/forum?industry=Food+%26+Beverages" },
-      { label: "Ask a Question",     href: "/forum/new" },
-    ],
-  },
-  {
     label: "Classifieds",
     href: "/classifieds",
     icon: Tag,
@@ -446,6 +433,18 @@ export default function Navbar() {
               <Bell className="w-4 h-4" />
             </Link>
             <Link
+              href="/forum"
+              aria-label="Community Forum"
+              className={clsx(
+                "p-2 rounded-lg transition-colors",
+                pathname.startsWith("/forum")
+                  ? "text-brand-700 bg-brand-50"
+                  : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+              )}
+            >
+              <MessageSquare className="w-4 h-4" />
+            </Link>
+            <Link
               href="/advertise"
               className="hidden lg:flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-accent-500 text-white hover:bg-accent-600 transition-colors"
             >
@@ -532,6 +531,27 @@ export default function Navbar() {
                 {item.label}
               </Link>
             ))}
+            {/* Icon-only items shown in full in mobile menu */}
+            <Link
+              href="/announcements"
+              onClick={() => setMobileOpen(false)}
+              className={clsx(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium",
+                pathname.startsWith("/announcements") ? "bg-brand-50 text-brand-700" : "text-gray-700 hover:bg-gray-50"
+              )}
+            >
+              <Bell className="w-4 h-4 shrink-0" /> Announcements
+            </Link>
+            <Link
+              href="/forum"
+              onClick={() => setMobileOpen(false)}
+              className={clsx(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium",
+                pathname.startsWith("/forum") ? "bg-brand-50 text-brand-700" : "text-gray-700 hover:bg-gray-50"
+              )}
+            >
+              <MessageSquare className="w-4 h-4 shrink-0" /> Forum
+            </Link>
             <div className="pt-3 border-t border-gray-100 mt-2">
               <div className="px-3">
                 <UserMenu />
