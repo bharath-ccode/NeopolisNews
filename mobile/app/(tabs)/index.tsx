@@ -118,22 +118,20 @@ export default function HomeScreen() {
     : (profile?.name ?? user?.user_metadata?.name ?? "").split(" ")[0] || "there";
 
   const loadData = useCallback(async () => {
-    try {
-      const [dealsRes, buzzRes, newsRes] = await Promise.all([
-        fetch(`${API}/api/deals`).then(r => r.json()),
-        fetch(`${API}/api/announcements`).then(r => r.json()),
-        fetch(`${API}/api/news?limit=5`).then(r => r.json()),
-      ]);
-      setDeals(Array.isArray(dealsRes) ? dealsRes.slice(0, 2) : []);
-      setAnnouncements(Array.isArray(buzzRes) ? buzzRes.slice(0, 2) : []);
-      const articles = Array.isArray(newsRes) ? newsRes : (newsRes?.articles ?? []);
-      setNews(articles.slice(0, 2));
-    } catch {
-      // keep empty arrays
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+    const [dealsRes, buzzRes, newsRes] = await Promise.allSettled([
+      fetch(`${API}/api/deals`).then(r => r.json()),
+      fetch(`${API}/api/announcements`).then(r => r.json()),
+      fetch(`${API}/api/news?limit=5`).then(r => r.json()),
+    ]);
+    const dealsData  = dealsRes.status  === "fulfilled" ? dealsRes.value  : [];
+    const buzzData   = buzzRes.status   === "fulfilled" ? buzzRes.value   : [];
+    const newsData   = newsRes.status   === "fulfilled" ? newsRes.value   : [];
+    setDeals(Array.isArray(dealsData) ? dealsData.slice(0, 2) : []);
+    setAnnouncements(Array.isArray(buzzData) ? buzzData.slice(0, 2) : []);
+    const articles = Array.isArray(newsData) ? newsData : (newsData?.articles ?? []);
+    setNews(articles.slice(0, 2));
+    setLoading(false);
+    setRefreshing(false);
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
