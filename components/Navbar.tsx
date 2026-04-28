@@ -26,6 +26,7 @@ import {
   GraduationCap,
   Landmark,
   Bell,
+  MessageSquare,
 } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "@/context/AuthContext";
@@ -148,6 +149,19 @@ const NAV_ITEMS = [
     label: "Deals",
     href: "/deals",
     icon: ShoppingBag,
+  },
+  {
+    label: "Forum",
+    href: "/forum",
+    icon: MessageSquare,
+    sub: [
+      { label: "All Topics",         href: "/forum" },
+      { label: "Education",          href: "/forum?industry=Education" },
+      { label: "Health & Wellness",  href: "/forum?industry=Health+%26+Wellness" },
+      { label: "Services",           href: "/forum?industry=Services" },
+      { label: "Food & Beverages",   href: "/forum?industry=Food+%26+Beverages" },
+      { label: "Ask a Question",     href: "/forum/new" },
+    ],
   },
   {
     label: "Classifieds",
