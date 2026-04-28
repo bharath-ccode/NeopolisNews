@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ChevronDown } from "lucide-react";
@@ -8,24 +8,37 @@ import { useAuth } from "@/context/AuthContext";
 import { getIndustries, getTypes } from "@/lib/businessDirectory";
 
 export default function NewForumPostPage() {
-  const { user }    = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router      = useRouter();
   const industries  = getIndustries();
 
   const [title,      setTitle]      = useState("");
   const [body,       setBody]       = useState("");
-  const [authorName, setAuthorName] = useState(user?.name ?? "");
   const [industry,   setIndustry]   = useState("");
   const [type,       setType]       = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState("");
 
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace("/auth/login?next=/forum/new");
+    }
+  }, [authLoading, user, router]);
+
   const types = industry ? getTypes(industry) : [];
+
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 rounded-full border-4 border-brand-200 border-t-brand-600" />
+      </div>
+    );
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim() || !body.trim() || !authorName.trim()) {
-      setError("Please fill in your name, title, and question.");
+    if (!title.trim() || !body.trim()) {
+      setError("Please fill in the title and your question.");
       return;
     }
     setSubmitting(true);
@@ -35,12 +48,12 @@ export default function NewForumPostPage() {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
       body:    JSON.stringify({
-        author_name: authorName.trim(),
+        author_name: user!.name ?? user!.email ?? "Resident",
         title:       title.trim(),
         body:        body.trim(),
         industry:    industry || null,
         type:        type || null,
-        user_id:     user?.id ?? null,
+        user_id:     user!.id,
       }),
     });
 
@@ -72,19 +85,12 @@ export default function NewForumPostPage() {
       <div className="max-w-2xl mx-auto px-4 py-8">
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
 
-          {/* Author name */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Your name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={authorName}
-              onChange={e => setAuthorName(e.target.value)}
-              placeholder="e.g. Priya S."
-              maxLength={60}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
-            />
+          {/* Posting as */}
+          <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 rounded-xl px-4 py-2.5">
+            <div className="w-7 h-7 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-xs uppercase">
+              {(user.name ?? user.email ?? "R").charAt(0)}
+            </div>
+            Posting as <span className="font-semibold text-gray-800">{user.name ?? user.email}</span>
           </div>
 
           {/* Title */}
@@ -186,7 +192,8 @@ export default function NewForumPostPage() {
         </form>
 
         <p className="text-xs text-gray-400 text-center mt-4">
-          Be respectful. Posts are visible to all Neopolis residents.
+          Be respectful. Posts are visible to all Neopolis residents. Not you?{" "}
+          <button onClick={() => router.push("/auth/login?next=/forum/new")} className="text-brand-500 hover:underline">Switch account</button>
         </p>
       </div>
     </div>
