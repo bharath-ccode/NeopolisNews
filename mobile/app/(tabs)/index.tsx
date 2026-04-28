@@ -383,26 +383,40 @@ function StatItem({ icon, label }: { icon: string; label: string }) {
 function DealCard({ deal }: { deal: Deal }) {
   const badge = deal.discount_percent ? `${deal.discount_percent}% OFF` : (deal.discount_label ?? "Offer");
   return (
-    <TouchableOpacity style={s.card} activeOpacity={0.8}>
-      {deal.image_url && <Image source={{ uri: deal.image_url }} style={s.cardImg} resizeMode="cover" />}
-      <View style={s.cardBody}>
-        <View style={s.cardTopRow}>
-          <View style={[s.badge, { backgroundColor: colors.orange[600] }]}>
-            <Text style={s.badgeText}>{badge}</Text>
+    <View style={[s.card, s.dealCardWrap]}>
+      {/* Orange left accent */}
+      <View style={s.dealAccent} />
+      <View style={{ flex: 1, overflow: "hidden", borderTopRightRadius: 16, borderBottomRightRadius: 16 }}>
+        {deal.image_url
+          ? <Image source={{ uri: deal.image_url }} style={s.cardImg} resizeMode="cover" />
+          : (
+            <View style={s.dealNoImg}>
+              <Text style={s.dealNoImgBadge}>{badge}</Text>
+              <Text style={s.dealNoImgName} numberOfLines={1}>{deal.name}</Text>
+            </View>
+          )
+        }
+        <View style={s.cardBody}>
+          <View style={s.cardTopRow}>
+            {deal.image_url && (
+              <View style={[s.badge, { backgroundColor: colors.orange[600] }]}>
+                <Text style={s.badgeText}>{badge}</Text>
+              </View>
+            )}
+            <Text style={s.cardMeta}>Until {new Date(deal.end_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</Text>
           </View>
-          <Text style={s.cardMeta}>Until {new Date(deal.end_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</Text>
+          {deal.image_url && <Text style={s.cardTitle} numberOfLines={2}>{deal.name}</Text>}
+          {deal.description ? <Text style={s.cardSub} numberOfLines={1}>{deal.description}</Text> : null}
+          {deal.businesses && (
+            <View style={s.bizRow}>
+              <BizLogo logo={deal.businesses.logo} />
+              <Text style={s.bizName}>{deal.businesses.name}</Text>
+              {deal.businesses.verified && <Text style={s.verified}>✓</Text>}
+            </View>
+          )}
         </View>
-        <Text style={s.cardTitle} numberOfLines={2}>{deal.name}</Text>
-        {deal.description ? <Text style={s.cardSub} numberOfLines={2}>{deal.description}</Text> : null}
-        {deal.businesses && (
-          <View style={s.bizRow}>
-            <BizLogo logo={deal.businesses.logo} />
-            <Text style={s.bizName}>{deal.businesses.name}</Text>
-            {deal.businesses.verified && <Text style={s.verified}>✓</Text>}
-          </View>
-        )}
       </View>
-    </TouchableOpacity>
+    </View>
   );
 }
 
@@ -516,6 +530,18 @@ const s = StyleSheet.create({
   bizLogoPlaceholder:{ width: 22, height: 22, borderRadius: 6, backgroundColor: colors.gray[100], alignItems: "center", justifyContent: "center" },
   bizName:          { fontSize: 12, fontWeight: "600", color: colors.gray[600] },
   verified:         { fontSize: 11, color: colors.brand[500], fontWeight: "700" },
+
+  // Deal card accent styles
+  dealCardWrap: {
+    flexDirection: "row", padding: 0, overflow: "hidden",
+    shadowColor: colors.orange[600],
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22, shadowRadius: 10, elevation: 6,
+  },
+  dealAccent:    { width: 5, backgroundColor: colors.orange[600] },
+  dealNoImg:     { backgroundColor: colors.orange[600], paddingHorizontal: 12, paddingVertical: 14 },
+  dealNoImgBadge:{ color: "rgba(255,255,255,0.75)", fontSize: 10, fontWeight: "800", letterSpacing: 0.8, marginBottom: 3 },
+  dealNoImgName: { color: colors.white, fontSize: 16, fontWeight: "900" },
 
   // Full-screen weather modal
   wxScreen:     { flex: 1, backgroundColor: colors.brand[950] },
