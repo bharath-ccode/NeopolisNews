@@ -47,18 +47,6 @@ const NAV_ITEMS = [
     ],
   },
   {
-    label: "Announcements",
-    href: "/announcements",
-    icon: Bell,
-    sub: [
-      { label: "Grand Openings",  href: "/announcements?type=opening"     },
-      { label: "New Arrivals",    href: "/announcements?type=new_arrival" },
-      { label: "We're Hiring",    href: "/announcements?type=hiring"      },
-      { label: "Community News",  href: "/announcements?type=community"   },
-      { label: "Notices",         href: "/announcements?type=notice"      },
-    ],
-  },
-  {
     label: "Real Estate",
     href: "/real-estate",
     icon: Building2,
@@ -445,6 +433,18 @@ export default function Navbar() {
             >
               <Search className="w-4 h-4" />
             </button>
+            <Link
+              href="/announcements"
+              aria-label="Announcements"
+              className={clsx(
+                "p-2 rounded-lg transition-colors",
+                pathname.startsWith("/announcements")
+                  ? "text-brand-700 bg-brand-50"
+                  : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+              )}
+            >
+              <Bell className="w-4 h-4" />
+            </Link>
             <Link
               href="/advertise"
               className="hidden lg:flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-accent-500 text-white hover:bg-accent-600 transition-colors"
