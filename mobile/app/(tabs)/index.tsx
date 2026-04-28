@@ -123,7 +123,6 @@ export default function HomeScreen() {
       fetch(`${API}/api/announcements`).then(r => r.json()),
       fetch(`${API}/api/news?limit=5`).then(r => r.json()),
     ]);
-    console.log("[deals] status:", dealsRes.status, "value:", JSON.stringify(dealsRes.status === "fulfilled" ? dealsRes.value : (dealsRes as PromiseRejectedResult).reason));
     const dealsData  = dealsRes.status  === "fulfilled" ? dealsRes.value  : [];
     const buzzData   = buzzRes.status   === "fulfilled" ? buzzRes.value   : [];
     const newsData   = newsRes.status   === "fulfilled" ? newsRes.value   : [];
