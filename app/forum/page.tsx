@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { MessageSquare, Plus, Clock, ChevronRight } from "lucide-react";
@@ -37,7 +37,7 @@ const INDUSTRY_EMOJI: Record<string, string> = {
   "Education":        "🎓",
 };
 
-export default function ForumPage() {
+function ForumContent() {
   const searchParams = useSearchParams();
   const router       = useRouter();
   const industries   = getIndustries();
@@ -161,6 +161,18 @@ export default function ForumPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ForumPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 rounded-full border-4 border-brand-200 border-t-brand-600" />
+      </div>
+    }>
+      <ForumContent />
+    </Suspense>
   );
 }
 
