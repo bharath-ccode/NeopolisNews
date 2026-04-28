@@ -96,7 +96,7 @@ const ANNOUNCE_LABEL: Record<string, string> = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
-  const { user }  = useAuth();
+  const { user, profile } = useAuth();
   const router    = useRouter();
 
   const [deals, setDeals]                 = useState<Deal[]>([]);
@@ -111,7 +111,10 @@ export default function HomeScreen() {
   const [wxOpen, setWxOpen] = useState(false);
   const hourListRef         = useRef<FlatList<HourItem>>(null);
 
-  const firstName = user?.user_metadata?.name?.split(" ")[0] ?? "there";
+  // Prefer @screen_name, fall back to first name from profile/metadata
+  const displayHandle = profile?.screen_name
+    ? `@${profile.screen_name}`
+    : (profile?.name ?? user?.user_metadata?.name ?? "").split(" ")[0] || "there";
 
   const loadData = useCallback(async () => {
     try {
@@ -189,7 +192,7 @@ export default function HomeScreen() {
       {/* Top bar */}
       <View style={s.topBar}>
         <View>
-          <Text style={s.greeting}>Hi {firstName} 👋</Text>
+          <Text style={s.greeting}>Hi {displayHandle} 👋</Text>
           <Text style={s.location}>📍 Neopolis</Text>
         </View>
         <TouchableOpacity style={s.weatherBadge} onPress={() => setWxOpen(true)} activeOpacity={0.75}>
