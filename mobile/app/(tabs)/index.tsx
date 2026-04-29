@@ -193,9 +193,12 @@ export default function HomeScreen() {
     <SafeAreaView style={s.root}>
       {/* Top bar */}
       <View style={s.topBar}>
-        <View>
-          <Text style={s.greeting}>Hi {displayHandle} 👋</Text>
-          <Text style={s.location}>📍 Neopolis</Text>
+        <View style={s.topBarLeft}>
+          <Image source={require("../../assets/logo.png")} style={s.headerLogo} resizeMode="contain" />
+          <View>
+            <Text style={s.greeting}>Hi {displayHandle} 👋</Text>
+            <Text style={s.location}>📍 Neopolis</Text>
+          </View>
         </View>
         <TouchableOpacity style={s.weatherBadge} onPress={() => setWxOpen(true)} activeOpacity={0.75}>
           <Text style={s.weatherEmoji}>{wx.emoji}</Text>
@@ -483,6 +486,8 @@ const s = StyleSheet.create({
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
     paddingHorizontal: 16, paddingVertical: 12, backgroundColor: colors.brand[950],
   },
+  topBarLeft:  { flexDirection: "row", alignItems: "center", gap: 10 },
+  headerLogo:  { width: 36, height: 36, borderRadius: 8, backgroundColor: colors.white },
   greeting: { color: colors.white, fontSize: 16, fontWeight: "700" },
   location: { color: colors.brand[400], fontSize: 12, marginTop: 2 },
 

@@ -11,7 +11,7 @@ export default function WelcomeScreen() {
         {/* Brand */}
         <View style={s.brandWrap}>
           <View style={s.logoCircle}>
-            <Text style={s.logoText}>N</Text>
+            <Image source={require("../../assets/logo.png")} style={s.logoImg} resizeMode="contain" />
           </View>
           <Text style={s.brand}>
             Neopolis<Text style={s.brandAccent}>News</Text>
@@ -79,10 +79,10 @@ const s = StyleSheet.create({
     marginTop: 24,
   },
   logoCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    backgroundColor: colors.brand[600],
+    width: 96,
+    height: 96,
+    borderRadius: 24,
+    backgroundColor: colors.white,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
@@ -92,10 +92,9 @@ const s = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
-  logoText: {
-    color: colors.white,
-    fontSize: 32,
-    fontWeight: "900",
+  logoImg: {
+    width: 80,
+    height: 80,
   },
   brand: {
     fontSize: 28,
