@@ -3,19 +3,21 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "@/lib/colors";
 
 const MEDICAL = [
-  { emoji: "🏥", label: "Hospitals"   },
-  { emoji: "🩺", label: "Clinics"     },
-  { emoji: "🧪", label: "Diagnostics" },
-  { emoji: "💊", label: "Pharmacies"  },
-  { emoji: "🚑", label: "Ambulance"   },
+  { emoji: "🏥", label: "Hospitals"          },
+  { emoji: "🚑", label: "Ambulance Services" },
+  { emoji: "🩺", label: "Clinics"            },
+  { emoji: "🧪", label: "Diagnostics"        },
+  { emoji: "💊", label: "Pharmacies"         },
 ];
+
 const WELLNESS = [
-  { emoji: "🧘", label: "Yoga"        },
-  { emoji: "💪", label: "Gym"         },
-  { emoji: "💃", label: "Dance"       },
-  { emoji: "🧖", label: "Spa"         },
-  { emoji: "🥗", label: "Nutrition"   },
-  { emoji: "🎵", label: "Sound Heal." },
+  { emoji: "🧖", label: "Massage Spa"              },
+  { emoji: "💪", label: "Gym"                      },
+  { emoji: "🧘", label: "Yoga Studio"              },
+  { emoji: "💃", label: "Dance Studio"             },
+  { emoji: "🏋️", label: "Personal Trainers"        },
+  { emoji: "🕯️", label: "Meditation & Mindfulness" },
+  { emoji: "🥗", label: "Nutrition & Diet"         },
 ];
 
 export default function HealthScreen() {
@@ -26,6 +28,7 @@ export default function HealthScreen() {
           <Text style={s.headerTitle}>Health & Wellness</Text>
           <Text style={s.headerSub}>Find care and wellness in Neopolis</Text>
         </View>
+
         <View style={s.section}>
           <Text style={s.sectionLabel}>MEDICAL</Text>
           <View style={s.grid}>
@@ -37,6 +40,7 @@ export default function HealthScreen() {
             ))}
           </View>
         </View>
+
         <View style={s.section}>
           <Text style={s.sectionLabel}>WELLNESS</Text>
           <View style={s.grid}>
@@ -48,11 +52,13 @@ export default function HealthScreen() {
             ))}
           </View>
         </View>
+
         <View style={{ height: 24 }} />
       </ScrollView>
     </SafeAreaView>
   );
 }
+
 const s = StyleSheet.create({
   root:         { flex: 1, backgroundColor: colors.gray[50] },
   header:       { backgroundColor: colors.brand[950], padding: 20, paddingTop: 12 },
@@ -61,7 +67,7 @@ const s = StyleSheet.create({
   section:      { paddingHorizontal: 16, paddingTop: 20 },
   sectionLabel: { fontSize: 11, fontWeight: "800", color: colors.gray[400], letterSpacing: 1, marginBottom: 12 },
   grid:         { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  tile:         {
+  tile: {
     width: "30%", backgroundColor: colors.white, borderRadius: 14,
     alignItems: "center", paddingVertical: 16, gap: 8,
     shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
