@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, ActivityIndicator, Image, FlatList,
+  TextInput, ActivityIndicator, Image, Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "@/lib/colors";
@@ -9,6 +9,19 @@ import { TAXONOMY, INDUSTRY_EMOJI, getTypes, getSubtypes } from "@/lib/businessD
 
 const API = process.env.EXPO_PUBLIC_API_URL ?? "https://neopolis.news";
 const INDUSTRIES = Object.keys(TAXONOMY);
+
+const CINEMAS = [
+  { id: "ALUC", name: "Allu Cinemas Kokapet",           slug: "allu-cinemas-kokapet",                              address: "Kokapet, Hyderabad",              formats: ["Multiplex", "Dolby Atmos"], distance: "0.8 km" },
+  { id: "AACN", name: "Aparna Cinemas Nallagandla",      slug: "aparna-cinemas-nallagandla",                        address: "Nallagandla, Hyderabad",          formats: ["Multiplex", "Dolby Atmos"], distance: "3.2 km" },
+  { id: "MRAD", name: "Miraj Cinemas — Anand Mall",      slug: "miraj-cinemas-anand-mall-and-movies-narsingi",      address: "Anand Mall, Narsingi, Hyderabad", formats: ["Multiplex"],                distance: "4.1 km" },
+];
+
+function formatDate(d: Date) {
+  return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+}
+function getDays(n = 7) {
+  return Array.from({ length: n }, (_, i) => { const d = new Date(); d.setDate(d.getDate() + i); return d; });
+}
 
 interface Business {
   id: string;
@@ -188,7 +201,14 @@ export default function SearchScreen() {
           <ActivityIndicator color={colors.brand[500]} style={{ marginTop: 40 }} />
         ) : (
           <>
-            {displayedBusinesses.length > 0 && (
+            {industry === "Entertainment" && type === "Cinema" ? (
+              <>
+                <View style={s.sectionRow}>
+                  <Text style={s.sectionLabel}>Cinemas near Neopolis</Text>
+                </View>
+                <CinemaView />
+              </>
+            ) : displayedBusinesses.length > 0 && (
               <>
                 <View style={s.sectionRow}>
                   <Text style={s.sectionLabel}>
@@ -242,6 +262,58 @@ export default function SearchScreen() {
         <View style={{ height: 32 }} />
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function CinemaView() {
+  const days = getDays(7);
+  const [selectedDay, setSelectedDay] = useState(0);
+  const dateStr = formatDate(days[selectedDay]);
+
+  return (
+    <View style={{ paddingBottom: 8 }}>
+      {/* Date strip */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12, gap: 8, paddingVertical: 8 }}>
+        {days.map((d, i) => (
+          <TouchableOpacity
+            key={i}
+            onPress={() => setSelectedDay(i)}
+            activeOpacity={0.75}
+            style={[cs.dateBtn, selectedDay === i && cs.dateBtnActive]}
+          >
+            <Text style={[cs.dateDow,  selectedDay === i && cs.dateDowActive]}>{i === 0 ? "Today" : d.toLocaleDateString("en-IN", { weekday: "short" })}</Text>
+            <Text style={[cs.dateNum,  selectedDay === i && cs.dateNumActive]}>{d.getDate()}</Text>
+            <Text style={[cs.dateMon,  selectedDay === i && cs.dateMonActive]}>{d.toLocaleDateString("en-IN", { month: "short" })}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {/* Cinema cards */}
+      {CINEMAS.map((c) => (
+        <View key={c.id} style={cs.card}>
+          <View style={cs.cardTop}>
+            <View style={cs.iconWrap}><Text style={{ fontSize: 20 }}>🎬</Text></View>
+            <View style={{ flex: 1 }}>
+              <Text style={cs.cinemaName}>{c.name}</Text>
+              <Text style={cs.cinemaAddr}>📍 {c.address}</Text>
+              <Text style={cs.cinemaDist}>{c.distance} from Neopolis</Text>
+            </View>
+          </View>
+          <View style={cs.formats}>
+            {c.formats.map(f => (
+              <View key={f} style={cs.formatChip}><Text style={cs.formatText}>{f}</Text></View>
+            ))}
+          </View>
+          <TouchableOpacity
+            style={cs.bmsBtn}
+            activeOpacity={0.85}
+            onPress={() => Linking.openURL(`https://in.bookmyshow.com/cinemas/hyderabad/${c.slug}/buytickets/${c.id}/${dateStr}`)}
+          >
+            <Text style={cs.bmsBtnText}>🎟️  View Showtimes &amp; Book</Text>
+          </TouchableOpacity>
+        </View>
+      ))}
+    </View>
   );
 }
 
@@ -355,4 +427,27 @@ const s = StyleSheet.create({
   emptyWrap: { paddingTop: 60, alignItems: "center", gap: 10, paddingHorizontal: 32 },
   emptyEmoji:{ fontSize: 40 },
   emptyText: { fontSize: 14, color: colors.gray[400], textAlign: "center", lineHeight: 20 },
+});
+
+const cs = StyleSheet.create({
+  dateBtn:       { alignItems: "center", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: colors.gray[200], backgroundColor: colors.white, minWidth: 58 },
+  dateBtnActive: { backgroundColor: colors.gray[900], borderColor: colors.gray[900] },
+  dateDow:       { fontSize: 10, fontWeight: "700", color: colors.gray[500], textTransform: "uppercase" },
+  dateDowActive: { color: colors.white },
+  dateNum:       { fontSize: 18, fontWeight: "900", color: colors.gray[800] },
+  dateNumActive: { color: colors.white },
+  dateMon:       { fontSize: 10, color: colors.gray[400] },
+  dateMonActive: { color: "rgba(255,255,255,0.7)" },
+
+  card:     { backgroundColor: colors.white, marginHorizontal: 12, marginBottom: 10, borderRadius: 16, padding: 14, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 6, elevation: 3 },
+  cardTop:  { flexDirection: "row", gap: 12, marginBottom: 10 },
+  iconWrap: { width: 44, height: 44, borderRadius: 12, backgroundColor: colors.gray[900], alignItems: "center", justifyContent: "center" },
+  cinemaName: { fontSize: 14, fontWeight: "800", color: colors.gray[900] },
+  cinemaAddr: { fontSize: 12, color: colors.gray[500], marginTop: 2 },
+  cinemaDist: { fontSize: 11, color: colors.brand[500], fontWeight: "600", marginTop: 2 },
+  formats:    { flexDirection: "row", gap: 6, marginBottom: 12 },
+  formatChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 100, backgroundColor: colors.gray[100] },
+  formatText: { fontSize: 11, fontWeight: "600", color: colors.gray[600] },
+  bmsBtn:     { backgroundColor: "#dc2626", borderRadius: 12, paddingVertical: 12, alignItems: "center" },
+  bmsBtnText: { color: colors.white, fontSize: 14, fontWeight: "800" },
 });
