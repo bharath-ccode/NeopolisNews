@@ -333,7 +333,7 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <Image src="/logo.png" alt="NeopolisNews" width={36} height={36} className="object-contain" />
+            <Image src="/logo.png" alt="NeopolisNews" width={52} height={52} className="object-contain" />
             <span className="text-lg font-bold text-gray-900 leading-none">
               Neopolis<span className="text-brand-600">News</span>
             </span>
