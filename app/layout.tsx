@@ -7,26 +7,32 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neopolis.news";
 
 export const metadata: Metadata = {
   title: {
-    default: "NeopolisNews – Urban District Digital Platform",
-    template: "%s | NeopolisNews",
+    default: "Neopolis News – Kokapet & Narsingi Local News, Real Estate & Business Directory",
+    template: "%s | Neopolis News",
   },
   description:
-    "Your single source of truth for Neopolis – real estate, rentals, retail, news, and services for India's next urban micro-city.",
+    "Neopolis News is your hyperlocal guide to Kokapet, Narsingi and the Neopolis urban district — real estate, rentals, local businesses, health, deals, events and neighbourhood news.",
   keywords: [
+    "Neopolis News",
     "Neopolis",
-    "urban district",
-    "real estate India",
-    "mixed-use development",
-    "rentals",
-    "commercial property",
+    "Kokapet",
+    "Narsingi",
+    "Hyderabad real estate",
+    "Kokapet apartments",
+    "Narsingi businesses",
+    "Neopolis district",
+    "local news Hyderabad",
+    "Kokapet rentals",
+    "mixed-use urban district",
+    "Neopolis Hyderabad",
   ],
   openGraph: {
-    title: "NeopolisNews – Urban District Digital Platform",
+    title: "Neopolis News – Kokapet & Narsingi Local News, Real Estate & Business Directory",
     description:
-      "Real estate intelligence, rentals, retail directory, local news & services for the Neopolis urban district.",
+      "Hyperlocal news, real estate, business directory, health, deals and events for the Neopolis urban district — Kokapet & Narsingi, Hyderabad.",
     type: "website",
     url: SITE_URL,
-    siteName: "NeopolisNews",
+    siteName: "Neopolis News",
   },
   alternates: { canonical: SITE_URL },
 };
@@ -34,7 +40,7 @@ export const metadata: Metadata = {
 const websiteJsonLd = {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  name: "NeopolisNews",
+  name: "Neopolis News",
   url: SITE_URL,
   potentialAction: {
     "@type": "SearchAction",
