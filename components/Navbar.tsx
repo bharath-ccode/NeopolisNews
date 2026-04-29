@@ -13,6 +13,7 @@ import {
   Megaphone,
   Menu,
   X,
+  Clapperboard,
   ChevronDown,
   ChevronRight,
   LayoutDashboard,
@@ -120,6 +121,14 @@ const NAV_ITEMS = [
         ],
       },
       { label: "Upcoming Events", href: "/events" },
+    ],
+  },
+  {
+    label: "Entertainment",
+    href: "/entertainment/cinemas",
+    icon: Clapperboard,
+    sub: [
+      { label: "Cinemas", href: "/entertainment/cinemas" },
     ],
   },
   {
