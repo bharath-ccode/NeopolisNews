@@ -91,7 +91,7 @@ export default function HealthScreen() {
           <View style={s.resultsSection}>
             <Text style={s.resultsLabel}>{selectedType} in Neopolis</Text>
             {loading ? (
-              <ActivityIndicator color={colors.brand[400]} style={{ marginTop: 20 }} />
+              <ActivityIndicator color={colors.emerald[500]} style={{ marginTop: 20 }} />
             ) : businesses.length === 0 ? (
               <View style={s.emptyWrap}>
                 <Text style={s.emptyText}>No listings found yet</Text>
@@ -169,7 +169,7 @@ const s = StyleSheet.create({
   root:         { flex: 1, backgroundColor: colors.gray[50] },
   header:       { backgroundColor: colors.brand[950], padding: 20, paddingTop: 12 },
   headerTitle:  { color: colors.white, fontSize: 22, fontWeight: "800" },
-  headerSub:    { color: colors.brand[400], fontSize: 13, marginTop: 4 },
+  headerSub:    { color: colors.emerald[400], fontSize: 13, marginTop: 4 },
 
   section:      { paddingHorizontal: 16, paddingTop: 20 },
   sectionLabel: { fontSize: 11, fontWeight: "800", color: colors.gray[400], letterSpacing: 1, marginBottom: 12 },
@@ -184,13 +184,13 @@ const s = StyleSheet.create({
   },
   tileMedical:  { backgroundColor: colors.white },
   tileWellness: { backgroundColor: "#faf5ff" },
-  tileActive:   { borderColor: colors.brand[500] },
+  tileActive:   { borderColor: colors.emerald[600] },
   tileEmoji:    { fontSize: 26 },
   tileLabel: {
     fontSize: 11, fontWeight: "700", color: colors.gray[700],
     textAlign: "center",
   },
-  tileLabelActive: { color: colors.brand[600] },
+  tileLabelActive: { color: colors.emerald[700] },
 
   resultsSection: { paddingHorizontal: 16, paddingTop: 20 },
   resultsLabel:   { fontSize: 13, fontWeight: "800", color: colors.gray[700], marginBottom: 12 },

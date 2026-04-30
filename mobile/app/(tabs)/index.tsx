@@ -402,7 +402,7 @@ function DealCard({ deal }: { deal: Deal }) {
         <View style={s.cardBody}>
           <View style={s.cardTopRow}>
             {deal.image_url && (
-              <View style={[s.badge, { backgroundColor: colors.orange[600] }]}>
+              <View style={[s.badge, { backgroundColor: colors.amber[600] }]}>
                 <Text style={s.badgeText}>{badge}</Text>
               </View>
             )}
@@ -539,12 +539,12 @@ const s = StyleSheet.create({
   // Deal card accent styles
   dealCardWrap: {
     flexDirection: "row", padding: 0, overflow: "hidden",
-    shadowColor: colors.orange[600],
+    shadowColor: colors.amber[600],
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.22, shadowRadius: 10, elevation: 6,
   },
-  dealAccent:    { width: 5, backgroundColor: colors.orange[600] },
-  dealNoImg:     { backgroundColor: colors.orange[600], paddingHorizontal: 12, paddingVertical: 14 },
+  dealAccent:    { width: 5, backgroundColor: colors.amber[600] },
+  dealNoImg:     { backgroundColor: colors.amber[600], paddingHorizontal: 12, paddingVertical: 14 },
   dealNoImgBadge:{ color: "rgba(255,255,255,0.75)", fontSize: 10, fontWeight: "800", letterSpacing: 0.8, marginBottom: 3 },
   dealNoImgName: { color: colors.white, fontSize: 16, fontWeight: "900" },
 
