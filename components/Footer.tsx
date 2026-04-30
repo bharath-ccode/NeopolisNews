@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Building2, Mail, Phone, MapPin } from "lucide-react";
+import Image from "next/image";
+import { Mail, Phone, MapPin } from "lucide-react";
 import FooterSubscribe from "./FooterSubscribe";
 
 const FOOTER_LINKS = {
@@ -36,12 +37,17 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-8 mb-10">
           {/* Brand */}
           <div className="col-span-2">
-            <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center">
-                <Building2 className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-lg font-bold text-white">
-                Neopolis<span className="text-brand-400">News</span>
+            <Link href="/" className="flex items-center gap-3 mb-5">
+              <Image
+                src="/logo.png"
+                alt="Neopolis News"
+                width={72}
+                height={72}
+                className="rounded-xl object-contain bg-white p-1"
+              />
+              <span className="text-xl font-extrabold text-white leading-tight">
+                Neopolis<br />
+                <span className="text-brand-400">News</span>
               </span>
             </Link>
             <p className="text-sm leading-relaxed mb-4">
@@ -51,11 +57,11 @@ export default function Footer() {
             </p>
             <div className="space-y-2 text-sm">
               <a
-                href="mailto:hello@neopolisnews.in"
+                href="mailto:support@neopolis.news"
                 className="flex items-center gap-2 hover:text-white transition-colors"
               >
                 <Mail className="w-4 h-4 shrink-0" />
-                hello@neopolisnews.in
+                support@neopolis.news
               </a>
               <a
                 href="tel:+919900000000"
@@ -99,7 +105,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-brand-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-brand-400">
-          <p>© 2026 NeopolisNews. All rights reserved.</p>
+          <p>© 2026 Neopolis News. All rights reserved.</p>
           <div className="flex gap-4">
             <Link href="/privacy" className="hover:text-white">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-white">Terms of Use</Link>
