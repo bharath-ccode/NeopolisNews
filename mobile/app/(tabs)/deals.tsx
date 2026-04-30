@@ -168,8 +168,8 @@ function DealCard({ deal }: { deal: Deal }) {
   );
 }
 
-const ORANGE = colors.orange[600];
-const ORANGE_LIGHT = colors.orange[50];
+const ORANGE = colors.amber[600];
+const ORANGE_LIGHT = colors.amber[50];
 
 const s = StyleSheet.create({
   root:   { flex: 1, backgroundColor: "#f1f5f9" },
@@ -244,10 +244,10 @@ const s = StyleSheet.create({
   timerBadge: {
     backgroundColor: ORANGE_LIGHT,
     paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8,
-    borderWidth: 1, borderColor: "#fed7aa",
+    borderWidth: 1, borderColor: colors.amber[100],
   },
   timerBadgeUrgent: { backgroundColor: "#fef2f2", borderColor: "#fecaca" },
-  timerText:       { color: colors.orange[600], fontSize: 11, fontWeight: "700" },
+  timerText:       { color: colors.amber[700], fontSize: 11, fontWeight: "700" },
   timerTextUrgent: { color: "#dc2626" },
 
   dealName: { fontSize: 17, fontWeight: "800", color: colors.gray[900], lineHeight: 23, marginBottom: 4 },

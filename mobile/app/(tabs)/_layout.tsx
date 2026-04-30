@@ -18,7 +18,7 @@ export default function TabLayout() {
           backgroundColor: "#0f2544",
           borderTopColor: "#1e3a5f",
         },
-        tabBarActiveTintColor: "#f97316",
+        tabBarActiveTintColor: "#d97706",
         tabBarInactiveTintColor: "#94a3b8",
       }}
     >
