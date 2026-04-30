@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
       start_date,
       end_date,
       image_url: image_url ?? null,
+      created_by: auth.data.userId,
     })
     .select()
     .single();

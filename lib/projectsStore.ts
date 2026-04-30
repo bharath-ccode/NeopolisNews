@@ -242,6 +242,7 @@ export async function getProjectById(id: string): Promise<Project | null> {
 
 export async function createProject(input: ProjectInput): Promise<Project> {
   const sb = createClient();
+  const { data: { user } } = await sb.auth.getUser();
 
   const { data: proj, error: projErr } = await sb
     .from("projects")
@@ -257,6 +258,7 @@ export async function createProject(input: ProjectInput): Promise<Project> {
       tier:                  input.tier,
       price_range_min:       input.priceRangeMin,
       price_range_max:       input.priceRangeMax,
+      created_by:            user?.id ?? null,
     })
     .select()
     .single();

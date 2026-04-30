@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
       bms_url:       bms_url ?? null,
       running_from,
       running_until: running_until ?? null,
+      created_by:    auth.data.userId,
     })
     .select()
     .single();
