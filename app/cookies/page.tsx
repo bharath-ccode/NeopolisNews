@@ -112,13 +112,6 @@ export default function CookiesPage() {
         <CookieTable
           rows={[
             {
-              name: "neopolis_listings",
-              type: "localStorage",
-              purpose:
-                "Stores property listings you have posted as an individual owner. Used to display and manage your listings on the dashboard.",
-              duration: "Until manually cleared",
-            },
-            {
               name: "neopolis_businesses",
               type: "localStorage",
               purpose:
