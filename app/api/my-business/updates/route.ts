@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
       image_url: image_url ?? null,
       cta_label: cta_label ?? null,
       cta_url: cta_url ?? null,
+      created_by: auth.data.userId,
     })
     .select()
     .single();

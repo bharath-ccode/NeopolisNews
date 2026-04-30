@@ -94,6 +94,7 @@ export async function createArticle(
   payload: Omit<Article, "id" | "createdAt" | "updatedAt">
 ): Promise<Article> {
   const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   const { data, error } = await supabase
     .from("articles")
     .insert({
@@ -113,6 +114,7 @@ export async function createArticle(
       source:     payload.source ?? null,
       project_id: payload.projectId ?? null,
       builder_id: payload.builderId ?? null,
+      created_by: user?.id ?? null,
     })
     .select()
     .single();

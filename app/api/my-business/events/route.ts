@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("business_events")
-    .insert({ business_id: businessId, name, event_date, start_time, end_time, description: description ?? null, image_url: image_url ?? null })
+    .insert({ business_id: businessId, name, event_date, start_time, end_time, description: description ?? null, image_url: image_url ?? null, created_by: auth.data.userId })
     .select()
     .single();
 

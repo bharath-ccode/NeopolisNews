@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
       status: "draft",
       image_url: image_url ?? null,
       source: "business",
+      created_by: auth.data.userId,
     })
     .select("id")
     .single();
@@ -77,6 +78,7 @@ export async function POST(req: NextRequest) {
       image_url: image_url ?? null,
       submission_status: "pending",
       article_id: article.id,
+      created_by: auth.data.userId,
     })
     .select()
     .single();
