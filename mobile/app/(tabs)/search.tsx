@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, ActivityIndicator, Image, Linking,
@@ -10,11 +10,14 @@ import { TAXONOMY, INDUSTRY_EMOJI, getTypes, getSubtypes } from "@/lib/businessD
 const API = process.env.EXPO_PUBLIC_API_URL ?? "https://neopolis.news";
 const INDUSTRIES = Object.keys(TAXONOMY);
 
-const CINEMAS = [
-  { id: "ALUC", name: "Allu Cinemas Kokapet",           slug: "allu-cinemas-kokapet",                              address: "Kokapet, Hyderabad",              formats: ["Multiplex", "Dolby Atmos"], distance: "0.8 km" },
-  { id: "AACN", name: "Aparna Cinemas Nallagandla",      slug: "aparna-cinemas-nallagandla",                        address: "Nallagandla, Hyderabad",          formats: ["Multiplex", "Dolby Atmos"], distance: "3.2 km" },
-  { id: "MRAD", name: "Miraj Cinemas — Anand Mall",      slug: "miraj-cinemas-anand-mall-and-movies-narsingi",      address: "Anand Mall, Narsingi, Hyderabad", formats: ["Multiplex"],                distance: "4.1 km" },
-];
+interface Cinema {
+  id: string;
+  name: string;
+  address: string | null;
+  subtypes: string[];
+  bms_code: string | null;
+  bms_slug: string | null;
+}
 
 function formatDate(d: Date) {
   return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
@@ -268,7 +271,17 @@ export default function SearchScreen() {
 function CinemaView() {
   const days = getDays(7);
   const [selectedDay, setSelectedDay] = useState(0);
+  const [cinemas, setCinemas]         = useState<Cinema[]>([]);
+  const [loading, setLoading]         = useState(true);
   const dateStr = formatDate(days[selectedDay]);
+
+  useEffect(() => {
+    fetch(`${API}/api/cinemas`)
+      .then(r => r.json())
+      .then(data => setCinemas(Array.isArray(data) ? data : []))
+      .catch(() => setCinemas([]))
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <View style={{ paddingBottom: 8 }}>
@@ -288,31 +301,48 @@ function CinemaView() {
         ))}
       </ScrollView>
 
-      {/* Cinema cards */}
-      {CINEMAS.map((c) => (
-        <View key={c.id} style={cs.card}>
-          <View style={cs.cardTop}>
-            <View style={cs.iconWrap}><Text style={{ fontSize: 20 }}>🎬</Text></View>
-            <View style={{ flex: 1 }}>
-              <Text style={cs.cinemaName}>{c.name}</Text>
-              <Text style={cs.cinemaAddr}>📍 {c.address}</Text>
-              <Text style={cs.cinemaDist}>{c.distance} from Neopolis</Text>
-            </View>
-          </View>
-          <View style={cs.formats}>
-            {c.formats.map(f => (
-              <View key={f} style={cs.formatChip}><Text style={cs.formatText}>{f}</Text></View>
-            ))}
-          </View>
-          <TouchableOpacity
-            style={cs.bmsBtn}
-            activeOpacity={0.85}
-            onPress={() => Linking.openURL(`https://in.bookmyshow.com/cinemas/hyderabad/${c.slug}/buytickets/${c.id}/${dateStr}`)}
-          >
-            <Text style={cs.bmsBtnText}>🎟️  View Showtimes &amp; Book</Text>
-          </TouchableOpacity>
+      {loading ? (
+        <ActivityIndicator color={colors.brand[400]} style={{ marginTop: 20, marginBottom: 12 }} />
+      ) : cinemas.length === 0 ? (
+        <View style={{ paddingHorizontal: 12, paddingTop: 12 }}>
+          <Text style={{ color: colors.gray[400], fontSize: 13, textAlign: "center" }}>No cinemas listed yet</Text>
         </View>
-      ))}
+      ) : (
+        cinemas.map((c) => {
+          const bmsUrl = c.bms_slug && c.bms_code
+            ? `https://in.bookmyshow.com/cinemas/hyderabad/${c.bms_slug}/buytickets/${c.bms_code}/${dateStr}`
+            : null;
+          return (
+            <View key={c.id} style={cs.card}>
+              <View style={cs.cardTop}>
+                <View style={cs.iconWrap}><Text style={{ fontSize: 20 }}>🎬</Text></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={cs.cinemaName}>{c.name}</Text>
+                  {c.address && <Text style={cs.cinemaAddr}>📍 {c.address}</Text>}
+                </View>
+              </View>
+              {c.subtypes.length > 0 && (
+                <View style={cs.formats}>
+                  {c.subtypes.map(f => (
+                    <View key={f} style={cs.formatChip}><Text style={cs.formatText}>{f}</Text></View>
+                  ))}
+                </View>
+              )}
+              {bmsUrl ? (
+                <TouchableOpacity
+                  style={cs.bmsBtn}
+                  activeOpacity={0.85}
+                  onPress={() => Linking.openURL(bmsUrl)}
+                >
+                  <Text style={cs.bmsBtnText}>🎟️  View Showtimes &amp; Book</Text>
+                </TouchableOpacity>
+              ) : (
+                <Text style={{ fontSize: 12, color: colors.gray[400], textAlign: "center", paddingVertical: 8 }}>Booking link not available</Text>
+              )}
+            </View>
+          );
+        })
+      )}
     </View>
   );
 }
