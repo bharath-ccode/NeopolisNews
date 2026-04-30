@@ -30,7 +30,7 @@ const MODULES = [
   {
     href: "/real-estate",
     icon: Building2,
-    color: "bg-blue-50 text-blue-600",
+    color: "bg-amber-50 text-amber-700",
     title: "Real Estate Intelligence",
     desc: "Project pages, price trends, construction progress, floor plans, and live inventory for every tower.",
     tags: ["Developer Listings", "Price History", "Drone Videos"],
@@ -38,7 +38,7 @@ const MODULES = [
   {
     href: "/rentals",
     icon: Home,
-    color: "bg-green-50 text-green-600",
+    color: "bg-emerald-50 text-emerald-700",
     title: "Rentals & Resale",
     desc: "Residential, commercial, and retail spaces available to rent or buy — verified owners and brokers.",
     tags: ["Residential", "Office Leasing", "Resale"],
@@ -154,7 +154,7 @@ export default function HomePage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Copy */}
             <div>
-              <span className="inline-flex items-center gap-2 bg-brand-800 text-brand-300 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
+              <span className="inline-flex items-center gap-2 bg-amber-900/40 border border-amber-500/40 text-amber-300 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
                 <MapPin className="w-3.5 h-3.5" />
                 India&apos;s next urban micro-city
               </span>
@@ -185,7 +185,7 @@ export default function HomePage() {
                 {["Verified Listings", "Weekly Updates", "100% Free for Buyers"].map(
                   (t) => (
                     <span key={t} className="flex items-center gap-1.5">
-                      <CheckCircle className="w-4 h-4 text-green-400" />
+                      <CheckCircle className="w-4 h-4 text-emerald-400" />
                       {t}
                     </span>
                   )
@@ -207,13 +207,13 @@ export default function HomePage() {
       </section>
 
       {/* ── Stats ── */}
-      <section className="bg-white border-b border-gray-100">
+      <section className="bg-gradient-to-r from-amber-50 via-white to-emerald-50 border-b border-amber-100">
         <SectionWrapper tight>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {STATS.map((s) => (
+            {STATS.map((s, i) => (
               <div key={s.label} className="text-center">
-                <s.icon className="w-6 h-6 text-brand-500 mx-auto mb-2" />
-                <div className="text-3xl font-extrabold text-gray-900">
+                <s.icon className={`w-6 h-6 mx-auto mb-2 ${i % 2 === 0 ? "text-amber-600" : "text-emerald-600"}`} />
+                <div className={`text-3xl font-extrabold ${i % 2 === 0 ? "text-amber-600" : "text-emerald-700"}`}>
                   {s.value}
                 </div>
                 <div className="text-sm text-gray-500 mt-0.5">{s.label}</div>
@@ -227,6 +227,10 @@ export default function HomePage() {
       <SectionWrapper id="modules">
         <div className="text-center mb-10">
           <h2 className="section-heading">Everything Neopolis, One Platform</h2>
+          <div className="flex justify-center gap-1.5 mt-3 mb-3">
+            <div className="w-8 h-1 rounded-full bg-amber-500" />
+            <div className="w-8 h-1 rounded-full bg-emerald-600" />
+          </div>
           <p className="text-gray-500 mt-2 max-w-xl mx-auto">
             Six integrated modules serving homebuyers, tenants, retailers,
             developers, and service providers.
@@ -274,11 +278,19 @@ export default function HomePage() {
             </Link>
           </div>
           <div className="grid md:grid-cols-3 gap-5">
-            {FEATURED_PROJECTS.map((p) => (
+            {FEATURED_PROJECTS.map((p, i) => (
               <div key={p.name} className="card p-5">
                 {/* Placeholder image strip */}
-                <div className="h-36 bg-gradient-to-br from-brand-100 to-brand-200 rounded-lg mb-4 flex items-center justify-center">
-                  <Building2 className="w-10 h-10 text-brand-400" />
+                <div className={`h-36 rounded-lg mb-4 flex items-center justify-center ${
+                  i === 0 ? "bg-gradient-to-br from-amber-100 to-amber-200" :
+                  i === 1 ? "bg-gradient-to-br from-emerald-100 to-emerald-200" :
+                            "bg-gradient-to-br from-brand-100 to-brand-200"
+                }`}>
+                  <Building2 className={`w-10 h-10 ${
+                    i === 0 ? "text-amber-500" :
+                    i === 1 ? "text-emerald-600" :
+                              "text-brand-400"
+                  }`} />
                 </div>
                 <div className="flex items-start justify-between mb-2">
                   <div>
@@ -360,10 +372,14 @@ export default function HomePage() {
             {FLYWHEEL.map((f, i) => (
               <div key={f.step} className="flex flex-col md:flex-row items-center">
                 <div className="flex flex-col items-center text-center w-40 px-2">
-                  <div className="w-12 h-12 rounded-full bg-brand-700 border-2 border-brand-500 flex items-center justify-center mb-3">
-                    <f.icon className="w-5 h-5 text-brand-300" />
+                  <div className={`w-12 h-12 rounded-full border-2 flex items-center justify-center mb-3 ${
+                    parseInt(f.step) % 2 === 1
+                      ? "bg-amber-800/60 border-amber-500"
+                      : "bg-emerald-800/60 border-emerald-500"
+                  }`}>
+                    <f.icon className={`w-5 h-5 ${parseInt(f.step) % 2 === 1 ? "text-amber-300" : "text-emerald-300"}`} />
                   </div>
-                  <span className="text-xs text-brand-400 font-bold mb-1">
+                  <span className={`text-xs font-bold mb-1 ${parseInt(f.step) % 2 === 1 ? "text-amber-400" : "text-emerald-400"}`}>
                     STEP {f.step}
                   </span>
                   <span className="text-sm font-semibold text-white leading-snug">
