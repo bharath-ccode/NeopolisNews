@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const industry = req.nextUrl.searchParams.get("industry");
+  const type     = req.nextUrl.searchParams.get("type");
   const limit    = Math.min(parseInt(req.nextUrl.searchParams.get("limit") ?? "40"), 100);
 
   const admin = createAdminClient();
@@ -17,6 +18,7 @@ export async function GET(req: NextRequest) {
     .limit(limit);
 
   if (industry) query = query.eq("industry", industry);
+  if (type)     query = query.contains("types", [type]);
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
