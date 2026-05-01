@@ -192,23 +192,40 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={s.root}>
       {/* Top bar */}
-      <View style={s.topBar}>
-        <View style={s.topBarLeft}>
-          <Image source={require("../../assets/logo.png")} style={s.headerLogo} resizeMode="contain" />
-          <View>
-            <Text style={s.greeting}>Hi {displayHandle} 👋</Text>
-            <Text style={s.location}>📍 Neopolis</Text>
-          </View>
-        </View>
-        <TouchableOpacity style={s.weatherBadge} onPress={() => setWxOpen(true)} activeOpacity={0.75}>
-          <Text style={s.weatherEmoji}>{wx.emoji}</Text>
-          <Text style={s.weatherTemp}>{wx.temp !== null ? `${wx.temp}°` : "—"}</Text>
-          {wx.aqi !== null && (
-            <View style={[s.aqiBadge, { backgroundColor: aqiBg(wx.aqi) }]}>
-              <Text style={s.aqiText}>AQI {wx.aqi}</Text>
+      <View style={s.header}>
+        <View style={s.topBar}>
+          <View style={s.topBarLeft}>
+            <Image source={require("../../assets/logo.png")} style={s.headerLogo} resizeMode="contain" />
+            <View>
+              <Text style={s.greeting}>Hi {displayHandle} 👋</Text>
+              <Text style={s.location}>📍 Neopolis</Text>
             </View>
-          )}
-        </TouchableOpacity>
+          </View>
+          <TouchableOpacity style={s.weatherBadge} onPress={() => setWxOpen(true)} activeOpacity={0.75}>
+            <Text style={s.weatherEmoji}>{wx.emoji}</Text>
+            <Text style={s.weatherTemp}>{wx.temp !== null ? `${wx.temp}°` : "—"}</Text>
+            {wx.feelsLike !== null && (
+              <Text style={s.feelsLike}>Feels {wx.feelsLike}°</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* AQI + walking advice strip */}
+        {wx.aqi !== null && (() => {
+          const info = aqiInfo(wx.aqi!);
+          return (
+            <TouchableOpacity style={[s.aqiStrip, { backgroundColor: info.color + "22" }]} onPress={() => setWxOpen(true)} activeOpacity={0.8}>
+              <View style={[s.aqiDot, { backgroundColor: info.color }]}>
+                <Text style={s.aqiDotText}>{wx.aqi}</Text>
+              </View>
+              <View style={s.aqiStripText}>
+                <Text style={[s.aqiLabel, { color: info.color }]}>AQI · {info.label}</Text>
+                <Text style={s.aqiAdvice} numberOfLines={1}>{info.advice}</Text>
+              </View>
+              <Text style={s.aqiTap}>Details →</Text>
+            </TouchableOpacity>
+          );
+        })()}
       </View>
 
       {/* Sections */}
@@ -482,14 +499,16 @@ const s = StyleSheet.create({
   root:          { flex: 1, backgroundColor: colors.gray[50] },
   scrollContent: { paddingBottom: 16 },
 
+  header: { backgroundColor: colors.brand[950] },
+
   topBar: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    paddingHorizontal: 16, paddingVertical: 12, backgroundColor: colors.brand[950],
+    paddingHorizontal: 16, paddingVertical: 12,
   },
   topBarLeft:  { flexDirection: "row", alignItems: "center", gap: 10 },
   headerLogo:  { width: 36, height: 36, borderRadius: 8, backgroundColor: colors.white },
-  greeting: { color: colors.white, fontSize: 16, fontWeight: "700" },
-  location: { color: colors.brand[400], fontSize: 12, marginTop: 2 },
+  greeting:    { color: colors.white, fontSize: 16, fontWeight: "700" },
+  location:    { color: colors.brand[400], fontSize: 12, marginTop: 2 },
 
   weatherBadge: {
     flexDirection: "row", alignItems: "center", gap: 6,
@@ -498,8 +517,23 @@ const s = StyleSheet.create({
   },
   weatherEmoji: { fontSize: 14 },
   weatherTemp:  { color: colors.white, fontSize: 13, fontWeight: "700" },
-  aqiBadge:     { borderRadius: 100, paddingHorizontal: 6, paddingVertical: 2 },
-  aqiText:      { color: colors.white, fontSize: 10, fontWeight: "800" },
+  feelsLike:    { color: "rgba(255,255,255,0.5)", fontSize: 11 },
+
+  // AQI strip
+  aqiStrip: {
+    flexDirection: "row", alignItems: "center", gap: 10,
+    paddingHorizontal: 16, paddingVertical: 8,
+    borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.06)",
+  },
+  aqiDot: {
+    width: 36, height: 36, borderRadius: 10,
+    alignItems: "center", justifyContent: "center",
+  },
+  aqiDotText:    { color: colors.white, fontSize: 11, fontWeight: "900" },
+  aqiStripText:  { flex: 1 },
+  aqiLabel:      { fontSize: 12, fontWeight: "800" },
+  aqiAdvice:     { fontSize: 11, color: "rgba(255,255,255,0.55)", marginTop: 1 },
+  aqiTap:        { fontSize: 11, color: "rgba(255,255,255,0.35)", fontWeight: "600" },
 
   loadingWrap: { paddingTop: 80, alignItems: "center" },
 
