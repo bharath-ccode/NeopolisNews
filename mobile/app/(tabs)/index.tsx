@@ -196,10 +196,7 @@ export default function HomeScreen() {
         <View style={s.topBar}>
           <View style={s.topBarLeft}>
             <Image source={require("../../assets/logo.png")} style={s.headerLogo} resizeMode="contain" />
-            <View>
-              <Text style={s.greeting}>Hi {displayHandle} 👋</Text>
-              <Text style={s.location}>📍 Neopolis</Text>
-            </View>
+            <Text style={s.greeting}>Hi {displayHandle} 👋</Text>
           </View>
           <TouchableOpacity style={s.weatherBadge} onPress={() => setWxOpen(true)} activeOpacity={0.75}>
             <Text style={s.weatherEmoji}>{wx.emoji}</Text>
