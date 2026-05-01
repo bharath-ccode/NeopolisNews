@@ -34,6 +34,7 @@ interface Business {
   address: string;
   status: string;
   verified: boolean;
+  approved_for_sessions: boolean;
   logo: string | null;
   pictures: string[];
   social_links: SocialLinks;
@@ -125,6 +126,11 @@ export default function AdminBusinessEditPage() {
   function toggleVerified() {
     if (!business) return;
     persist({ verified: !business.verified });
+  }
+
+  function toggleApprovedForSessions() {
+    if (!business) return;
+    persist({ approved_for_sessions: !business.approved_for_sessions });
   }
 
   async function uploadFile(file: File, folder: string): Promise<string> {
@@ -365,6 +371,27 @@ export default function AdminBusinessEditPage() {
           <button onClick={toggleVerified}
             className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none ${business.verified ? "bg-green-500" : "bg-gray-200"}`}>
             <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${business.verified ? "translate-x-6" : "translate-x-1"}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* Approved for sessions toggle */}
+      <div className="card p-5 mb-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">{business.approved_for_sessions ? "🧘" : "🔒"}</span>
+            <div>
+              <p className="font-semibold text-gray-900 text-sm">Approved for Live Sessions</p>
+              <p className="text-xs text-gray-400">
+                {business.approved_for_sessions
+                  ? "Can publish yoga, fitness, and wellness sessions visible on the app"
+                  : "Not allowed to create live sessions — toggle to approve"}
+              </p>
+            </div>
+          </div>
+          <button onClick={toggleApprovedForSessions}
+            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none ${business.approved_for_sessions ? "bg-brand-600" : "bg-gray-200"}`}>
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${business.approved_for_sessions ? "translate-x-6" : "translate-x-1"}`} />
           </button>
         </div>
       </div>

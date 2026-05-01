@@ -168,7 +168,11 @@ export default function WellnessSessionsTab({ businessId, token }: { businessId:
                   <button
                     key={m}
                     type="button"
-                    onClick={() => setDeliveryMode(m)}
+                    onClick={() => {
+                    setDeliveryMode(m);
+                    const cap = m === "on_location" ? 10 : 25;
+                    setMaxSeats((prev) => String(Math.min(Number(prev), cap)));
+                  }}
                     className={`py-2.5 rounded-lg border text-sm font-semibold transition-colors ${
                       deliveryMode === m
                         ? "bg-brand-600 text-white border-brand-600"
@@ -209,8 +213,17 @@ export default function WellnessSessionsTab({ businessId, token }: { businessId:
 
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <label className={LABEL}>Max Seats</label>
-                <input type="number" min="1" max="500" className={INPUT} value={maxSeats} onChange={(e) => setMaxSeats(e.target.value)} />
+                <label className={LABEL}>Max Slots <span className="font-normal text-gray-400">(limit: {deliveryMode === "on_location" ? 10 : 25})</span></label>
+                <input
+                  type="number" min="1"
+                  max={deliveryMode === "on_location" ? 10 : 25}
+                  className={INPUT}
+                  value={maxSeats}
+                  onChange={(e) => {
+                    const cap = deliveryMode === "on_location" ? 10 : 25;
+                    setMaxSeats(String(Math.min(Number(e.target.value), cap)));
+                  }}
+                />
               </div>
               <div>
                 <label className={LABEL}>Daily Session Time</label>
