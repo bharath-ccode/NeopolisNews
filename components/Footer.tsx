@@ -38,9 +38,8 @@ export default function Footer() {
         {/* ── Main grid ─────────────────────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-8 gap-8 mb-10">
 
-          {/* Logo pane — own visual panel */}
-          <div className="lg:col-span-2 flex flex-col items-center justify-center
-                          bg-white/5 rounded-2xl border border-white/10 p-6 gap-4">
+          {/* Logo pane */}
+          <div className="lg:col-span-2 flex flex-col items-center justify-center p-6 gap-4">
             <Link href="/" className="flex flex-col items-center gap-3">
               <Image
                 src="/logo.png"

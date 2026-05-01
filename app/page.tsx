@@ -148,8 +148,8 @@ export default function HomePage() {
   return (
     <>
       {/* ── Hero ── */}
-      <section className="relative bg-gradient-to-br from-brand-950 via-brand-900 to-brand-800 text-white overflow-hidden">
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-brand-400 via-transparent to-transparent" />
+      <section className="relative bg-gradient-to-br from-gray-950 via-brand-950 to-brand-900 text-white overflow-hidden">
+        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-amber-500 via-transparent to-transparent" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Copy */}
@@ -160,7 +160,7 @@ export default function HomePage() {
               </span>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-5">
                 The Digital Hub for{" "}
-                <span className="text-brand-400">Neopolis</span>
+                <span className="text-amber-400">Neopolis</span>
               </h1>
               <p className="text-lg text-brand-200 mb-8 leading-relaxed max-w-xl">
                 Real estate intelligence, rentals, retail discovery, local news,
@@ -194,7 +194,7 @@ export default function HomePage() {
             </div>
 
             {/* Lead form */}
-            <div className="bg-brand-900/60 backdrop-blur rounded-2xl border border-brand-700 p-6">
+            <div className="bg-black/25 backdrop-blur rounded-2xl border border-white/10 p-6">
               <LeadForm
                 title="Get Free Expert Advice"
                 subtitle="Buy, rent, or invest in Neopolis — our advisors will guide you."
@@ -358,13 +358,13 @@ export default function HomePage() {
       </SectionWrapper>
 
       {/* ── Strategic Flywheel ── */}
-      <section className="bg-brand-950 text-white">
+      <section className="bg-gray-900 text-white">
         <SectionWrapper>
           <div className="text-center mb-10">
             <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
               Why NeopolisNews Scales
             </h2>
-            <p className="text-brand-300 max-w-xl mx-auto text-sm">
+            <p className="text-gray-400 max-w-xl mx-auto text-sm">
               The platform flywheel: each stakeholder strengthens the next.
             </p>
           </div>
@@ -387,7 +387,7 @@ export default function HomePage() {
                   </span>
                 </div>
                 {i < FLYWHEEL.length - 1 && (
-                  <ArrowRight className="text-brand-600 rotate-90 md:rotate-0 my-3 md:my-0 shrink-0" />
+                  <ArrowRight className="text-gray-600 rotate-90 md:rotate-0 my-3 md:my-0 shrink-0" />
                 )}
               </div>
             ))}
