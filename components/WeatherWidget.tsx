@@ -184,6 +184,7 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
     <div className="relative">
 
       {/* ── Trigger button ─────────────────────────────────────────────── */}
+      <div className="flex flex-col gap-0.5">
       <button
         ref={btnRef}
         onClick={() => setOpen((v) => !v)}
@@ -199,8 +200,20 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
         <span className="text-base font-black tracking-tight">{temp}°C</span>
         <span className={variant === "nav" ? "text-gray-400" : "text-brand-300 font-medium"}>{label}</span>
         {variant === "topbar" && <span className="text-brand-400 text-xs">· Kokapet</span>}
+        {aqiInfo && aqi !== null && (
+          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${aqiInfo.badgeBg} ${aqiInfo.badgeText}`}>
+            AQI {aqi} · {aqiInfo.label}
+          </span>
+        )}
         <ChevronDown className={`w-3.5 h-3.5 text-brand-300 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
+      {aqiInfo && (
+        <p className={`text-[11px] font-medium flex items-center gap-1 ${variant === "nav" ? "text-gray-500" : "text-brand-300/70"}`}>
+          <PersonStanding className="w-3 h-3 shrink-0" />
+          {aqiInfo.advice}
+        </p>
+      )}
+      </div>
 
       {/* ── Detail panel ───────────────────────────────────────────────── */}
       {open && (
