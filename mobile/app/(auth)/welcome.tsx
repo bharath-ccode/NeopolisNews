@@ -11,7 +11,6 @@ export default function WelcomeScreen() {
         {/* Brand */}
         <View style={s.brandWrap}>
           <Image source={require("../../assets/logo_transbg.png")} style={s.logoImg} resizeMode="contain" />
-          <Text style={s.tagline}>Urban District Gateway</Text>
         </View>
 
         {/* Feature pills */}
@@ -74,15 +73,8 @@ const s = StyleSheet.create({
     marginTop: 16,
   },
   logoImg: {
-    width: 200,
-    height: 200,
-  },
-  tagline: {
-    marginTop: 4,
-    fontSize: 14,
-    color: colors.amber[500],
-    fontWeight: "600",
-    letterSpacing: 0.5,
+    width: 400,
+    height: 400,
   },
   pillsWrap: {
     flexDirection: "row",
