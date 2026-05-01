@@ -59,7 +59,7 @@ export default function Footer() {
               </span>
             </Link>
             <p className="text-xs text-brand-300 text-center leading-relaxed">
-              Your hyperlocal guide to Kokapet, Narsingi &amp; the Neopolis urban district.
+              Your digital gateway to the Neopolis urban district.
             </p>
           </div>
 

@@ -16,7 +16,7 @@ export default function WelcomeScreen() {
           <Text style={s.brand}>
             Neopolis<Text style={s.brandAccent}>News</Text>
           </Text>
-          <Text style={s.tagline}>Your hyperlocal neighbourhood app</Text>
+          <Text style={s.tagline}>Your digital gateway to the urban district</Text>
         </View>
 
         {/* Feature pills */}
