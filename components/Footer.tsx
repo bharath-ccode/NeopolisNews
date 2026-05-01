@@ -39,27 +39,16 @@ export default function Footer() {
         <div className="grid grid-cols-1 lg:grid-cols-8 gap-8 mb-10">
 
           {/* Logo pane */}
-          <div className="lg:col-span-2 flex flex-col items-center justify-center p-6 gap-4">
-            <Link href="/" className="flex flex-col items-center gap-3">
+          <div className="lg:col-span-2 flex flex-col items-center justify-center p-6">
+            <Link href="/">
               <Image
-                src="/logo.png"
+                src="/logo_transbg.png"
                 alt="Neopolis News"
-                width={160}
-                height={160}
-                className="rounded-2xl object-contain"
+                width={180}
+                height={180}
+                className="object-contain"
               />
-              <span className="text-center">
-                <span className="block text-2xl font-extrabold text-white tracking-tight">
-                  Neopolis
-                </span>
-                <span className="block text-2xl font-extrabold text-brand-400 tracking-tight -mt-1">
-                  News
-                </span>
-              </span>
             </Link>
-            <p className="text-xs text-brand-300 text-center leading-relaxed">
-              Urban District Gateway
-            </p>
           </div>
 
           {/* Right side — contact + subscribe + links */}
