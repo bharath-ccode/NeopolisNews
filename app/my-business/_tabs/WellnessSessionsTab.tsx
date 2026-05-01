@@ -16,6 +16,9 @@ interface WellnessSession {
   meeting_link: string | null;
   platform: string;
   platform_label: string;
+  delivery_mode: "online" | "on_location";
+  session_time: string | null;
+  address: string | null;
   start_date: string;
   end_date: string;
   status: "draft" | "live" | "ended" | "cancelled";
@@ -63,11 +66,14 @@ export default function WellnessSessionsTab({ businessId, token }: { businessId:
   const [description, setDescription] = useState("");
   const [priceInr, setPriceInr] = useState("");
   const [maxSeats, setMaxSeats] = useState("20");
+  const [deliveryMode, setDeliveryMode] = useState<"online" | "on_location">("online");
+  const [sessionTime, setSessionTime] = useState("");
+  const [address, setAddress] = useState("");
   const [meetingLink, setMeetingLink] = useState("");
   const [startDate, setStartDate] = useState(today());
   const [endDate, setEndDate] = useState(minEnd(today()));
 
-  const providerInfo = meetingLink.trim() ? detectProvider(meetingLink.trim()) : null;
+  const providerInfo = deliveryMode === "online" && meetingLink.trim() ? detectProvider(meetingLink.trim()) : null;
 
   useEffect(() => {
     fetch(`/api/my-business/wellness-sessions?businessId=${businessId}`, {
@@ -80,6 +86,7 @@ export default function WellnessSessionsTab({ businessId, token }: { businessId:
   function resetForm() {
     setTrainerName(""); setSessionType(SESSION_TYPES[0]); setLanguage("English");
     setDescription(""); setPriceInr(""); setMaxSeats("20");
+    setDeliveryMode("online"); setSessionTime(""); setAddress("");
     setMeetingLink(""); setStartDate(today()); setEndDate(minEnd(today()));
   }
 
@@ -94,7 +101,11 @@ export default function WellnessSessionsTab({ businessId, token }: { businessId:
         businessId, trainer_name: trainerName, session_type: sessionType,
         language, description: description || null,
         price_inr: parseInt(priceInr), max_seats: parseInt(maxSeats),
-        meeting_link: meetingLink.trim() || null, start_date: startDate, end_date: endDate,
+        delivery_mode: deliveryMode,
+        session_time: sessionTime || null,
+        address: deliveryMode === "on_location" ? address.trim() || null : null,
+        meeting_link: deliveryMode === "online" ? meetingLink.trim() || null : null,
+        start_date: startDate, end_date: endDate,
       }),
     });
     if (res.ok) {
@@ -148,6 +159,28 @@ export default function WellnessSessionsTab({ businessId, token }: { businessId:
         <div className="card p-5">
           <h4 className="font-semibold text-gray-900 text-sm mb-4">Create Session</h4>
           <form onSubmit={handleSubmit} className="space-y-4">
+
+            {/* Delivery mode toggle */}
+            <div>
+              <label className={LABEL}>Delivery Mode *</label>
+              <div className="grid grid-cols-2 gap-2">
+                {(["online", "on_location"] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setDeliveryMode(m)}
+                    className={`py-2.5 rounded-lg border text-sm font-semibold transition-colors ${
+                      deliveryMode === m
+                        ? "bg-brand-600 text-white border-brand-600"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-brand-300"
+                    }`}
+                  >
+                    {m === "online" ? "🎥 Online (Zoom / Meet)" : "🏢 In-Studio / Gym"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
                 <label className={LABEL}>Trainer Name *</label>
@@ -174,27 +207,47 @@ export default function WellnessSessionsTab({ businessId, token }: { businessId:
               </div>
             </div>
 
-            <div>
-              <label className={LABEL}>Max Seats</label>
-              <input type="number" min="1" max="500" className={INPUT} value={maxSeats} onChange={(e) => setMaxSeats(e.target.value)} />
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className={LABEL}>Max Seats</label>
+                <input type="number" min="1" max="500" className={INPUT} value={maxSeats} onChange={(e) => setMaxSeats(e.target.value)} />
+              </div>
+              <div>
+                <label className={LABEL}>Daily Session Time</label>
+                <input type="time" className={INPUT} value={sessionTime} onChange={(e) => setSessionTime(e.target.value)} />
+                <p className="text-xs text-gray-400 mt-1">When the class runs each day</p>
+              </div>
             </div>
 
-            <div>
-              <label className={LABEL}>Meeting Link</label>
-              <input
-                type="url"
-                className={INPUT}
-                value={meetingLink}
-                onChange={(e) => setMeetingLink(e.target.value)}
-                placeholder="https://zoom.us/j/… or meet.google.com/… or teams.microsoft.com/…"
-              />
-              {providerInfo && (
-                <div className={`mt-2 inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full border ${providerInfo.color}`}>
-                  <Video className="w-3.5 h-3.5" />
-                  {providerInfo.label} · {providerInfo.note}
-                </div>
-              )}
-            </div>
+            {deliveryMode === "online" ? (
+              <div>
+                <label className={LABEL}>Zoom / Meet Link</label>
+                <input
+                  type="url"
+                  className={INPUT}
+                  value={meetingLink}
+                  onChange={(e) => setMeetingLink(e.target.value)}
+                  placeholder="https://zoom.us/j/… or meet.google.com/…"
+                />
+                {providerInfo && (
+                  <div className={`mt-2 inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full border ${providerInfo.color}`}>
+                    <Video className="w-3.5 h-3.5" />
+                    {providerInfo.label} · {providerInfo.note}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div>
+                <label className={LABEL}>Studio / Gym Address</label>
+                <input
+                  className={INPUT}
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Floor 2, Neopolis Fitness Hub, Kokapet"
+                />
+                <p className="text-xs text-gray-400 mt-1">Shown to members on the app so they can find the venue</p>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -258,16 +311,24 @@ export default function WellnessSessionsTab({ businessId, token }: { businessId:
                       {s.status.charAt(0).toUpperCase() + s.status.slice(1)}
                     </span>
                     <span className="text-xs font-semibold text-brand-600 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-full">{s.session_type}</span>
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border bg-gray-50 text-gray-600`}>
-                      {s.platform_label}
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
+                      s.delivery_mode === "on_location"
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+                        : "bg-gray-50 text-gray-600 border-gray-200"
+                    }`}>
+                      {s.delivery_mode === "on_location" ? "🏢 In-Studio" : `🎥 ${s.platform_label}`}
                     </span>
                   </div>
                   <p className="font-bold text-sm text-gray-900">{s.trainer_name}</p>
                   <p className="text-xs text-gray-500 mt-0.5">
                     {new Date(s.start_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} –{" "}
                     {new Date(s.end_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    {s.session_time && ` · ${s.session_time.slice(0, 5)}`}
                     {" · "}{s.language}
                   </p>
+                  {s.delivery_mode === "on_location" && s.address && (
+                    <p className="text-xs text-gray-400 mt-0.5">📍 {s.address}</p>
+                  )}
                   <div className="flex items-center gap-4 mt-1.5">
                     <span className="text-sm font-bold text-gray-900">₹{s.price_inr.toLocaleString("en-IN")}<span className="text-xs font-normal text-gray-400">/mo</span></span>
                     <span className="flex items-center gap-1 text-xs text-gray-500">
