@@ -206,6 +206,28 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── Banner ── */}
+      <section className="relative w-full overflow-hidden" style={{ height: "clamp(220px, 40vw, 560px)" }}>
+        <img
+          src="/banner.png"
+          alt="Neopolis Urban District"
+          className="absolute inset-0 w-full h-full object-cover object-center"
+        />
+        {/* bottom fade into stats section */}
+        <div className="absolute inset-0 bg-gradient-to-t from-amber-50/80 via-transparent to-transparent" />
+        {/* tagline overlay */}
+        <div className="absolute inset-0 flex items-end justify-start">
+          <div className="px-6 md:px-12 pb-6 md:pb-10">
+            <p className="text-white text-sm font-semibold tracking-widest uppercase mb-1 drop-shadow">
+              Kokapet · Narsingi · Hyderabad
+            </p>
+            <h2 className="text-white text-3xl md:text-5xl font-extrabold leading-tight drop-shadow-lg">
+              Urban District Gateway
+            </h2>
+          </div>
+        </div>
+      </section>
+
       {/* ── Stats ── */}
       <section className="bg-gradient-to-r from-amber-50 via-white to-emerald-50 border-b border-amber-100">
         <SectionWrapper tight>
