@@ -10,12 +10,7 @@ export default function WelcomeScreen() {
 
         {/* Brand */}
         <View style={s.brandWrap}>
-          <View style={s.logoCircle}>
-            <Image source={require("../../assets/logo.png")} style={s.logoImg} resizeMode="contain" />
-          </View>
-          <Text style={s.brand}>
-            Neopolis<Text style={s.brandAccent}>News</Text>
-          </Text>
+          <Image source={require("../../assets/logo_transbg.png")} style={s.logoImg} resizeMode="contain" />
           <Text style={s.tagline}>Urban District Gateway</Text>
         </View>
 
@@ -76,40 +71,18 @@ const s = StyleSheet.create({
   },
   brandWrap: {
     alignItems: "center",
-    marginTop: 24,
-  },
-  logoCircle: {
-    width: 96,
-    height: 96,
-    borderRadius: 24,
-    backgroundColor: colors.white,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-    shadowColor: colors.amber[500],
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    elevation: 10,
+    marginTop: 16,
   },
   logoImg: {
-    width: 80,
-    height: 80,
-  },
-  brand: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: colors.white,
-    letterSpacing: -0.5,
-  },
-  brandAccent: {
-    color: colors.amber[400],
+    width: 200,
+    height: 200,
   },
   tagline: {
-    marginTop: 8,
+    marginTop: 4,
     fontSize: 14,
-    color: colors.amber[600],
-    fontWeight: "500",
+    color: colors.amber[500],
+    fontWeight: "600",
+    letterSpacing: 0.5,
   },
   pillsWrap: {
     flexDirection: "row",
