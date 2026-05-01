@@ -219,7 +219,7 @@ export default function HomePage() {
         <div className="absolute inset-0 flex items-end justify-start">
           <div className="px-6 md:px-12 pb-6 md:pb-10">
             <h2 className="text-white text-3xl md:text-5xl font-extrabold leading-tight drop-shadow-lg">
-              Urban District Gateway
+              Neopolis. Financial District. Surroundings.
             </h2>
           </div>
         </div>
