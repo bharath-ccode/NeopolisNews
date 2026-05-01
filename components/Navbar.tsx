@@ -339,8 +339,8 @@ export default function Navbar() {
       </div>
 
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
+        <div className="grid grid-cols-[auto_1fr_auto] items-center h-16 gap-4">
+          {/* Left — Logo + name */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <Image src="/logo.png" alt="NeopolisNews" width={52} height={52} className="object-contain" />
             <span className="text-lg font-bold text-gray-900 leading-none">
@@ -348,8 +348,8 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop nav */}
-          <div className="hidden lg:flex items-center gap-1">
+          {/* Center — Desktop nav (truly centered) */}
+          <div className="hidden lg:flex items-center justify-center gap-0.5">
             {NAV_ITEMS.filter((item) => !item.highlight).map((item) => {
               const active = pathname.startsWith(item.href);
               return (
@@ -362,17 +362,15 @@ export default function Navbar() {
                   <Link
                     href={item.href}
                     className={clsx(
-                      "flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      item.highlight
-                        ? "bg-accent-500 text-white hover:bg-accent-600"
-                        : active
+                      "flex items-center gap-1 px-2.5 py-2 rounded-lg text-sm font-medium transition-colors",
+                      active
                         ? "bg-brand-50 text-brand-700"
                         : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                     )}
                   >
-                    <item.icon className="w-4 h-4" />
+                    <item.icon className="w-3.5 h-3.5" />
                     {item.label}
-                    {item.sub && <ChevronDown className="w-3.5 h-3.5 opacity-60" />}
+                    {item.sub && <ChevronDown className="w-3 h-3 opacity-60" />}
                   </Link>
 
                   {item.sub && activeDropdown === item.href && (
@@ -419,8 +417,8 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* Auth + Mobile toggle */}
-          <div className="flex items-center gap-3">
+          {/* Right — Actions + mobile toggle */}
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setSearchOpen(true)}
               aria-label="Search"
@@ -454,7 +452,7 @@ export default function Navbar() {
             </Link>
             <Link
               href="/advertise"
-              className="hidden lg:flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-accent-500 text-white hover:bg-accent-600 transition-colors"
+              className="hidden lg:flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-accent-500 text-white hover:bg-accent-600 transition-colors whitespace-nowrap"
             >
               <Megaphone className="w-4 h-4" />
               Advertise
