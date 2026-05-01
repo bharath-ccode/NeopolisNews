@@ -59,7 +59,7 @@ export default function Footer() {
               </span>
             </Link>
             <p className="text-xs text-brand-300 text-center leading-relaxed">
-              Your digital gateway to the Neopolis urban district.
+              Urban District Gateway
             </p>
           </div>
 

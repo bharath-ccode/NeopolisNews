@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     template: "%s | Neopolis News",
   },
   description:
-    "Neopolis News is your hyperlocal guide to Kokapet, Narsingi and the Neopolis urban district — real estate, rentals, local businesses, health, deals, events and neighbourhood news.",
+    "Neopolis News — Urban District Gateway. Real estate, rentals, local businesses, health, deals, events and news for Kokapet, Narsingi and the Neopolis urban district.",
   keywords: [
     "Neopolis News",
     "Neopolis",
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Neopolis News – Kokapet & Narsingi Local News, Real Estate & Business Directory",
     description:
-      "Hyperlocal news, real estate, business directory, health, deals and events for the Neopolis urban district — Kokapet & Narsingi, Hyderabad.",
+      "Urban District Gateway — news, real estate, business directory, health, deals and events for Kokapet & Narsingi, Hyderabad.",
     type: "website",
     url: SITE_URL,
     siteName: "Neopolis News",
