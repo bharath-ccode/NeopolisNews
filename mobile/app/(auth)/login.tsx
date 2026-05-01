@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
   View, Text, StyleSheet, TextInput, TouchableOpacity,
-  KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView,
+  KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView, Image,
 } from "react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -43,6 +43,7 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
           <View style={s.header}>
+            <Image source={require("../../assets/logo_transbg.png")} style={s.logo} resizeMode="contain" />
             <Text style={s.title}>Welcome back</Text>
             <Text style={s.subtitle}>Sign in to your Neopolis account</Text>
           </View>
@@ -131,6 +132,11 @@ const s = StyleSheet.create({
   },
   header: {
     marginBottom: 36,
+  },
+  logo: {
+    width: 120,
+    height: 120,
+    marginBottom: 16,
   },
   title: {
     fontSize: 30,
