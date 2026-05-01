@@ -35,12 +35,22 @@ export async function POST(req: NextRequest) {
   const auth = await resolveBusinessAuth(req, businessId);
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
+  const admin = createAdminClient();
+
+  // Only admin-approved gyms/studios may publish sessions.
+  const { data: biz } = await admin
+    .from("businesses")
+    .select("approved_for_sessions")
+    .eq("id", businessId)
+    .single();
+  if (!biz?.approved_for_sessions)
+    return NextResponse.json({ error: "This business is not approved to create live sessions. Contact admin to get approved." }, { status: 403 });
+
   const mode = delivery_mode === "on_location" ? "on_location" : "online";
   const { provider, label } = (mode === "online" && meeting_link)
     ? detectProvider(meeting_link)
     : { provider: "other", label: "Other" };
 
-  const admin = createAdminClient();
   const { data, error } = await admin
     .from("wellness_sessions")
     .insert({
