@@ -339,17 +339,18 @@ export default function Navbar() {
       </div>
 
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-[auto_1fr_auto] items-center h-16 gap-4">
-          {/* Left — Logo + name */}
-          <Link href="/" className="flex items-center gap-2 shrink-0">
+        <div className="relative flex items-center h-16">
+          {/* Left — Logo + name (in normal flow, z-10 so it stays above abs center) */}
+          <Link href="/" className="flex items-center gap-2 shrink-0 z-10 relative">
             <Image src="/logo.png" alt="NeopolisNews" width={52} height={52} className="object-contain" />
-            <span className="text-lg font-bold text-gray-900 leading-none">
+            <span className="text-lg font-bold text-gray-900 leading-none whitespace-nowrap">
               Neopolis<span className="text-brand-600">News</span>
             </span>
           </Link>
 
-          {/* Center — Desktop nav (truly centered) */}
-          <div className="hidden lg:flex items-center justify-center gap-0.5">
+          {/* Center — absolutely centered nav; pointer-events-none on wrapper so logo/actions stay clickable */}
+          <div className="absolute inset-x-0 flex justify-center pointer-events-none">
+          <div className="hidden lg:flex items-center gap-0.5 pointer-events-auto">
             {NAV_ITEMS.filter((item) => !item.highlight).map((item) => {
               const active = pathname.startsWith(item.href);
               return (
@@ -416,9 +417,10 @@ export default function Navbar() {
               );
             })}
           </div>
+          </div>{/* end absolute center wrapper */}
 
-          {/* Right — Actions + mobile toggle */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Right — Actions + mobile toggle (ml-auto pushes to far right) */}
+          <div className="flex items-center gap-2 shrink-0 ml-auto z-10 relative">
             <button
               onClick={() => setSearchOpen(true)}
               aria-label="Search"
