@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
   const {
     businessId, trainer_name, session_type, language, description,
     price_inr, max_seats, meeting_link, start_date, end_date,
+    delivery_mode, session_time, address,
   } = body ?? {};
 
   if (!businessId || !trainer_name || !session_type || !start_date || !end_date || price_inr == null)
@@ -34,7 +35,10 @@ export async function POST(req: NextRequest) {
   const auth = await resolveBusinessAuth(req, businessId);
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-  const { provider, label } = meeting_link ? detectProvider(meeting_link) : { provider: "other", label: "Other" };
+  const mode = delivery_mode === "on_location" ? "on_location" : "online";
+  const { provider, label } = (mode === "online" && meeting_link)
+    ? detectProvider(meeting_link)
+    : { provider: "other", label: "Other" };
 
   const admin = createAdminClient();
   const { data, error } = await admin
@@ -47,7 +51,10 @@ export async function POST(req: NextRequest) {
       description: description?.trim() || null,
       price_inr: Number(price_inr),
       max_seats: Number(max_seats ?? 20),
-      meeting_link: meeting_link?.trim() || null,
+      delivery_mode: mode,
+      session_time: session_time || null,
+      address: mode === "on_location" ? (address?.trim() || null) : null,
+      meeting_link: mode === "online" ? (meeting_link?.trim() || null) : null,
       platform: provider,
       platform_label: label,
       start_date,
