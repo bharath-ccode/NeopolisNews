@@ -218,9 +218,6 @@ export default function HomePage() {
         {/* tagline overlay */}
         <div className="absolute inset-0 flex items-end justify-start">
           <div className="px-6 md:px-12 pb-6 md:pb-10">
-            <p className="text-white text-sm font-semibold tracking-widest uppercase mb-1 drop-shadow">
-              Kokapet · Narsingi · Hyderabad
-            </p>
             <h2 className="text-white text-3xl md:text-5xl font-extrabold leading-tight drop-shadow-lg">
               Urban District Gateway
             </h2>
