@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
   View, Text, StyleSheet, TextInput, TouchableOpacity,
-  KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView, Image,
+  KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView, Image, ImageBackground,
 } from "react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -24,131 +24,153 @@ export default function LoginScreen() {
       setError(err);
       setLoading(false);
     }
-    // on success AuthContext triggers redirect via _layout
   }
 
   return (
-    <SafeAreaView style={s.root}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
-      >
-        <ScrollView
-          contentContainerStyle={s.inner}
-          keyboardShouldPersistTaps="handled"
+    <ImageBackground
+      source={require("../../assets/banner.png")}
+      style={s.bg}
+      resizeMode="cover"
+    >
+      <View style={s.overlay} />
+      <SafeAreaView style={s.root}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
         >
-          {/* Back */}
-          <TouchableOpacity onPress={() => router.back()} style={s.backBtn} activeOpacity={0.7}>
-            <Text style={s.backText}>← Back</Text>
-          </TouchableOpacity>
+          <ScrollView
+            contentContainerStyle={s.inner}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* Back */}
+            <TouchableOpacity onPress={() => router.back()} style={s.backBtn} activeOpacity={0.7}>
+              <Text style={s.backText}>← Back</Text>
+            </TouchableOpacity>
 
-          <View style={s.header}>
-            <Image source={require("../../assets/logo_transbg.png")} style={s.logo} resizeMode="contain" />
-            <Text style={s.title}>Welcome back</Text>
-            <Text style={s.subtitle}>Sign in to your Neopolis account</Text>
-          </View>
-
-          <View style={s.form}>
-            <View style={s.field}>
-              <Text style={s.label}>Email</Text>
-              <TextInput
-                style={s.input}
-                placeholder="you@example.com"
-                placeholderTextColor={colors.gray[400]}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                value={email}
-                onChangeText={setEmail}
-              />
+            <View style={s.header}>
+              <Image source={require("../../assets/logo_transbg.png")} style={s.logo} resizeMode="contain" />
+              <Text style={s.title}>Welcome back</Text>
+              <Text style={s.subtitle}>Sign in to your Neopolis account</Text>
             </View>
 
-            <View style={s.field}>
-              <Text style={s.label}>Password</Text>
-              <TextInput
-                style={s.input}
-                placeholder="Your password"
-                placeholderTextColor={colors.gray[400]}
-                secureTextEntry
-                value={password}
-                onChangeText={setPassword}
-                onSubmitEditing={handleLogin}
-                returnKeyType="done"
-              />
-            </View>
+            <View style={s.card}>
+              <View style={s.form}>
+                <View style={s.field}>
+                  <Text style={s.label}>Email</Text>
+                  <TextInput
+                    style={s.input}
+                    placeholder="you@example.com"
+                    placeholderTextColor="rgba(255,255,255,0.35)"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    value={email}
+                    onChangeText={setEmail}
+                  />
+                </View>
 
-            {error ? (
-              <View style={s.errorBox}>
-                <Text style={s.errorText}>{error}</Text>
+                <View style={s.field}>
+                  <Text style={s.label}>Password</Text>
+                  <TextInput
+                    style={s.input}
+                    placeholder="Your password"
+                    placeholderTextColor="rgba(255,255,255,0.35)"
+                    secureTextEntry
+                    value={password}
+                    onChangeText={setPassword}
+                    onSubmitEditing={handleLogin}
+                    returnKeyType="done"
+                  />
+                </View>
+
+                {error ? (
+                  <View style={s.errorBox}>
+                    <Text style={s.errorText}>{error}</Text>
+                  </View>
+                ) : null}
+
+                <TouchableOpacity
+                  style={[s.btnPrimary, (!email || !password || loading) && s.btnDisabled]}
+                  onPress={handleLogin}
+                  disabled={!email || !password || loading}
+                  activeOpacity={0.85}
+                >
+                  {loading ? (
+                    <ActivityIndicator color={colors.white} />
+                  ) : (
+                    <Text style={s.btnText}>Sign In</Text>
+                  )}
+                </TouchableOpacity>
               </View>
-            ) : null}
 
-            <TouchableOpacity
-              style={[s.btnPrimary, (!email || !password || loading) && s.btnDisabled]}
-              onPress={handleLogin}
-              disabled={!email || !password || loading}
-              activeOpacity={0.85}
-            >
-              {loading ? (
-                <ActivityIndicator color={colors.white} />
-              ) : (
-                <Text style={s.btnText}>Sign In</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          <View style={s.footer}>
-            <Text style={s.footerText}>Don&apos;t have an account? </Text>
-            <TouchableOpacity onPress={() => router.replace("/(auth)/signup")} activeOpacity={0.7}>
-              <Text style={s.footerLink}>Sign Up</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+              <View style={s.footer}>
+                <Text style={s.footerText}>Don&apos;t have an account? </Text>
+                <TouchableOpacity onPress={() => router.replace("/(auth)/signup")} activeOpacity={0.7}>
+                  <Text style={s.footerLink}>Sign Up</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </ImageBackground>
   );
 }
 
 const s = StyleSheet.create({
+  bg: {
+    flex: 1,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(5,10,30,0.72)",
+  },
   root: {
     flex: 1,
-    backgroundColor: colors.brand[950],
+    backgroundColor: "transparent",
   },
   inner: {
     flexGrow: 1,
-    paddingHorizontal: 28,
+    paddingHorizontal: 24,
     paddingTop: 16,
     paddingBottom: 32,
   },
   backBtn: {
     alignSelf: "flex-start",
     paddingVertical: 8,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   backText: {
-    color: colors.brand[300],
+    color: "rgba(255,255,255,0.7)",
     fontSize: 15,
     fontWeight: "600",
   },
   header: {
-    marginBottom: 36,
+    alignItems: "flex-start",
+    marginBottom: 28,
   },
   logo: {
-    width: 120,
-    height: 120,
-    marginBottom: 16,
+    width: 100,
+    height: 100,
+    marginBottom: 12,
   },
   title: {
     fontSize: 30,
     fontWeight: "800",
     color: colors.white,
     letterSpacing: -0.5,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   subtitle: {
     fontSize: 15,
-    color: colors.brand[400],
-    fontWeight: "400",
+    color: "rgba(255,255,255,0.55)",
+  },
+  card: {
+    backgroundColor: "rgba(255,255,255,0.07)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+    borderRadius: 24,
+    padding: 24,
   },
   form: {
     gap: 18,
@@ -159,12 +181,12 @@ const s = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: "600",
-    color: colors.gray[300],
+    color: "rgba(255,255,255,0.7)",
   },
   input: {
-    backgroundColor: "rgba(255,255,255,0.07)",
+    backgroundColor: "rgba(255,255,255,0.08)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
+    borderColor: "rgba(255,255,255,0.15)",
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -184,15 +206,15 @@ const s = StyleSheet.create({
     fontWeight: "500",
   },
   btnPrimary: {
-    backgroundColor: colors.brand[500],
+    backgroundColor: colors.amber[600],
     paddingVertical: 16,
     borderRadius: 16,
     alignItems: "center",
     marginTop: 4,
-    shadowColor: colors.brand[400],
+    shadowColor: colors.amber[500],
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
     elevation: 6,
   },
   btnDisabled: {
@@ -206,14 +228,14 @@ const s = StyleSheet.create({
   footer: {
     flexDirection: "row",
     justifyContent: "center",
-    marginTop: 32,
+    marginTop: 24,
   },
   footerText: {
-    color: colors.gray[500],
+    color: "rgba(255,255,255,0.45)",
     fontSize: 14,
   },
   footerLink: {
-    color: colors.brand[300],
+    color: colors.amber[400],
     fontSize: 14,
     fontWeight: "700",
   },
