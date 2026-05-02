@@ -350,7 +350,7 @@ export default function Navbar() {
 
           {/* Center — text-only nav links, takes all remaining space, centered; xl+ only */}
           <div className="hidden xl:flex flex-1 items-center justify-center gap-0.5">
-            {NAV_ITEMS.filter((item) => !item.highlight).map((item) => {
+            {NAV_ITEMS.filter((item) => !item.highlight && item.label !== "Deals").map((item) => {
               const active = pathname.startsWith(item.href);
               return (
                 <div
@@ -425,6 +425,18 @@ export default function Navbar() {
             >
               <Search className="w-4 h-4" />
             </button>
+            <Link
+              href="/deals"
+              aria-label="Deals"
+              className={clsx(
+                "p-2 rounded-lg transition-colors",
+                pathname.startsWith("/deals")
+                  ? "text-brand-700 bg-brand-50"
+                  : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+              )}
+            >
+              <ShoppingBag className="w-4 h-4" />
+            </Link>
             <Link
               href="/announcements"
               aria-label="Announcements"
