@@ -339,18 +339,19 @@ export default function Navbar() {
       </div>
 
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative flex items-center h-16">
-          {/* Left — Logo + name (in normal flow, z-10 so it stays above abs center) */}
-          <Link href="/" className="flex items-center gap-2 shrink-0 z-10 relative">
-            <Image src="/logo.png" alt="NeopolisNews" width={52} height={52} className="object-contain" />
-            <span className="text-lg font-bold text-gray-900 leading-none whitespace-nowrap">
-              Neopolis<span className="text-brand-600">News</span>
-            </span>
-          </Link>
+        <div className="flex items-center h-16 gap-2">
+          {/* Left — Logo + name */}
+          <div className="flex flex-1 items-center justify-start">
+            <Link href="/" className="flex items-center gap-2 shrink-0">
+              <Image src="/logo.png" alt="NeopolisNews" width={44} height={44} className="object-contain" />
+              <span className="text-lg font-bold text-gray-900 leading-none whitespace-nowrap">
+                Neopolis<span className="text-brand-600">News</span>
+              </span>
+            </Link>
+          </div>
 
-          {/* Center — absolutely centered nav; pointer-events-none on wrapper so logo/actions stay clickable */}
-          <div className="absolute inset-x-0 flex justify-center pointer-events-none">
-          <div className="hidden lg:flex items-center gap-0.5 pointer-events-auto">
+          {/* Center — text-only nav links, truly centered */}
+          <div className="hidden lg:flex flex-1 items-center justify-center gap-0.5">
             {NAV_ITEMS.filter((item) => !item.highlight).map((item) => {
               const active = pathname.startsWith(item.href);
               return (
@@ -363,13 +364,12 @@ export default function Navbar() {
                   <Link
                     href={item.href}
                     className={clsx(
-                      "flex items-center gap-1 px-2.5 py-2 rounded-lg text-sm font-medium transition-colors",
+                      "flex items-center gap-0.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap",
                       active
                         ? "bg-brand-50 text-brand-700"
                         : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                     )}
                   >
-                    <item.icon className="w-3.5 h-3.5" />
                     {item.label}
                     {item.sub && <ChevronDown className="w-3 h-3 opacity-60" />}
                   </Link>
@@ -417,10 +417,9 @@ export default function Navbar() {
               );
             })}
           </div>
-          </div>{/* end absolute center wrapper */}
 
-          {/* Right — Actions + mobile toggle (ml-auto pushes to far right) */}
-          <div className="flex items-center gap-2 shrink-0 ml-auto z-10 relative">
+          {/* Right — Actions + mobile toggle */}
+          <div className="flex flex-1 items-center justify-end gap-2">
             <button
               onClick={() => setSearchOpen(true)}
               aria-label="Search"
