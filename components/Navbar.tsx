@@ -339,19 +339,17 @@ export default function Navbar() {
       </div>
 
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center h-16 gap-2">
-          {/* Left — Logo + name */}
-          <div className="flex flex-1 items-center justify-start">
-            <Link href="/" className="flex items-center gap-2 shrink-0">
-              <Image src="/logo.png" alt="NeopolisNews" width={44} height={44} className="object-contain" />
-              <span className="text-lg font-bold text-gray-900 leading-none whitespace-nowrap">
-                Neopolis<span className="text-brand-600">News</span>
-              </span>
-            </Link>
-          </div>
+        <div className="flex items-center h-16 gap-4">
+          {/* Left — Logo + name, natural width */}
+          <Link href="/" className="flex items-center gap-2 shrink-0">
+            <Image src="/logo.png" alt="NeopolisNews" width={44} height={44} className="object-contain" />
+            <span className="text-lg font-bold text-gray-900 leading-none whitespace-nowrap">
+              Neopolis<span className="text-brand-600">News</span>
+            </span>
+          </Link>
 
-          {/* Center — text-only nav links, truly centered */}
-          <div className="hidden lg:flex flex-1 items-center justify-center gap-0.5">
+          {/* Center — text-only nav links, takes all remaining space, centered; xl+ only */}
+          <div className="hidden xl:flex flex-1 items-center justify-center gap-0.5">
             {NAV_ITEMS.filter((item) => !item.highlight).map((item) => {
               const active = pathname.startsWith(item.href);
               return (
@@ -418,8 +416,8 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* Right — Actions + mobile toggle */}
-          <div className="flex flex-1 items-center justify-end gap-2">
+          {/* Right — Actions + mobile toggle, natural width, pushed to far right */}
+          <div className="flex items-center gap-2 shrink-0 ml-auto">
             <button
               onClick={() => setSearchOpen(true)}
               aria-label="Search"
@@ -453,16 +451,16 @@ export default function Navbar() {
             </Link>
             <Link
               href="/advertise"
-              className="hidden lg:flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-accent-500 text-white hover:bg-accent-600 transition-colors whitespace-nowrap"
+              className="hidden xl:flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-accent-500 text-white hover:bg-accent-600 transition-colors whitespace-nowrap"
             >
               <Megaphone className="w-4 h-4" />
               Advertise
             </Link>
-            <div className="hidden lg:flex">
+            <div className="hidden xl:flex">
               <UserMenu />
             </div>
             <button
-              className="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100"
+              className="xl:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100"
               onClick={() => setMobileOpen(!mobileOpen)}
               aria-label="Toggle menu"
             >
@@ -518,7 +516,7 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="lg:hidden border-t border-gray-100 bg-white pb-4">
+        <div className="xl:hidden border-t border-gray-100 bg-white pb-4">
           <div className="max-w-7xl mx-auto px-4 pt-3 space-y-1">
             {NAV_ITEMS.map((item) => (
               <Link
