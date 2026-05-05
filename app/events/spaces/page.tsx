@@ -5,26 +5,23 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Landmark, Wine, Trees,
-  Users, MapPin, Phone, Clock, CheckCircle, ArrowRight, CalendarDays, Star,
+  MapPin, Phone, Clock, CheckCircle, ArrowRight, CalendarDays,
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import LeadForm from "@/components/LeadForm";
 import { getSubtypes } from "@/lib/businessDirectory";
+import { createClient } from "@/lib/supabase/client";
 
 type VenueType = "Convention Centre" | "Banquet Hall" | "Outdoor Space";
 
-interface Space {
-  type: VenueType;
+interface Business {
+  id: string;
   name: string;
-  location: string;
-  phone: string;
-  capacity: string;
-  area: string;
-  hours: string;
-  rating: number;
-  reviews: number;
-  amenities: string[];
-  description: string;
+  subtypes: string[];
+  address: string | null;
+  contact_phone: string | null;
+  description: string | null;
+  timings: { day: string; open: string; close: string; closed: boolean }[] | null;
 }
 
 const TYPE_CONFIG: { id: VenueType; icon: React.ElementType; color: string; iconBg: string }[] = [
@@ -34,124 +31,68 @@ const TYPE_CONFIG: { id: VenueType; icon: React.ElementType; color: string; icon
 ];
 const TYPE_MAP = Object.fromEntries(TYPE_CONFIG.map((t) => [t.id, t]));
 
-const SPACES: Space[] = [
-  {
-    type: "Convention Centre",
-    name: "Neopolis Convention & Exhibition Centre",
-    location: "Block A, Commercial Zone",
-    phone: "+91 99002 00001",
-    capacity: "up to 2,000",
-    area: "8,500 sq ft (divisible)",
-    hours: "Available 24 / 7 (booking required)",
-    rating: 4.7, reviews: 84,
-    amenities: ["AV & Stage Setup", "Catering Kitchen", "Green Room", "Ample Parking", "High-Speed Wi-Fi", "Breakout Halls"],
-    description: "Neopolis's largest event venue — divisible into three halls. Ideal for corporate conferences, exhibitions, product launches, and large-scale gatherings.",
-  },
-  {
-    type: "Banquet Hall",
-    name: "The Grand Ballroom — Neopolis",
-    location: "Tower 5, Hospitality Block",
-    phone: "+91 99002 00011",
-    capacity: "up to 600",
-    area: "3,200 sq ft",
-    hours: "Mon – Sun, 10 AM – 12 AM",
-    rating: 4.8, reviews: 136,
-    amenities: ["In-house Catering", "Décor & Floral", "Dance Floor", "Stage & DJ Console", "Valet Parking", "Bridal Suite"],
-    description: "An elegant ballroom for weddings, receptions, milestone celebrations, and gala dinners. Full catering and décor packages available.",
-  },
-  {
-    type: "Outdoor Space",
-    name: "Central Park Amphitheatre",
-    location: "Central Park, District Core",
-    phone: "+91 99002 00021",
-    capacity: "up to 3,000 (standing) / 1,500 (seated)",
-    area: "Open-air, 12,000 sq ft",
-    hours: "Available 7 AM – 11 PM",
-    rating: 4.6, reviews: 52,
-    amenities: ["Professional Stage", "Sound & Lighting Rig", "Backstage Area", "Food Vendor Zones", "Accessible Pathways"],
-    description: "A naturally landscaped open-air amphitheatre — the go-to venue for music festivals, community days, marathons, and outdoor film screenings.",
-  },
-  {
-    type: "Convention Centre",
-    name: "Apex Business Conference Hub",
-    location: "Tower 3, Business Park",
-    phone: "+91 99002 00031",
-    capacity: "up to 400",
-    area: "2,400 sq ft (3 meeting rooms)",
-    hours: "Mon – Sat, 8 AM – 10 PM",
-    rating: 4.5, reviews: 61,
-    amenities: ["Video Conferencing", "AV Equipment", "Catering Service", "Dedicated Reception", "Underground Parking"],
-    description: "Three configurable meeting and seminar rooms ideal for corporate training, AGMs, seminars, and investor presentations.",
-  },
-  {
-    type: "Banquet Hall",
-    name: "Neopolis Terrace Banquets",
-    location: "Rooftop, Commercial Block C",
-    phone: "+91 99002 00041",
-    capacity: "up to 250",
-    area: "1,800 sq ft open terrace",
-    hours: "Mon – Sun, 12 PM – 12 AM",
-    rating: 4.4, reviews: 47,
-    amenities: ["Skyline View", "Open Bar Setup", "Live Counter Catering", "Photobooth Corner", "Ample Parking"],
-    description: "A rooftop venue with panoramic views of the Neopolis skyline. Perfect for intimate weddings, cocktail parties, and milestone dinners.",
-  },
-  {
-    type: "Outdoor Space",
-    name: "East Lawn & Events Ground",
-    location: "East Precinct, Neopolis",
-    phone: "+91 99002 00051",
-    capacity: "up to 5,000",
-    area: "2.5 acres open ground",
-    hours: "Available 6 AM – 10 PM",
-    rating: 4.3, reviews: 29,
-    amenities: ["Flexible Layout", "Power & Water Points", "Food Court Area", "Security Fencing Available", "Ample Parking"],
-    description: "The largest open ground in the district — suited for large fairs, car shows, sporting events, and community festivals.",
-  },
-];
+function formatTimings(timings: Business["timings"]): string {
+  if (!timings || timings.length === 0) return "Hours not listed";
+  const open = timings.filter((t) => !t.closed);
+  if (open.length === 0) return "Temporarily closed";
+  if (open.length === 7) return `Daily, ${open[0].open} – ${open[0].close}`;
+  const days = open.map((t) => t.day.slice(0, 3)).join(", ");
+  return `${days}, ${open[0].open} – ${open[0].close}`;
+}
 
-function SpaceCard({ s }: { s: Space }) {
-  const cfg = TYPE_MAP[s.type];
+function SpaceCard({ b }: { b: Business }) {
+  const subtype = (b.subtypes ?? []).find((s) => TYPE_MAP[s as VenueType]) as VenueType | undefined;
+  const cfg = subtype ? TYPE_MAP[subtype] : TYPE_CONFIG[0];
   const Icon = cfg.icon;
+
   return (
     <div className="card p-5 space-y-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
       <div className="flex items-start justify-between">
         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${cfg.iconBg}`}>
           <Icon className={`w-6 h-6 ${cfg.color.split(" ")[1]}`} />
         </div>
-        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${cfg.color}`}>{s.type}</span>
-      </div>
-      <div>
-        <h3 className="font-bold text-gray-900">{s.name}</h3>
-        <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
-          <MapPin className="w-3 h-3" /> {s.location}
-        </p>
-      </div>
-      <p className="text-sm text-gray-600 leading-relaxed">{s.description}</p>
-      <div className="space-y-1.5 text-xs text-gray-500">
-        <p className="flex items-center gap-2"><Users className="w-3.5 h-3.5 text-gray-400" /> {s.capacity}</p>
-        <p className="flex items-center gap-2"><Landmark className="w-3.5 h-3.5 text-gray-400" /> {s.area}</p>
-        <p className="flex items-center gap-2"><Clock className="w-3.5 h-3.5 text-gray-400" /> {s.hours}</p>
-      </div>
-      <div className="flex flex-wrap gap-1.5">
-        {s.amenities.slice(0, 4).map((a) => (
-          <span key={a} className="text-xs bg-gray-50 border border-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{a}</span>
-        ))}
-        {s.amenities.length > 4 && (
-          <span className="text-xs text-gray-400">+{s.amenities.length - 4} more</span>
+        {subtype && (
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${cfg.color}`}>{subtype}</span>
         )}
       </div>
+
+      <div>
+        <h3 className="font-bold text-gray-900">{b.name}</h3>
+        {b.address && (
+          <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+            <MapPin className="w-3 h-3 shrink-0" /> {b.address}
+          </p>
+        )}
+      </div>
+
+      {b.description && (
+        <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">{b.description}</p>
+      )}
+
+      <div className="space-y-1.5 text-xs text-gray-500">
+        {b.timings && (
+          <p className="flex items-center gap-2">
+            <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+            {formatTimings(b.timings)}
+          </p>
+        )}
+      </div>
+
       <div className="flex items-center justify-between pt-1">
-        <div className="flex items-center gap-1">
-          <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
-          <span className="text-xs font-semibold text-gray-700">{s.rating}</span>
-          <span className="text-xs text-gray-400">({s.reviews})</span>
-        </div>
-        <a
-          href={`tel:${s.phone.replace(/\s/g, "")}`}
-          className="flex items-center gap-1.5 text-xs font-semibold text-violet-700 border border-violet-200 hover:bg-violet-50 px-3 py-1.5 rounded-lg transition-colors"
+        <Link
+          href={`/businesses/${b.id}`}
+          className="text-xs font-semibold text-violet-600 hover:text-violet-700 flex items-center gap-1"
         >
-          <Phone className="w-3.5 h-3.5" /> Enquire
-        </a>
+          View Profile <ArrowRight className="w-3 h-3" />
+        </Link>
+        {b.contact_phone && (
+          <a
+            href={`tel:${b.contact_phone.replace(/\s/g, "")}`}
+            className="flex items-center gap-1.5 text-xs font-semibold text-violet-700 border border-violet-200 hover:bg-violet-50 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            <Phone className="w-3.5 h-3.5" /> Enquire
+          </a>
+        )}
       </div>
     </div>
   );
@@ -166,6 +107,8 @@ function EventSpacesInner() {
   const [subFilter, setSubFilter] = useState<string>(
     subtypes.includes(subParam) ? subParam : "all"
   );
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const s = searchParams.get("sub") ?? "all";
@@ -173,14 +116,30 @@ function EventSpacesInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
+  useEffect(() => {
+    async function fetch() {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("businesses")
+        .select("id, name, subtypes, address, contact_phone, description, timings")
+        .eq("status", "active")
+        .eq("industry", "Events")
+        .contains("types", ["Event Spaces"])
+        .order("name");
+      setBusinesses(data ?? []);
+      setLoading(false);
+    }
+    fetch();
+  }, []);
+
   const handleFilter = (s: string) => {
     setSubFilter(s);
     router.replace(s === "all" ? "/events/spaces" : `/events/spaces?sub=${encodeURIComponent(s)}`, { scroll: false });
   };
 
   const filtered = subFilter === "all"
-    ? SPACES
-    : SPACES.filter((s) => s.type === subFilter);
+    ? businesses
+    : businesses.filter((b) => b.subtypes?.includes(subFilter));
 
   return (
     <>
@@ -228,10 +187,10 @@ function EventSpacesInner() {
                   : "border-gray-200 text-gray-500 hover:border-gray-400"
               }`}
             >
-              All <span className="ml-1 text-gray-400">({SPACES.length})</span>
+              All {!loading && <span className="ml-1 text-gray-400">({businesses.length})</span>}
             </button>
             {subtypes.map((st) => {
-              const count = SPACES.filter((s) => s.type === st).length;
+              const count = businesses.filter((b) => b.subtypes?.includes(st)).length;
               const cfg = TYPE_MAP[st as VenueType];
               return (
                 <button
@@ -243,7 +202,7 @@ function EventSpacesInner() {
                       : "border-gray-200 text-gray-500 hover:border-gray-400"
                   }`}
                 >
-                  {st} <span className="ml-1 opacity-60">({count})</span>
+                  {st} {!loading && <span className="ml-1 opacity-60">({count})</span>}
                 </button>
               );
             })}
@@ -260,7 +219,7 @@ function EventSpacesInner() {
                 {subFilter === "all" ? "All Event Spaces" : `${subFilter}s`}
               </h2>
               <p className="text-sm text-gray-500 mt-0.5">
-                {filtered.length} venue{filtered.length !== 1 ? "s" : ""} in Neopolis
+                {loading ? "Loading…" : `${filtered.length} venue${filtered.length !== 1 ? "s" : ""} in Neopolis`}
               </p>
             </div>
             <Link href="/events" className="text-violet-600 text-sm font-semibold flex items-center gap-1 hover:text-violet-700">
@@ -268,9 +227,23 @@ function EventSpacesInner() {
             </Link>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filtered.map((s) => <SpaceCard key={s.name} s={s} />)}
-          </div>
+          {loading ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="card p-5 h-64 animate-pulse bg-gray-100" />
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-16 text-gray-400">
+              <Landmark className="w-10 h-10 mx-auto mb-3 opacity-30" />
+              <p className="font-medium">No event spaces listed yet</p>
+              <p className="text-sm mt-1">Be the first to register your venue below.</p>
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {filtered.map((b) => <SpaceCard key={b.id} b={b} />)}
+            </div>
+          )}
         </SectionWrapper>
       </section>
 
