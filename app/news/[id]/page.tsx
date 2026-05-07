@@ -54,7 +54,6 @@ export default async function ArticlePage({ params }: { params: { id: string } }
   if (!articleData) notFound();
 
   const article = toArticle(articleData);
-  const paragraphs = article.content.split(/\n\n+/).filter(Boolean);
 
   const { data: related } = await admin
     .from("articles")
@@ -156,13 +155,18 @@ export default async function ArticlePage({ params }: { params: { id: string } }
 
       {/* Body */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 md:py-14">
-        <div className="space-y-5">
-          {paragraphs.map((p, i) => (
-            <p key={i} className="text-gray-700 leading-relaxed text-base">
-              {p}
-            </p>
-          ))}
-        </div>
+        <div
+          className="article-body text-gray-700 leading-relaxed text-base space-y-4
+            [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-gray-900 [&_h2]:mt-8 [&_h2]:mb-3
+            [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-gray-900 [&_h3]:mt-6 [&_h3]:mb-2
+            [&_p]:leading-relaxed
+            [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:space-y-2
+            [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:space-y-2
+            [&_li]:text-gray-700
+            [&_strong]:font-semibold [&_strong]:text-gray-900
+            [&_a]:text-brand-600 [&_a]:underline"
+          dangerouslySetInnerHTML={{ __html: article.content }}
+        />
 
         {article.source && (
           <p className="text-sm text-gray-400 mt-8 pt-6 border-t border-gray-100">
