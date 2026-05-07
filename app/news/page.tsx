@@ -15,6 +15,8 @@ import LeadForm from "@/components/LeadForm";
 import InfrastructureSection from "@/components/InfrastructureSection";
 import { getPublishedArticles, Article, ArticleCategory } from "@/lib/newsStore";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Local News & Updates – NeopolisNews",
   description:
