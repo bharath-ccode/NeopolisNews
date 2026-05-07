@@ -1,6 +1,8 @@
 -- Seed: Infrastructure article — Seven Roads to Link ORR with Musi Corridor
--- Run this in the Supabase SQL editor to publish the article.
+-- Run this in the Supabase SQL editor.
+-- If you already ran the previous version, use the UPDATE at the bottom instead.
 
+-- ── INSERT (if not yet added) ──────────────────────────────────────────────────
 insert into public.articles (
   title,
   excerpt,
@@ -19,38 +21,39 @@ insert into public.articles (
   created_at,
   updated_at
 ) values (
-  'Seven Roads to Link ORR with Musi Corridor, Easing Traffic in South-West Hyderabad',
+  'Seven Roads to Link ORR with Musi Corridor in Hyderabad, Ease Traffic',
 
-  'HRDCL is building seven new link roads under Phase-III at a cost of ₹203 crore, connecting the Outer Ring Road with the Musi corridor to decongest south-western Hyderabad.',
+  'MRDCL is developing seven master plan roads across Budvel, Kothwalguda and Gandipet to improve connectivity between the Outer Ring Road and key urban stretches, easing traffic and supporting future growth.',
 
-  '<p>The Hyderabad Road Development Corporation Limited (HRDCL) is set to construct seven new link roads under Package-I of Phase-III of its link road programme, at an estimated cost of <strong>₹203.34 crore</strong>. The roads are designed to create multiple entry and exit points between the Outer Ring Road (ORR) and the emerging Musi corridor, reducing pressure on existing arterial roads in the fast-growing south-western zones of Hyderabad.</p>
+  '<p>Hyderabad is set to witness a major leap in urban connectivity as the Musi Riverfront Development Corporation Limited (MRDCL) rolls out an ambitious plan to reshape the road network across <strong>Budvel, Kothwalguda and Gandipet</strong> — three of the city''s fastest-growing areas.</p>
+
+<p>The move aims to improve connectivity between the Outer Ring Road (ORR) and key urban stretches, easing traffic and supporting future growth. MRDCL has initiated development of master plan roads integrated with the proposed <strong>East-West Corridor along River Musi</strong> to reduce congestion in these high-growth areas. Seven such roads have been proposed.</p>
 
 <h2>The Seven Roads</h2>
-<p>The package covers approximately <strong>25.2 km</strong> across seven stretches:</p>
 <ol>
-  <li><strong>Bapu Ghat Bridge to P&amp;T Colony</strong> (East side of Esa River) — 2.10 km</li>
-  <li><strong>Kothur Railway Crossing to Kummariguda Junction</strong> — 2.60 km</li>
-  <li><strong>Kothur Y Junction to Vinayak Steel</strong> (NH 44) — 1.50 km</li>
-  <li><strong>NH 44 Shamshabad Bus Stop to Oasis International School</strong> (Rallaguda Road) — 4.00 km</li>
-  <li><strong>Shamshabad Railway Crossing to Dharmagiri Road</strong> — 5.00 km</li>
-  <li><strong>NH-44 Tondupally Junction to ORR Service Road</strong> — 3.00 km</li>
-  <li><strong>Gollapally NH Junction to ORR Service Road, Pedda Golconda</strong> — 7.00 km</li>
+  <li><strong>Osmansagar to Narsingi</strong> — 5.4 km, RoW 30 metres</li>
+  <li><strong>Osmansagar to ORR Service Road</strong> — 2.3 km, RoW 30 metres</li>
+  <li><strong>Kismatpur Bridge to HMDA Budvel Rangareddy Layout (L-M1)</strong> — 1.1 km, RoW 30 metres</li>
+  <li><strong>HMDA Budvel Layout to Rangareddy Shivam Road</strong> — 3.5 km, RoW 30 metres</li>
+  <li><strong>NIRD Road, Police Quarters, Rajendranagar to SS Convention, Airport Road, Sathamrai Colony, Shamshabad</strong> — 5 km, RoW 36 metres</li>
+  <li><strong>Kismatpur Bridge to HMDA Budvel Rangareddy Layout (L-N)</strong> — 3 km, RoW 36 metres</li>
+  <li><strong>Isthana Villas to Gandipet Road</strong> — 1.2 km, RoW 18 metres</li>
 </ol>
 
-<h2>Broader Phase-III Outlay</h2>
-<p>An additional 13 link roads under Package-III of Phase-III are proposed at <strong>₹293 crore</strong>, bringing the combined Phase-III allocation to over <strong>₹496 crore</strong> for 20 roads in total. The broader Musi Riverfront Development project covers a 55 km corridor from Osman Sagar to Bapu Ghat, with Phase I spanning 21 km at an estimated ₹6,500–7,000 crore.</p>
+<h2>Standardised Right of Way</h2>
+<p>By standardising these roads with RoW between 30 and 36 metres, the project aims to transform the local grid into a more organised arterial system. The integration of Budvel, Kothwalguda and Gandipet is particularly strategic given the massive HMDA layouts and the residential and commercial projects coming up in these areas.</p>
 
-<h2>Why It Matters for Neopolis</h2>
-<p>Key areas directly benefiting include <strong>Shamshabad, Kothur, Narsingi, and Gandipet</strong> — the growth zones surrounding the Neopolis district. Improved ORR connectivity means shorter commutes to the city''s IT corridors and Rajiv Gandhi International Airport, and is expected to boost real estate demand across the south-western micro-markets that feed into Neopolis.</p>
+<h2>About the Musi Riverfront Development Project</h2>
+<p>The Musi Riverfront Development Project (MRDP) is a flagship initiative of the Telangana government, aimed at rejuvenating the <strong>55 km stretch of River Musi</strong> into a clean, sustainable urban asset through ecological restoration and infrastructure development, managed by MRDCL.</p>
 
-<p>The project is a significant infrastructure signal for residents, businesses, and investors already active in the district.</p>',
+<p>The corporation has invited requests for proposals for the preparation of a detailed project report to develop these master plan roads, integrated with the proposed East-West Corridor. The selected agency will conduct surveys, traffic studies and projections up to 2047, determine lane requirements, and design road infrastructure including signage, junctions, drainage, safety measures and utilities, along with cost estimates. Consultants will also assess existing structures including bridges and culverts, and carry out further testing for distressed structures as per IRC norms.</p>',
 
   'infrastructure',
   'Infrastructure',
   'tag-blue',
-  'NeopolisNews Bureau',
+  'S Bachan Jeet Singh',
   'May 1, 2026',
-  '3 min read',
+  '2 min read',
   0,
   false,
   'published',
@@ -59,3 +62,38 @@ insert into public.articles (
   now(),
   now()
 );
+
+-- ── UPDATE (if you already ran the old version) ────────────────────────────────
+-- Uncomment and run this block instead if the article is already in the DB:
+/*
+update public.articles set
+  title      = 'Seven Roads to Link ORR with Musi Corridor in Hyderabad, Ease Traffic',
+  excerpt    = 'MRDCL is developing seven master plan roads across Budvel, Kothwalguda and Gandipet to improve connectivity between the Outer Ring Road and key urban stretches, easing traffic and supporting future growth.',
+  content    = '<p>Hyderabad is set to witness a major leap in urban connectivity as the Musi Riverfront Development Corporation Limited (MRDCL) rolls out an ambitious plan to reshape the road network across <strong>Budvel, Kothwalguda and Gandipet</strong> — three of the city''s fastest-growing areas.</p>
+
+<p>The move aims to improve connectivity between the Outer Ring Road (ORR) and key urban stretches, easing traffic and supporting future growth. MRDCL has initiated development of master plan roads integrated with the proposed <strong>East-West Corridor along River Musi</strong> to reduce congestion in these high-growth areas. Seven such roads have been proposed.</p>
+
+<h2>The Seven Roads</h2>
+<ol>
+  <li><strong>Osmansagar to Narsingi</strong> — 5.4 km, RoW 30 metres</li>
+  <li><strong>Osmansagar to ORR Service Road</strong> — 2.3 km, RoW 30 metres</li>
+  <li><strong>Kismatpur Bridge to HMDA Budvel Rangareddy Layout (L-M1)</strong> — 1.1 km, RoW 30 metres</li>
+  <li><strong>HMDA Budvel Layout to Rangareddy Shivam Road</strong> — 3.5 km, RoW 30 metres</li>
+  <li><strong>NIRD Road, Police Quarters, Rajendranagar to SS Convention, Airport Road, Sathamrai Colony, Shamshabad</strong> — 5 km, RoW 36 metres</li>
+  <li><strong>Kismatpur Bridge to HMDA Budvel Rangareddy Layout (L-N)</strong> — 3 km, RoW 36 metres</li>
+  <li><strong>Isthana Villas to Gandipet Road</strong> — 1.2 km, RoW 18 metres</li>
+</ol>
+
+<h2>Standardised Right of Way</h2>
+<p>By standardising these roads with RoW between 30 and 36 metres, the project aims to transform the local grid into a more organised arterial system. The integration of Budvel, Kothwalguda and Gandipet is particularly strategic given the massive HMDA layouts and the residential and commercial projects coming up in these areas.</p>
+
+<h2>About the Musi Riverfront Development Project</h2>
+<p>The Musi Riverfront Development Project (MRDP) is a flagship initiative of the Telangana government, aimed at rejuvenating the <strong>55 km stretch of River Musi</strong> into a clean, sustainable urban asset through ecological restoration and infrastructure development, managed by MRDCL.</p>
+
+<p>The corporation has invited requests for proposals for the preparation of a detailed project report to develop these master plan roads, integrated with the proposed East-West Corridor. The selected agency will conduct surveys, traffic studies and projections up to 2047, determine lane requirements, and design road infrastructure including signage, junctions, drainage, safety measures and utilities, along with cost estimates. Consultants will also assess existing structures including bridges and culverts, and carry out further testing for distressed structures as per IRC norms.</p>',
+  author     = 'S Bachan Jeet Singh',
+  date       = 'May 1, 2026',
+  read_time  = '2 min read',
+  updated_at = now()
+where title ilike '%seven roads%musi%';
+*/
