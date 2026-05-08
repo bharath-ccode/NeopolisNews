@@ -175,12 +175,8 @@ export default function SessionsScreen() {
         ))}
       </View>
 
-      {/* Type filter chips */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={s.typeBar}
-      >
+      {/* Type filter chips — wrapped rows */}
+      <View style={s.typeBar}>
         {SESSION_TYPES.map((t) => (
           <TouchableOpacity
             key={t}
@@ -192,7 +188,7 @@ export default function SessionsScreen() {
             <Text style={[s.typeChipText, activeType === t && s.typeChipTextActive]}>{t}</Text>
           </TouchableOpacity>
         ))}
-      </ScrollView>
+      </View>
 
       {/* Session list */}
       <ScrollView
@@ -362,7 +358,7 @@ function SessionCard({
 
 const s = StyleSheet.create({
   root:   { flex: 1, backgroundColor: colors.gray[50] },
-  header: { backgroundColor: colors.brand[950], paddingHorizontal: 16, paddingVertical: 16 },
+  header: { backgroundColor: "#0f766e", paddingHorizontal: 16, paddingVertical: 16 },
   headerTitle: { color: colors.white, fontSize: 22, fontWeight: "800" },
   headerSub:   { color: colors.emerald[400], fontSize: 13, marginTop: 4 },
 
@@ -371,11 +367,11 @@ const s = StyleSheet.create({
     backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.gray[100],
   },
   modeChip:         { flex: 1, paddingVertical: 7, borderRadius: 8, alignItems: "center", backgroundColor: colors.gray[100] },
-  modeChipActive:   { backgroundColor: colors.brand[950] },
+  modeChipActive:   { backgroundColor: "#0f766e" },
   modeChipText:     { fontSize: 12, fontWeight: "700", color: colors.gray[600] },
   modeChipTextActive: { color: colors.white },
 
-  typeBar: { paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
+  typeBar: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
   typeChip: {
     flexDirection: "row", alignItems: "center", gap: 5,
     paddingHorizontal: 12, paddingVertical: 7, borderRadius: 100,
