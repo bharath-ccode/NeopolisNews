@@ -3,9 +3,9 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import {
   User,
-  Building2,
   Mail,
   Lock,
   Eye,
@@ -23,12 +23,7 @@ type Step = "type" | "details" | "done";
 
 const Logo = () => (
   <Link href="/" className="flex items-center gap-2 mb-8">
-    <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
-      <Building2 className="w-5 h-5 text-white" />
-    </div>
-    <span className="text-lg font-bold text-gray-900">
-      Neopolis<span className="text-brand-600">News</span>
-    </span>
+    <Image src="/logo.png" alt="NeopolisNews" width={44} height={44} className="object-contain" />
   </Link>
 );
 
