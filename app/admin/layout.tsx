@@ -21,6 +21,7 @@ import {
   Tag,
   UserCheck,
   IndianRupee,
+  CalendarDays,
 } from "lucide-react";
 import clsx from "clsx";
 import { AdminAuthProvider, useAdminAuth } from "@/context/AdminAuthContext";
@@ -31,6 +32,7 @@ const NAV = [
   { href: "/admin/builders",      icon: HardHat,         label: "Builders"      },
   { href: "/admin/projects",      icon: Layers,          label: "Projects"      },
   { href: "/admin/businesses",    icon: Store,           label: "Businesses"    },
+  { href: "/admin/events",        icon: CalendarDays,    label: "Events"        },
   { href: "/admin/brokers",       icon: UserCheck,       label: "Brokers"       },
   { href: "/admin/classifieds",   icon: Home,            label: "Properties"    },
   { href: "/admin/ads",           icon: Tag,             label: "Classifieds"   },
@@ -221,12 +223,20 @@ function AdminShell({ children }: { children: React.ReactNode }) {
               })}
             </p>
           </div>
-          {pathname !== "/admin/settings" && (
-            <Link href="/admin/news/create" className="btn-primary text-sm py-2">
-              <PlusCircle className="w-3.5 h-3.5" />
-              New Article
-            </Link>
-          )}
+          {pathname !== "/admin/settings" && (() => {
+            const ctaMap: Record<string, { href: string; label: string }> = {
+              "/admin/events":     { href: "/admin/events/create",   label: "New Event"    },
+              "/admin/businesses": { href: "/admin/businesses/new",  label: "New Business" },
+            };
+            const match = Object.entries(ctaMap).find(([prefix]) => pathname.startsWith(prefix));
+            const cta = match ? match[1] : { href: "/admin/news/create", label: "New Article" };
+            return (
+              <Link href={cta.href} className="btn-primary text-sm py-2">
+                <PlusCircle className="w-3.5 h-3.5" />
+                {cta.label}
+              </Link>
+            );
+          })()}
         </div>
 
         <div className="p-4 md:p-8">{children}</div>
