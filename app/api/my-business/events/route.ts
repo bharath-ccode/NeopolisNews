@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
-  const { businessId, name, event_type, event_date, start_time, end_time, description, image_url } = body ?? {};
+  const { businessId, name, event_type, event_date, end_date, start_time, end_time, description, image_url, is_free, ticket_price, total_slots } = body ?? {};
 
   if (!businessId || !name || !event_type || !event_date || !start_time || !end_time) {
     return NextResponse.json({ error: "businessId, name, event_type, event_date, start_time, end_time are required." }, { status: 400 });
@@ -34,7 +34,17 @@ export async function POST(req: NextRequest) {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("business_events")
-    .insert({ business_id: businessId, name, event_type, event_date, start_time, end_time, description: description ?? null, image_url: image_url ?? null, created_by: auth.data.userId })
+    .insert({
+      business_id: businessId, name, event_type, event_date,
+      end_date: end_date ?? null,
+      start_time, end_time,
+      description: description ?? null,
+      image_url: image_url ?? null,
+      is_free: is_free ?? true,
+      ticket_price: ticket_price ?? null,
+      total_slots: total_slots ?? null,
+      created_by: auth.data.userId,
+    })
     .select()
     .single();
 

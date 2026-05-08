@@ -31,10 +31,14 @@ export default function AdminCreateEventPage() {
   const [name, setName] = useState("");
   const [eventType, setEventType] = useState("exhibition");
   const [eventDate, setEventDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isFree, setIsFree] = useState(true);
+  const [ticketPrice, setTicketPrice] = useState("");
+  const [totalSlots, setTotalSlots] = useState("");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -73,9 +77,13 @@ export default function AdminCreateEventPage() {
       body: JSON.stringify({
         businessId: selectedBiz.id,
         name, event_type: eventType, event_date: eventDate,
+        end_date: endDate || null,
         start_time: startTime, end_time: endTime,
         description: description || null,
         image_url: imageUrl,
+        is_free: isFree,
+        ticket_price: !isFree && ticketPrice ? parseFloat(ticketPrice) : null,
+        total_slots: totalSlots ? parseInt(totalSlots, 10) : null,
       }),
     });
     const data = await res.json();
@@ -157,10 +165,16 @@ export default function AdminCreateEventPage() {
           </select>
         </div>
 
-        {/* Date */}
-        <div>
-          <label className={LABEL}>Date *</label>
-          <input type="date" className={INPUT} value={eventDate} onChange={(e) => setEventDate(e.target.value)} required />
+        {/* Dates */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={LABEL}>Start Date *</label>
+            <input type="date" className={INPUT} value={eventDate} onChange={(e) => setEventDate(e.target.value)} required />
+          </div>
+          <div>
+            <label className={LABEL}>End Date <span className="font-normal text-gray-400">(multi-day)</span></label>
+            <input type="date" className={INPUT} value={endDate} min={eventDate} onChange={(e) => setEndDate(e.target.value)} />
+          </div>
         </div>
 
         {/* Times */}
@@ -173,6 +187,37 @@ export default function AdminCreateEventPage() {
             <label className={LABEL}>End Time *</label>
             <input type="time" className={INPUT} value={endTime} onChange={(e) => setEndTime(e.target.value)} required />
           </div>
+        </div>
+
+        {/* Free / Ticketed */}
+        <div>
+          <label className={LABEL}>Entry</label>
+          <div className="flex gap-3">
+            <button type="button" onClick={() => setIsFree(true)}
+              className={`flex-1 py-2.5 rounded-lg border text-sm font-semibold transition-colors ${isFree ? "bg-green-50 border-green-400 text-green-700" : "border-gray-200 text-gray-500 hover:bg-gray-50"}`}>
+              Free
+            </button>
+            <button type="button" onClick={() => setIsFree(false)}
+              className={`flex-1 py-2.5 rounded-lg border text-sm font-semibold transition-colors ${!isFree ? "bg-violet-50 border-violet-400 text-violet-700" : "border-gray-200 text-gray-500 hover:bg-gray-50"}`}>
+              Paid / Ticketed
+            </button>
+          </div>
+        </div>
+
+        {/* Ticket price (shown only when paid) */}
+        {!isFree && (
+          <div>
+            <label className={LABEL}>Ticket Price (₹) *</label>
+            <input type="number" min="1" step="1" className={INPUT} value={ticketPrice}
+              onChange={(e) => setTicketPrice(e.target.value)} placeholder="e.g. 500" required />
+          </div>
+        )}
+
+        {/* Slots */}
+        <div>
+          <label className={LABEL}>Total Slots <span className="font-normal text-gray-400">(leave blank for unlimited)</span></label>
+          <input type="number" min="1" step="1" className={INPUT} value={totalSlots}
+            onChange={(e) => setTotalSlots(e.target.value)} placeholder="e.g. 200" />
         </div>
 
         {/* Description */}

@@ -75,7 +75,7 @@ function EventCard({ ev, featured }: { ev: BusinessEvent; featured?: boolean }) 
           <p className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-gray-400" />{ev.businesses.address}</p>
         )}
       </div>
-      <Link href={`/businesses/${ev.business_id}`}
+      <Link href={`/events/${ev.id}`}
         className="inline-flex items-center gap-1 text-xs font-semibold text-violet-600 hover:text-violet-700">
         View Details <ArrowRight className="w-3 h-3" />
       </Link>
