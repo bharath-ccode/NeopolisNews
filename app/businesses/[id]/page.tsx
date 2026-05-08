@@ -309,7 +309,7 @@ export default async function BusinessProfilePage({
                     href={`tel:${b.contact_phone}`}
                     className="inline-flex items-center gap-2 bg-white text-brand-800 hover:bg-brand-50 font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg text-sm"
                   >
-                    <Phone className="w-4 h-4" /> Call Now
+                    <Phone className="w-4 h-4" /> {b.contact_phone}
                   </a>
                 )}
                 <ContactButton businessId={b.id} businessName={b.name} />
