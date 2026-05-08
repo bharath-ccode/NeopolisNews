@@ -21,6 +21,7 @@ import {
   Tag,
 } from "lucide-react";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { getSubtypes } from "@/lib/businessDirectory";
 import ViewTracker from "./ViewTracker";
 import ContactButton from "./ContactButton";
 import ReviewSection from "./ReviewSection";
@@ -476,22 +477,57 @@ export default async function BusinessProfilePage({
                 </div>
               )}
 
-              {/* What we offer */}
-              {b.subtypes.length > 0 && (
-                <div className="card p-6">
-                  <h2 className="font-bold text-gray-900 text-base mb-3">What We Offer</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {b.subtypes.map((s) => (
-                      <span
-                        key={s}
-                        className="bg-brand-50 border border-brand-100 text-brand-700 text-xs font-semibold px-3 py-1.5 rounded-full"
-                      >
-                        {s}
-                      </span>
-                    ))}
+              {/* Category tree */}
+              {(b.types.length > 0 || b.subtypes.length > 0) && (() => {
+                // track which subtypes are shown under a type to surface any remainder
+                const shown = new Set<string>();
+                const rows = b.types.map((type) => {
+                  const matched = getSubtypes(b.industry, type).filter((s) => b.subtypes.includes(s));
+                  matched.forEach((s) => shown.add(s));
+                  return { type, matched };
+                });
+                const remainder = b.subtypes.filter((s) => !shown.has(s));
+                return (
+                  <div className="card p-6">
+                    <h2 className="font-bold text-gray-900 text-base mb-4">Category</h2>
+                    <div className="space-y-3">
+                      {/* Industry */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest w-16 shrink-0">Industry</span>
+                        <span className="bg-brand-600 text-white text-xs font-bold px-3 py-1 rounded-full">{b.industry}</span>
+                      </div>
+                      {/* Types + their subtypes */}
+                      {rows.map(({ type, matched }) => (
+                        <div key={type} className="pl-4 border-l-2 border-brand-100 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest w-12 shrink-0">Type</span>
+                            <span className="bg-orange-100 text-orange-700 text-xs font-bold px-3 py-1 rounded-full">{type}</span>
+                          </div>
+                          {matched.length > 0 && (
+                            <div className="pl-16 flex flex-wrap gap-1.5">
+                              {matched.map((s) => (
+                                <span key={s} className="bg-brand-50 border border-brand-100 text-brand-700 text-xs font-semibold px-2.5 py-1 rounded-full">
+                                  {s}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {/* Subtypes not mapped to any type */}
+                      {remainder.length > 0 && (
+                        <div className="pl-4 border-l-2 border-brand-100 flex flex-wrap gap-1.5">
+                          {remainder.map((s) => (
+                            <span key={s} className="bg-brand-50 border border-brand-100 text-brand-700 text-xs font-semibold px-2.5 py-1 rounded-full">
+                              {s}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Reviews */}
               <ReviewSection businessId={b.id} />
