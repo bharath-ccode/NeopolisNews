@@ -119,7 +119,7 @@ export default function BusinessDetailScreen() {
             <Text style={s.backText}>← Back</Text>
           </TouchableOpacity>
         </View>
-        <View style={s.centered}><ActivityIndicator color="#f97316" size="large" /></View>
+        <View style={s.centered}><ActivityIndicator color="#0d9488" size="large" /></View>
       </SafeAreaView>
     );
   }
@@ -316,9 +316,9 @@ export default function BusinessDetailScreen() {
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
-const WARM_DARK  = "#c2410c"; // orange-700
-const WARM_MID   = "#ea580c"; // orange-600
-const WARM_LIGHT = "#fed7aa"; // orange-200
+const TEAL_DARK  = "#0f766e"; // teal-700
+const TEAL_MID   = "#0d9488"; // teal-600
+const TEAL_LIGHT = "#99f6e4"; // teal-200
 
 const s = StyleSheet.create({
   root:         { flex: 1, backgroundColor: colors.gray[50] },
@@ -328,7 +328,7 @@ const s = StyleSheet.create({
   // Header — warm orange
   header: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    backgroundColor: WARM_DARK,
+    backgroundColor: TEAL_DARK,
     paddingHorizontal: 16, paddingVertical: 14,
   },
   backBtn:     { paddingVertical: 4, paddingRight: 12 },
@@ -338,7 +338,7 @@ const s = StyleSheet.create({
   // Hero — warm gradient feel
   hero: {
     flexDirection: "row", alignItems: "flex-start", gap: 14,
-    backgroundColor: WARM_MID,
+    backgroundColor: TEAL_MID,
     paddingHorizontal: 16, paddingTop: 18, paddingBottom: 20,
   },
   logoWrap: {
@@ -359,14 +359,14 @@ const s = StyleSheet.create({
   heroAddress:   { fontSize: 12, color: "rgba(255,255,255,0.7)", marginTop: 5, lineHeight: 17 },
 
   // Category pills
-  catRow:    { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: "#fff7ed", borderBottomWidth: 1, borderBottomColor: "#fed7aa" },
+  catRow:    { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: "#f0fdfa", borderBottomWidth: 1, borderBottomColor: "#99f6e4" },
   catPillRow:{ flexDirection: "row", alignItems: "center", gap: 6 },
-  catSep:    { color: "#f97316", fontSize: 12 },
-  catPill:   { backgroundColor: "#ffedd5", borderRadius: 100, paddingHorizontal: 10, paddingVertical: 3, borderWidth: 1, borderColor: "#fed7aa" },
-  catPillText: { fontSize: 11, fontWeight: "600", color: "#c2410c" },
+  catSep:    { color: "#0d9488", fontSize: 12 },
+  catPill:   { backgroundColor: "#ccfbf1", borderRadius: 100, paddingHorizontal: 10, paddingVertical: 3, borderWidth: 1, borderColor: "#99f6e4" },
+  catPillText: { fontSize: 11, fontWeight: "600", color: "#0f766e" },
 
   // Photos
-  photosScroll:   { backgroundColor: "#fff" },
+  photosScroll:   { backgroundColor: "#fafaf9" },
   photosContent:  { paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
   photo:          { width: 200, height: 130, borderRadius: 12 },
 
@@ -374,7 +374,7 @@ const s = StyleSheet.create({
   cards: { padding: 16, gap: 12 },
   card:  { backgroundColor: "#fff", borderRadius: 16, padding: 16, shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
   cardTitle: { fontSize: 12, fontWeight: "700", color: colors.gray[400], textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 },
-  cardCount: { fontWeight: "700", color: "#f97316" },
+  cardCount: { fontWeight: "700", color: "#0d9488" },
   cardBody:  { fontSize: 14, color: colors.gray[700], lineHeight: 22 },
 
   // Carousel shared
