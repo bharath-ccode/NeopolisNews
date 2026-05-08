@@ -85,7 +85,7 @@ export default function LoginForm() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-12">
       <Link href="/" className="flex flex-col items-center gap-2 mb-8">
-        <Image src="/logo.png" alt="NeopolisNews" width={120} height={120} className="object-contain" />
+        <Image src="/logo.png" alt="NeopolisNews" width={120} height={120} className="w-[120px] h-[120px] object-contain" />
         <span className="text-lg font-bold text-gray-900">Neopolis<span className="text-brand-600">News</span></span>
       </Link>
 
