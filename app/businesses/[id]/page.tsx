@@ -226,13 +226,13 @@ export default async function BusinessProfilePage({
       <ViewTracker id={b.id} />
 
       {/* ── HERO ────────────────────────────────────────────────────────────── */}
-      <section className="bg-gradient-to-br from-brand-950 via-brand-900 to-brand-800 text-white">
+      <section className="bg-gradient-to-br from-amber-400 via-orange-500 to-rose-600 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 md:py-20">
 
           {/* Back link */}
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 text-brand-300 hover:text-white text-sm mb-8 transition-colors"
+            className="inline-flex items-center gap-1.5 text-white/70 hover:text-white text-sm mb-8 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" /> NeopolisNews
           </Link>
@@ -281,20 +281,20 @@ export default async function BusinessProfilePage({
               {/* Inline category breadcrumb */}
               {(b.industry || b.types.length > 0 || b.subtypes.length > 0) && (
                 <div className="flex flex-wrap items-center gap-2 mb-4 justify-center md:justify-start">
-                  <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full">{b.industry}</span>
+                  <span className="bg-white/25 text-white text-xs font-bold px-3 py-1 rounded-full">{b.industry}</span>
                   {b.types.length > 0 && (
                     <>
-                      <span className="text-white/40 text-sm">›</span>
+                      <span className="text-white/50 text-sm">›</span>
                       {b.types.map((t) => (
-                        <span key={t} className="bg-orange-400/20 border border-orange-400/30 text-orange-200 text-xs font-semibold px-3 py-1 rounded-full">{t}</span>
+                        <span key={t} className="bg-white/20 border border-white/30 text-white text-xs font-semibold px-3 py-1 rounded-full">{t}</span>
                       ))}
                     </>
                   )}
                   {b.subtypes.length > 0 && (
                     <>
-                      <span className="text-white/40 text-sm">›</span>
+                      <span className="text-white/50 text-sm">›</span>
                       {b.subtypes.map((s) => (
-                        <span key={s} className="bg-white/10 border border-white/20 text-white/70 text-xs font-semibold px-2.5 py-1 rounded-full">{s}</span>
+                        <span key={s} className="bg-white/15 border border-white/25 text-white/85 text-xs font-semibold px-2.5 py-1 rounded-full">{s}</span>
                       ))}
                     </>
                   )}
@@ -302,7 +302,7 @@ export default async function BusinessProfilePage({
               )}
 
               {/* Address */}
-              <div className="flex items-start gap-2 text-brand-200 mb-4 justify-center md:justify-start">
+              <div className="flex items-start gap-2 text-white/80 mb-4 justify-center md:justify-start">
                 <MapPin className="w-4 h-4 shrink-0 mt-0.5" />
                 <span className="text-sm leading-snug">{b.address}</span>
               </div>
@@ -337,7 +337,7 @@ export default async function BusinessProfilePage({
                 {b.contact_phone && (
                   <a
                     href={`tel:${b.contact_phone}`}
-                    className="inline-flex items-center gap-2 bg-white text-brand-800 hover:bg-brand-50 font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg text-sm"
+                    className="inline-flex items-center gap-2 bg-white text-orange-700 hover:bg-orange-50 font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg text-sm"
                   >
                     <Phone className="w-4 h-4" /> {b.contact_phone}
                   </a>
