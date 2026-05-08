@@ -206,6 +206,13 @@ export const TAXONOMY: Record<string, Record<string, string[]>> = {
       "Ethnic Wear",
       "Sportswear",
       "Jewellery",
+      "Lingerie & Innerwear",
+      "Bags & Handbags",
+      "Watches",
+      "Bridal Wear",
+      "Maternity Wear",
+      "Sunglasses & Eyewear",
+      "Uniforms & Workwear",
     ],
     "Electronics": [
       "Mobiles & Accessories",
