@@ -12,15 +12,27 @@ import {
   CheckCircle,
   AtSign,
   Building2,
+  ShieldCheck,
+  Settings,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase/client";
+
+interface OwnedBusiness {
+  id: string;
+  name: string;
+  industry: string;
+  status: string;
+  logo: string | null;
+  verified: boolean;
+}
 
 export default function IndividualDashboard() {
   const { user } = useAuth();
   const firstName = user?.name?.split(" ")[0] ?? "there";
   const [totalListings,  setTotalListings]  = useState(0);
   const [activeListings, setActiveListings] = useState(0);
+  const [ownedBiz, setOwnedBiz] = useState<OwnedBusiness[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -41,6 +53,14 @@ export default function IndividualDashboard() {
             .then(({ count }) => { if (count !== null) setTotalEnquiries(count); });
         }
       });
+
+    // Fetch businesses owned by this user (by owner_id or owner_email)
+    const emailFilter = user.email ? `,owner_email.eq.${user.email}` : "";
+    sb.from("businesses")
+      .select("id, name, industry, status, logo, verified")
+      .or(`owner_id.eq.${user.id}${emailFilter}`)
+      .order("completed_at", { ascending: true })
+      .then(({ data }) => { if (data) setOwnedBiz(data as OwnedBusiness[]); });
   }, [user]);
 
   const totalViews = 0;
@@ -147,6 +167,44 @@ export default function IndividualDashboard() {
         </div>
       )}
 
+      {/* My Businesses */}
+      {ownedBiz.length > 0 && (
+        <div>
+          <h3 className="text-sm font-bold text-gray-900 mb-3">My Businesses</h3>
+          <div className="grid sm:grid-cols-2 gap-3">
+            {ownedBiz.map((b) => (
+              <div key={b.id} className="card p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl overflow-hidden bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
+                  {b.logo
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={b.logo} alt={b.name} className="w-full h-full object-cover" />
+                    : <Building2 className="w-5 h-5 text-brand-300" />
+                  }
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-bold text-sm text-gray-900 truncate">{b.name}</p>
+                    {b.verified && <ShieldCheck className="w-3.5 h-3.5 text-green-500 shrink-0" />}
+                  </div>
+                  <p className="text-xs text-brand-600 font-medium">{b.industry}</p>
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                    b.status === "active" ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"
+                  }`}>
+                    {b.status}
+                  </span>
+                </div>
+                <Link
+                  href="/my-business"
+                  className="shrink-0 inline-flex items-center gap-1 text-xs font-bold text-brand-600 hover:text-brand-700 px-3 py-1.5 rounded-lg hover:bg-brand-50 transition-colors border border-brand-200"
+                >
+                  <Settings className="w-3.5 h-3.5" /> Manage
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Register a Business CTA */}
       <div className="card p-5 border-dashed border-2 border-brand-200 bg-brand-50/40">
         <div className="flex items-start gap-4">
@@ -154,7 +212,9 @@ export default function IndividualDashboard() {
             <Building2 className="w-5 h-5 text-brand-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-gray-900 text-sm">Do you own a business in Neopolis?</p>
+            <p className="font-bold text-gray-900 text-sm">
+              {ownedBiz.length > 0 ? "Register another business" : "Do you own a business in Neopolis?"}
+            </p>
             <p className="text-xs text-gray-500 mt-0.5">
               Get your business listed — add contact details, photos, hours, and start receiving enquiries from residents.
             </p>
