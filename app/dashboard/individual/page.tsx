@@ -11,6 +11,7 @@ import {
   ArrowRight,
   CheckCircle,
   AtSign,
+  Building2,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase/client";
@@ -145,6 +146,27 @@ export default function IndividualDashboard() {
           </Link>
         </div>
       )}
+
+      {/* Register a Business CTA */}
+      <div className="card p-5 border-dashed border-2 border-brand-200 bg-brand-50/40">
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center shrink-0">
+            <Building2 className="w-5 h-5 text-brand-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-gray-900 text-sm">Do you own a business in Neopolis?</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Get your business listed — add contact details, photos, hours, and start receiving enquiries from residents.
+            </p>
+          </div>
+          <Link
+            href="/register-business"
+            className="shrink-0 inline-flex items-center gap-1.5 text-xs font-bold bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            Register <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      </div>
 
       {/* Tips */}
       <div className="bg-brand-50 border border-brand-100 rounded-2xl p-5">
