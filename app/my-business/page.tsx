@@ -170,7 +170,7 @@ export default function MyBusinessPage() {
       const { data, error: bizErr } = await supabase
         .from("businesses")
         .select("*")
-        .eq("owner_email", session.user.email)
+        .or(`owner_email.eq.${session.user.email},owner_id.eq.${session.user.id}`)
         .order("completed_at", { ascending: true });
 
       if (bizErr || !data?.length) {
