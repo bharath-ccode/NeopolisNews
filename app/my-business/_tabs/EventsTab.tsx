@@ -3,9 +3,18 @@
 import { useState, useEffect, useRef } from "react";
 import { CalendarDays, Plus, Trash2, Loader2, Clock, Upload, X } from "lucide-react";
 
+const EVENT_TYPES = [
+  { value: "music_concert",  label: "Music Concert"   },
+  { value: "sports_run",     label: "Sports & Run"    },
+  { value: "food_festival",  label: "Food Festival"   },
+  { value: "culture_art",    label: "Culture & Art"   },
+  { value: "exhibition",     label: "Exhibition"      },
+];
+
 interface BusinessEvent {
   id: string;
   name: string;
+  event_type: string;
   event_date: string;
   start_time: string;
   end_time: string;
@@ -26,6 +35,7 @@ export default function EventsTab({ businessId, token }: { businessId: string; t
   const imageRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState("");
+  const [eventType, setEventType] = useState("exhibition");
   const [eventDate, setEventDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -59,17 +69,17 @@ export default function EventsTab({ businessId, token }: { businessId: string; t
   }
 
   function resetForm() {
-    setName(""); setEventDate(""); setStartTime(""); setEndTime(""); setDescription(""); setImageUrl(null);
+    setName(""); setEventType("exhibition"); setEventDate(""); setStartTime(""); setEndTime(""); setDescription(""); setImageUrl(null);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!name || !eventDate || !startTime || !endTime) return;
+    if (!name || !eventType || !eventDate || !startTime || !endTime) return;
     setSaving(true);
     const res = await fetch("/api/my-business/events", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ businessId, name, event_date: eventDate, start_time: startTime, end_time: endTime, description: description || null, image_url: imageUrl }),
+      body: JSON.stringify({ businessId, name, event_type: eventType, event_date: eventDate, start_time: startTime, end_time: endTime, description: description || null, image_url: imageUrl }),
     });
     if (res.ok) {
       const newEvent = await res.json();
@@ -111,6 +121,14 @@ export default function EventsTab({ businessId, token }: { businessId: string; t
             <div>
               <label className={LABEL}>Event Name *</label>
               <input className={INPUT} value={name} onChange={(e) => setName(e.target.value)} placeholder="Summer Sale Launch Party" required />
+            </div>
+            <div>
+              <label className={LABEL}>Event Type *</label>
+              <select className={INPUT} value={eventType} onChange={(e) => setEventType(e.target.value)} required>
+                {EVENT_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className={LABEL}>Date *</label>
@@ -177,6 +195,7 @@ export default function EventsTab({ businessId, token }: { businessId: string; t
               )}
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-sm text-gray-900 truncate">{ev.name}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{EVENT_TYPES.find((t) => t.value === ev.event_type)?.label ?? ev.event_type}</p>
                 <p className="text-xs text-brand-600 font-semibold mt-0.5">
                   {new Date(ev.event_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                 </p>
