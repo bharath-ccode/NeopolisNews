@@ -384,7 +384,7 @@ export default async function BusinessProfilePage({
 
       {/* ── PHOTOS ──────────────────────────────────────────────────────────── */}
       {pictures.length > 0 && (
-        <section className="bg-brand-950">
+        <section className="bg-[#fafaf9]">
           <div
             className={`max-w-4xl mx-auto grid gap-1 ${
               pictures.length === 1 ? "grid-cols-1" : "grid-cols-2"
