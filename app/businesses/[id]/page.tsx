@@ -254,7 +254,6 @@ export default async function BusinessProfilePage({
                     <ShieldCheck className="w-3.5 h-3.5" /> Verified
                   </span>
                 )}
-                <span className="text-brand-300 text-sm font-medium">{b.industry}</span>
                 {b.status !== "active" && (
                   <Link
                     href={`/businesses/${b.id}/claim`}
@@ -270,17 +269,26 @@ export default async function BusinessProfilePage({
                 {b.name}
               </h1>
 
-              {/* Type chips */}
-              {b.types.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-4 justify-center md:justify-start">
-                  {b.types.map((t) => (
-                    <span
-                      key={t}
-                      className="bg-white/10 border border-white/20 text-white/80 text-xs font-semibold px-3 py-1 rounded-full"
-                    >
-                      {t}
-                    </span>
-                  ))}
+              {/* Inline category breadcrumb */}
+              {(b.industry || b.types.length > 0 || b.subtypes.length > 0) && (
+                <div className="flex flex-wrap items-center gap-2 mb-4 justify-center md:justify-start">
+                  <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full">{b.industry}</span>
+                  {b.types.length > 0 && (
+                    <>
+                      <span className="text-white/40 text-sm">›</span>
+                      {b.types.map((t) => (
+                        <span key={t} className="bg-orange-400/20 border border-orange-400/30 text-orange-200 text-xs font-semibold px-3 py-1 rounded-full">{t}</span>
+                      ))}
+                    </>
+                  )}
+                  {b.subtypes.length > 0 && (
+                    <>
+                      <span className="text-white/40 text-sm">›</span>
+                      {b.subtypes.map((s) => (
+                        <span key={s} className="bg-white/10 border border-white/20 text-white/70 text-xs font-semibold px-2.5 py-1 rounded-full">{s}</span>
+                      ))}
+                    </>
+                  )}
                 </div>
               )}
 
@@ -477,31 +485,6 @@ export default async function BusinessProfilePage({
               )}
 
               {/* Category */}
-              {(b.types.length > 0 || b.subtypes.length > 0) && (
-                <div className="card p-6">
-                  <h2 className="font-bold text-gray-900 text-base mb-3">Category</h2>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="bg-brand-600 text-white text-xs font-bold px-3 py-1 rounded-full">{b.industry}</span>
-                    {b.types.length > 0 && (
-                      <>
-                        <span className="text-gray-300 text-sm">›</span>
-                        {b.types.map((t) => (
-                          <span key={t} className="bg-orange-100 text-orange-700 text-xs font-bold px-3 py-1 rounded-full">{t}</span>
-                        ))}
-                      </>
-                    )}
-                    {b.subtypes.length > 0 && (
-                      <>
-                        <span className="text-gray-300 text-sm">›</span>
-                        {b.subtypes.map((s) => (
-                          <span key={s} className="bg-brand-50 border border-brand-100 text-brand-700 text-xs font-semibold px-2.5 py-1 rounded-full">{s}</span>
-                        ))}
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
-
               {/* Reviews */}
               <ReviewSection businessId={b.id} />
 
