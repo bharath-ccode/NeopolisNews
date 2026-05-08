@@ -9,6 +9,7 @@ import {
 import {
   getIndustries, getTypes, getSubtypesByTypes,
 } from "@/lib/businessDirectory";
+import { Globe } from "lucide-react";
 import { DEFAULT_TIMINGS, type DayTiming } from "@/lib/businessStore";
 
 type Step = "info" | "owner" | "verify" | "profile" | "done";
@@ -135,6 +136,7 @@ export default function RegisterBusinessPage() {
 
   // Step 4 — profile
   const [contactPhone, setContactPhone] = useState("");
+  const [website, setWebsite] = useState("");
   const [description, setDescription] = useState("");
   const [timings, setTimings] = useState<DayTiming[]>(DEFAULT_TIMINGS.map((t) => ({ ...t })));
   const [instagram, setInstagram] = useState("");
@@ -214,6 +216,7 @@ export default function RegisterBusinessPage() {
           otp,
           password,
           contactPhone: contactPhone ? `+91${contactPhone}` : null,
+          website: website.trim() || null,
           description: description.trim() || null,
           timings,
           socialLinks: {
@@ -401,6 +404,11 @@ export default function RegisterBusinessPage() {
                     placeholder="9900000000"
                     className="flex-1 px-3 py-2.5 border border-gray-200 rounded-r-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
                 </div>
+              </div>
+              <div>
+                <label className={LABEL}><Globe className="w-3.5 h-3.5 inline mr-1" />Website URL <span className="font-normal text-gray-400">(optional)</span></label>
+                <input type="url" value={website} onChange={(e) => setWebsite(e.target.value)}
+                  placeholder="https://www.yourbusiness.com" className={INPUT} />
               </div>
               <div>
                 <label className={LABEL}>About Your Business <span className="font-normal text-gray-400">(optional)</span></label>
