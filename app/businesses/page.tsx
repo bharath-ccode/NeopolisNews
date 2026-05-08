@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Building2, ShieldCheck, MapPin, Loader2 } from "lucide-react";
+import { Building2, ShieldCheck, MapPin, Phone, Loader2 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import { TAXONOMY, getTypes, getSubtypes } from "@/lib/businessDirectory";
 
@@ -17,6 +17,7 @@ interface Business {
   types: string[];
   subtypes: string[];
   address: string | null;
+  contact_phone: string | null;
   logo: string | null;
   verified: boolean;
 }
@@ -188,6 +189,11 @@ export default function BusinessesPage() {
                     {b.address && (
                       <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5 truncate">
                         <MapPin className="w-3 h-3 shrink-0" />{b.address}
+                      </p>
+                    )}
+                    {b.contact_phone && (
+                      <p className="text-xs text-brand-600 font-medium flex items-center gap-1 mt-0.5">
+                        <Phone className="w-3 h-3 shrink-0" />{b.contact_phone}
                       </p>
                     )}
                     {b.types?.length > 0 && (
