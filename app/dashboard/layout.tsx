@@ -28,6 +28,7 @@ const INDIVIDUAL_NAV = [
   { href: "/dashboard/individual/sessions", icon: Video, label: "My Sessions" },
   { href: "/dashboard/individual/enquiries", icon: MessageSquare, label: "Enquiries" },
   { href: "/dashboard/individual/profile", icon: User, label: "My Profile" },
+  { href: "/register-business", icon: Building2, label: "Register Business" },
 ];
 
 const BUSINESS_NAV = [
