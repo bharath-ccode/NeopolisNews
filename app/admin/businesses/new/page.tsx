@@ -9,6 +9,7 @@ import {
   CheckCircle,
   Copy,
   ExternalLink,
+  Globe,
   Phone,
   MapPin,
   Mail,
@@ -121,6 +122,7 @@ export default function AdminNewBusinessPage() {
 
   // Step 2
   const [address, setAddress] = useState("");
+  const [website, setWebsite] = useState("");
   const [ownerPhone, setOwnerPhone] = useState("");
   const [email, setEmail] = useState("");
 
@@ -199,6 +201,7 @@ export default function AdminNewBusinessPage() {
           types: selectedTypes,
           subtypes: selectedSubtypes,
           address: address.trim(),
+          website: website.trim() || undefined,
           ownerEmail: email.trim() || undefined,
           ownerPhone: ownerPhone ? `+91${ownerPhone}` : undefined,
         }),
@@ -229,7 +232,7 @@ export default function AdminNewBusinessPage() {
   function reset() {
     setStep(1); setError("");
     setName(""); setIndustry(""); setSelectedTypes([]); setSelectedSubtypes([]);
-    setAddress(""); setOwnerPhone(""); setEmail(""); setCreated(null);
+    setAddress(""); setWebsite(""); setOwnerPhone(""); setEmail(""); setCreated(null);
   }
 
   // ── Layout ────────────────────────────────────────────────────────────────
@@ -423,6 +426,22 @@ export default function AdminNewBusinessPage() {
                   placeholder="Unit / shop, building, street, area, city — PIN"
                   rows={3}
                   className={INPUT + " resize-none"}
+                />
+              </div>
+
+              {/* Website */}
+              <div>
+                <label className={LABEL}>
+                  <Globe className="w-3.5 h-3.5 inline mr-1" />
+                  Website URL{" "}
+                  <span className="font-normal text-gray-400">(optional)</span>
+                </label>
+                <input
+                  type="url"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  placeholder="https://www.yourbusiness.com"
+                  className={INPUT}
                 />
               </div>
 

@@ -64,7 +64,7 @@ export async function POST(
 ) {
   const { id } = params;
   const body = await req.json().catch(() => null);
-  const { otp, claimToken, contactPhone, description, timings, socialLinks, password } = body ?? {};
+  const { otp, claimToken, contactPhone, website, description, timings, socialLinks, password } = body ?? {};
 
   const supabase = createAdminClient();
 
@@ -96,6 +96,7 @@ export async function POST(
     const updateData: Record<string, unknown> = {
       status: "active",
       contact_phone: contactPhone ?? null,
+      website: website ?? null,
       description: description ?? null,
       timings: timings ?? [],
       social_links: socialLinks ?? {},
@@ -134,6 +135,7 @@ export async function POST(
   const updateData: Record<string, unknown> = {
     status: "active",
     contact_phone: contactPhone ?? null,
+    website: website ?? null,
     description: description ?? null,
     timings: timings ?? [],
     social_links: socialLinks ?? {},

@@ -75,6 +75,7 @@ interface BusinessRow {
   pictures: string[];
   social_links: SocialLinks;
   contact_phone: string | null;
+  website: string | null;
   description: string | null;
   timings: DayTiming[];
   completed_at: string | null;
@@ -170,7 +171,7 @@ export default async function BusinessProfilePage({
   const pictures = (b.pictures ?? []).slice(0, 2);
   const timings: DayTiming[] = b.timings ?? [];
   const status = todayStatus(timings);
-  const hasSocial = social.instagram || social.facebook || social.youtube;
+  const hasSocial = social.instagram || social.facebook || social.youtube || b.website;
 
   const sameAs = [
     social.instagram,
@@ -510,6 +511,19 @@ export default async function BusinessProfilePage({
                           <Phone className="w-4 h-4 text-brand-600" />
                         </div>
                         <span className="text-sm font-medium">{b.contact_phone}</span>
+                      </a>
+                    )}
+                    {b.website && (
+                      <a
+                        href={b.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 text-gray-700 hover:text-brand-600 transition-colors group"
+                      >
+                        <div className="w-9 h-9 rounded-xl bg-brand-50 flex items-center justify-center group-hover:bg-brand-100 transition-colors">
+                          <ExternalLink className="w-4 h-4 text-brand-600" />
+                        </div>
+                        <span className="text-sm font-medium truncate">{b.website.replace(/^https?:\/\//, "")}</span>
                       </a>
                     )}
                     {social.instagram && (

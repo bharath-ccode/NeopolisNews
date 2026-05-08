@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Building2, Phone, Instagram, Facebook, Youtube,
+  Building2, Phone, Instagram, Facebook, Youtube, Globe,
   Clock, Loader2, CheckCircle, LogOut, ExternalLink,
   Image as ImageIcon, Upload, X, ShieldCheck,
   CalendarDays, Tag, Newspaper, Eye, MessageSquare, Film, Video, Bell,
@@ -21,6 +21,7 @@ import WellnessSessionsTab from "./_tabs/WellnessSessionsTab";
 
 interface SocialLinks { instagram?: string; facebook?: string; youtube?: string; }
 
+
 interface Business {
   id: string;
   name: string;
@@ -33,6 +34,7 @@ interface Business {
   social_links: SocialLinks;
   contact_phone: string | null;
   emergency_phone: string | null;
+  website: string | null;
   description: string | null;
   timings: DayTiming[];
   view_count: number;
@@ -95,6 +97,7 @@ function loadFields(
   setters: {
     setContactPhone: (v: string) => void;
     setEmergencyPhone: (v: string) => void;
+    setWebsite: (v: string) => void;
     setDescription: (v: string) => void;
     setTimings: (v: DayTiming[]) => void;
     setInstagram: (v: string) => void;
@@ -106,6 +109,7 @@ function loadFields(
 ) {
   setters.setContactPhone(data.contact_phone?.replace(/^\+91/, "") ?? "");
   setters.setEmergencyPhone(data.emergency_phone?.replace(/^\+91/, "") ?? "");
+  setters.setWebsite(data.website ?? "");
   setters.setDescription(data.description ?? "");
   setters.setTimings(data.timings?.length ? data.timings : []);
   setters.setInstagram(data.social_links?.instagram ?? "");
@@ -131,6 +135,7 @@ export default function MyBusinessPage() {
   // Editable fields
   const [contactPhone, setContactPhone] = useState("");
   const [emergencyPhone, setEmergencyPhone] = useState("");
+  const [website, setWebsite] = useState("");
   const [description, setDescription] = useState("");
   const [timings, setTimings] = useState<DayTiming[]>([]);
   const [instagram, setInstagram] = useState("");
@@ -144,7 +149,7 @@ export default function MyBusinessPage() {
   const logoRef = useRef<HTMLInputElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
 
-  const fieldSetters = { setContactPhone, setEmergencyPhone, setDescription, setTimings, setInstagram, setFacebook, setYoutube, setLogo, setPictures };
+  const fieldSetters = { setContactPhone, setEmergencyPhone, setWebsite, setDescription, setTimings, setInstagram, setFacebook, setYoutube, setLogo, setPictures };
 
   function switchBusiness(b: Business) {
     setBiz(b);
@@ -195,6 +200,7 @@ export default function MyBusinessPage() {
           businessId: biz.id,
           contactPhone: contactPhone ? `+91${contactPhone}` : null,
           emergencyPhone: emergencyPhone ? `+91${emergencyPhone}` : null,
+          website: website.trim() || null,
           description: description.trim() || null,
           timings,
           socialLinks: {
@@ -524,6 +530,11 @@ export default function MyBusinessPage() {
                       className="flex-1 px-3 py-2.5 border border-gray-200 rounded-r-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
                     />
                   </div>
+                </div>
+                <div>
+                  <label className={LABEL}><Globe className="w-3.5 h-3.5 inline mr-1" />Website URL <span className="font-normal text-gray-400">(optional)</span></label>
+                  <input type="url" value={website} onChange={(e) => setWebsite(e.target.value)}
+                    placeholder="https://www.yourbusiness.com" className={INPUT} />
                 </div>
                 <div>
                   <label className={LABEL}><Instagram className="w-3.5 h-3.5 inline mr-1" />Instagram URL</label>
