@@ -248,7 +248,7 @@ export default async function BusinessProfilePage({
       <ViewTracker id={b.id} />
 
       {/* ── HERO ────────────────────────────────────────────────────────────── */}
-      <section className="bg-gradient-to-br from-amber-400 via-orange-500 to-rose-600 text-white">
+      <section className="bg-[#0762cd] text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 md:py-20">
 
           {/* Back link */}
@@ -288,7 +288,7 @@ export default async function BusinessProfilePage({
                 {b.status !== "active" && (
                   <Link
                     href={`/businesses/${b.id}/claim`}
-                    className="inline-flex items-center gap-1 bg-amber-400/20 hover:bg-amber-400/30 text-amber-300 text-xs font-semibold px-2.5 py-1 rounded-full border border-amber-400/30 transition-colors"
+                    className="inline-flex items-center gap-1 bg-white/20 hover:bg-white/30 text-white text-xs font-semibold px-2.5 py-1 rounded-full border border-white/30 transition-colors"
                   >
                     <Flag className="w-3 h-3" /> Claim this business
                   </Link>
@@ -359,7 +359,7 @@ export default async function BusinessProfilePage({
                 {b.contact_phone && (
                   <a
                     href={`tel:${b.contact_phone}`}
-                    className="inline-flex items-center gap-2 bg-white text-orange-700 hover:bg-orange-50 font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg text-sm"
+                    className="inline-flex items-center gap-2 bg-white text-[#0762cd] hover:bg-blue-50 font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg text-sm"
                   >
                     <Phone className="w-4 h-4" /> {b.contact_phone}
                   </a>
@@ -384,7 +384,7 @@ export default async function BusinessProfilePage({
 
       {/* ── PHOTOS ──────────────────────────────────────────────────────────── */}
       {pictures.length > 0 && (
-        <section className="bg-gradient-to-br from-amber-400 via-orange-500 to-rose-600">
+        <section className="bg-[#0762cd]">
           <div
             className={`max-w-4xl mx-auto grid gap-1 ${
               pictures.length === 1 ? "grid-cols-1" : "grid-cols-2"
