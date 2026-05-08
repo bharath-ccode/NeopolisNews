@@ -37,10 +37,14 @@ export default function EventsTab({ businessId, token }: { businessId: string; t
   const [name, setName] = useState("");
   const [eventType, setEventType] = useState("exhibition");
   const [eventDate, setEventDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isFree, setIsFree] = useState(true);
+  const [ticketPrice, setTicketPrice] = useState("");
+  const [totalSlots, setTotalSlots] = useState("");
 
   useEffect(() => {
     fetch(`/api/my-business/events?businessId=${businessId}`, {
@@ -69,7 +73,7 @@ export default function EventsTab({ businessId, token }: { businessId: string; t
   }
 
   function resetForm() {
-    setName(""); setEventType("exhibition"); setEventDate(""); setStartTime(""); setEndTime(""); setDescription(""); setImageUrl(null);
+    setName(""); setEventType("exhibition"); setEventDate(""); setEndDate(""); setStartTime(""); setEndTime(""); setDescription(""); setImageUrl(null); setIsFree(true); setTicketPrice(""); setTotalSlots("");
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -79,7 +83,15 @@ export default function EventsTab({ businessId, token }: { businessId: string; t
     const res = await fetch("/api/my-business/events", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ businessId, name, event_type: eventType, event_date: eventDate, start_time: startTime, end_time: endTime, description: description || null, image_url: imageUrl }),
+      body: JSON.stringify({
+        businessId, name, event_type: eventType, event_date: eventDate,
+        end_date: endDate || null,
+        start_time: startTime, end_time: endTime,
+        description: description || null, image_url: imageUrl,
+        is_free: isFree,
+        ticket_price: !isFree && ticketPrice ? parseFloat(ticketPrice) : null,
+        total_slots: totalSlots ? parseInt(totalSlots, 10) : null,
+      }),
     });
     if (res.ok) {
       const newEvent = await res.json();
@@ -130,9 +142,15 @@ export default function EventsTab({ businessId, token }: { businessId: string; t
                 ))}
               </select>
             </div>
-            <div>
-              <label className={LABEL}>Date *</label>
-              <input type="date" className={INPUT} value={eventDate} onChange={(e) => setEventDate(e.target.value)} required />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={LABEL}>Start Date *</label>
+                <input type="date" className={INPUT} value={eventDate} onChange={(e) => setEventDate(e.target.value)} required />
+              </div>
+              <div>
+                <label className={LABEL}>End Date <span className="font-normal text-gray-400">(opt.)</span></label>
+                <input type="date" className={INPUT} value={endDate} min={eventDate} onChange={(e) => setEndDate(e.target.value)} />
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -143,6 +161,30 @@ export default function EventsTab({ businessId, token }: { businessId: string; t
                 <label className={LABEL}>End Time *</label>
                 <input type="time" className={INPUT} value={endTime} onChange={(e) => setEndTime(e.target.value)} required />
               </div>
+            </div>
+            {/* Free / Paid */}
+            <div>
+              <label className={LABEL}>Entry</label>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setIsFree(true)}
+                  className={`flex-1 py-2 rounded-lg border text-sm font-semibold transition-colors ${isFree ? "bg-green-50 border-green-400 text-green-700" : "border-gray-200 text-gray-500 hover:bg-gray-50"}`}>
+                  Free
+                </button>
+                <button type="button" onClick={() => setIsFree(false)}
+                  className={`flex-1 py-2 rounded-lg border text-sm font-semibold transition-colors ${!isFree ? "bg-violet-50 border-violet-400 text-violet-700" : "border-gray-200 text-gray-500 hover:bg-gray-50"}`}>
+                  Paid
+                </button>
+              </div>
+            </div>
+            {!isFree && (
+              <div>
+                <label className={LABEL}>Ticket Price (₹) *</label>
+                <input type="number" min="1" className={INPUT} value={ticketPrice} onChange={(e) => setTicketPrice(e.target.value)} placeholder="e.g. 500" required />
+              </div>
+            )}
+            <div>
+              <label className={LABEL}>Total Slots <span className="font-normal text-gray-400">(blank = unlimited)</span></label>
+              <input type="number" min="1" className={INPUT} value={totalSlots} onChange={(e) => setTotalSlots(e.target.value)} placeholder="e.g. 100" />
             </div>
             <div>
               <label className={LABEL}>Description</label>
