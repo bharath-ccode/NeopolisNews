@@ -23,7 +23,7 @@ type Step = "type" | "details" | "done";
 
 const Logo = () => (
   <Link href="/" className="flex flex-col items-center gap-2 mb-8">
-    <Image src="/logo.png" alt="NeopolisNews" width={120} height={120} className="object-contain" />
+    <Image src="/logo.png" alt="NeopolisNews" width={120} height={120} className="w-[120px] h-[120px] object-contain" />
     <span className="text-lg font-bold text-gray-900">Neopolis<span className="text-brand-600">News</span></span>
   </Link>
 );
