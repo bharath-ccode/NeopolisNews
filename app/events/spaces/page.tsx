@@ -70,6 +70,15 @@ function SpaceCard({ b }: { b: Business }) {
       )}
 
       <div className="space-y-1.5 text-xs text-gray-500">
+        {b.contact_phone && (
+          <p className="flex items-center gap-2">
+            <Phone className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+            <a href={`tel:${b.contact_phone.replace(/\s/g, "")}`}
+              className="font-medium text-violet-700 hover:text-violet-800 transition-colors">
+              {b.contact_phone}
+            </a>
+          </p>
+        )}
         {b.timings && (
           <p className="flex items-center gap-2">
             <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
@@ -78,21 +87,13 @@ function SpaceCard({ b }: { b: Business }) {
         )}
       </div>
 
-      <div className="flex items-center justify-between pt-1">
+      <div className="pt-1">
         <Link
           href={`/businesses/${b.id}`}
           className="text-xs font-semibold text-violet-600 hover:text-violet-700 flex items-center gap-1"
         >
           View Profile <ArrowRight className="w-3 h-3" />
         </Link>
-        {b.contact_phone && (
-          <a
-            href={`tel:${b.contact_phone.replace(/\s/g, "")}`}
-            className="flex items-center gap-1.5 text-xs font-semibold text-violet-700 border border-violet-200 hover:bg-violet-50 px-3 py-1.5 rounded-lg transition-colors"
-          >
-            <Phone className="w-3.5 h-3.5" /> Enquire
-          </a>
-        )}
       </div>
     </div>
   );
