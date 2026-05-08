@@ -30,6 +30,8 @@ interface Business {
   id: string;
   name: string;
   industry: string;
+  types?: string[];
+  subtypes?: string[];
   address: string | null;
   logo: string | null;
   verified: boolean;
@@ -46,6 +48,7 @@ export default function SearchScreen() {
   const [query, setQuery]           = useState("");
   const [industry, setIndustry]     = useState<string | null>(null);
   const [type, setType]             = useState<string | null>(null);
+  const [subtype, setSubtype]       = useState<string | null>(null);
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [articles, setArticles]     = useState<Article[]>([]);
   const [loading, setLoading]       = useState(false);
@@ -81,6 +84,7 @@ export default function SearchScreen() {
     setQuery(q);
     setIndustry(null);
     setType(null);
+    setSubtype(null);
     if (searchTimer.current) clearTimeout(searchTimer.current);
     searchTimer.current = setTimeout(() => doSearch(q), 350);
   }
@@ -89,24 +93,33 @@ export default function SearchScreen() {
     if (industry === ind) {
       setIndustry(null);
       setType(null);
+      setSubtype(null);
       setBusinesses([]);
     } else {
       setIndustry(ind);
       setType(null);
+      setSubtype(null);
       browseByIndustry(ind);
     }
   }
 
   function toggleType(t: string) {
     setType(prev => (prev === t ? null : t));
+    setSubtype(null);
+  }
+
+  function toggleSubtype(s: string) {
+    setSubtype(prev => (prev === s ? null : s));
   }
 
   const isTextMode = query.length >= 2;
 
-  // When type is selected, filter locally from businesses already fetched
-  const displayedBusinesses = type
-    ? businesses.filter(b => b.industry === industry)
-    : businesses;
+  // Filter locally by type and subtype from businesses already fetched for the industry
+  const displayedBusinesses = businesses.filter((b) => {
+    if (type    && !b.types?.includes(type))       return false;
+    if (subtype && !b.subtypes?.includes(subtype)) return false;
+    return true;
+  });
 
   const hasResults = displayedBusinesses.length > 0 || articles.length > 0;
 
@@ -189,9 +202,14 @@ export default function SearchScreen() {
                 </View>
                 <View style={s.subtypeWrap}>
                   {subtypes.map((sub) => (
-                    <View key={sub} style={s.subtypeChip}>
-                      <Text style={s.subtypeText}>{sub}</Text>
-                    </View>
+                    <TouchableOpacity
+                      key={sub}
+                      onPress={() => toggleSubtype(sub)}
+                      activeOpacity={0.75}
+                      style={[s.subtypeChip, subtype === sub && s.subtypeChipActive]}
+                    >
+                      <Text style={[s.subtypeText, subtype === sub && s.subtypeTextActive]}>{sub}</Text>
+                    </TouchableOpacity>
                   ))}
                 </View>
               </>
@@ -215,7 +233,7 @@ export default function SearchScreen() {
               <>
                 <View style={s.sectionRow}>
                   <Text style={s.sectionLabel}>
-                    {isTextMode ? "Businesses" : `${displayedBusinesses.length} in ${type ?? industry}`}
+                    {isTextMode ? "Businesses" : `${displayedBusinesses.length} in ${subtype ?? type ?? industry}`}
                   </Text>
                 </View>
                 {displayedBusinesses.map(b => <BizCard key={b.id} biz={b} />)}
@@ -416,9 +434,11 @@ const s = StyleSheet.create({
   typeLabel:      { fontSize: 13, fontWeight: "600", color: colors.gray[700] },
   typeLabelActive:{ color: colors.white },
 
-  subtypeWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 16, paddingBottom: 4 },
-  subtypeChip: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 100, backgroundColor: colors.gray[100] },
-  subtypeText: { fontSize: 12, color: colors.gray[600], fontWeight: "500" },
+  subtypeWrap:     { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 16, paddingBottom: 4 },
+  subtypeChip:     { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 100, backgroundColor: colors.gray[100] },
+  subtypeChipActive: { backgroundColor: colors.brand[600] },
+  subtypeText:     { fontSize: 12, color: colors.gray[600], fontWeight: "500" },
+  subtypeTextActive: { color: colors.white },
 
   bizCard: {
     flexDirection: "row", alignItems: "center", gap: 12,

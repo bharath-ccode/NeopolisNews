@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
   let query = admin
     .from("businesses")
-    .select("id, name, industry, address, logo, verified")
+    .select("id, name, industry, types, subtypes, address, logo, verified")
     .eq("status", "active")
     .order("name", { ascending: true })
     .limit(limit);
