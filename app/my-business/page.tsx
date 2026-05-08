@@ -32,6 +32,7 @@ interface Business {
   pictures: string[];
   social_links: SocialLinks;
   contact_phone: string | null;
+  emergency_phone: string | null;
   description: string | null;
   timings: DayTiming[];
   view_count: number;
@@ -93,6 +94,7 @@ function loadFields(
   data: Business,
   setters: {
     setContactPhone: (v: string) => void;
+    setEmergencyPhone: (v: string) => void;
     setDescription: (v: string) => void;
     setTimings: (v: DayTiming[]) => void;
     setInstagram: (v: string) => void;
@@ -103,6 +105,7 @@ function loadFields(
   }
 ) {
   setters.setContactPhone(data.contact_phone?.replace(/^\+91/, "") ?? "");
+  setters.setEmergencyPhone(data.emergency_phone?.replace(/^\+91/, "") ?? "");
   setters.setDescription(data.description ?? "");
   setters.setTimings(data.timings?.length ? data.timings : []);
   setters.setInstagram(data.social_links?.instagram ?? "");
@@ -127,6 +130,7 @@ export default function MyBusinessPage() {
 
   // Editable fields
   const [contactPhone, setContactPhone] = useState("");
+  const [emergencyPhone, setEmergencyPhone] = useState("");
   const [description, setDescription] = useState("");
   const [timings, setTimings] = useState<DayTiming[]>([]);
   const [instagram, setInstagram] = useState("");
@@ -140,7 +144,7 @@ export default function MyBusinessPage() {
   const logoRef = useRef<HTMLInputElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
 
-  const fieldSetters = { setContactPhone, setDescription, setTimings, setInstagram, setFacebook, setYoutube, setLogo, setPictures };
+  const fieldSetters = { setContactPhone, setEmergencyPhone, setDescription, setTimings, setInstagram, setFacebook, setYoutube, setLogo, setPictures };
 
   function switchBusiness(b: Business) {
     setBiz(b);
@@ -190,6 +194,7 @@ export default function MyBusinessPage() {
         body: JSON.stringify({
           businessId: biz.id,
           contactPhone: contactPhone ? `+91${contactPhone}` : null,
+          emergencyPhone: emergencyPhone ? `+91${emergencyPhone}` : null,
           description: description.trim() || null,
           timings,
           socialLinks: {
@@ -504,6 +509,19 @@ export default function MyBusinessPage() {
                       onChange={(e) => setContactPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
                       placeholder="9900000000"
                       className="flex-1 px-3 py-2.5 border border-gray-200 rounded-r-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className={LABEL}><Phone className="w-3.5 h-3.5 inline mr-1 text-red-500" />Emergency / Ambulance Number <span className="text-gray-400 font-normal">(optional)</span></label>
+                  <div className="flex">
+                    <span className="flex items-center px-3 border border-r-0 border-gray-200 rounded-l-lg bg-gray-50 text-sm text-gray-500">+91</span>
+                    <input
+                      type="tel"
+                      value={emergencyPhone}
+                      onChange={(e) => setEmergencyPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                      placeholder="Emergency contact number"
+                      className="flex-1 px-3 py-2.5 border border-gray-200 rounded-r-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
                     />
                   </div>
                 </div>

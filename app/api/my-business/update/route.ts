@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => null);
-  const { businessId, contactPhone, description, timings, socialLinks } = body ?? {};
+  const { businessId, contactPhone, emergencyPhone, description, timings, socialLinks } = body ?? {};
 
   if (!businessId) {
     return NextResponse.json({ error: "businessId is required." }, { status: 400 });
@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
     .from("businesses")
     .update({
       contact_phone: contactPhone ?? null,
+      emergency_phone: emergencyPhone ?? null,
       description: description ?? null,
       timings: timings ?? [],
       social_links: socialLinks ?? {},
