@@ -85,6 +85,12 @@ interface NewsItem {
   id: string; title: string; excerpt: string | null;
   date: string | null; tag: string | null; tag_color: string | null; image: string | null;
 }
+interface BusinessEvent {
+  id: string; name: string; event_type: string;
+  event_date: string; end_date: string | null;
+  start_time: string; image_url: string | null; is_free: boolean;
+  businesses: { name: string } | null;
+}
 
 const ANNOUNCE_COLOR: Record<string, string> = {
   opening: colors.green[600], hiring: colors.purple[600],
@@ -103,6 +109,7 @@ export default function HomeScreen() {
   const [deals, setDeals]                 = useState<Deal[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [news, setNews]                   = useState<NewsItem[]>([]);
+  const [events, setEvents]               = useState<BusinessEvent[]>([]);
   const [loading, setLoading]             = useState(true);
   const [refreshing, setRefreshing]       = useState(false);
 
@@ -118,18 +125,22 @@ export default function HomeScreen() {
     : (profile?.name ?? user?.user_metadata?.name ?? "").split(" ")[0] || "there";
 
   const loadData = useCallback(async () => {
-    const [dealsRes, buzzRes, newsRes] = await Promise.allSettled([
+    const today = new Date().toISOString().split("T")[0];
+    const [dealsRes, buzzRes, newsRes, eventsRes] = await Promise.allSettled([
       fetch(`${API}/api/deals`).then(r => r.json()),
       fetch(`${API}/api/announcements`).then(r => r.json()),
       fetch(`${API}/api/news?limit=5`).then(r => r.json()),
+      fetch(`${API}/api/events/upcoming?limit=5&from=${today}`).then(r => r.json()),
     ]);
     const dealsData  = dealsRes.status  === "fulfilled" ? dealsRes.value  : [];
     const buzzData   = buzzRes.status   === "fulfilled" ? buzzRes.value   : [];
     const newsData   = newsRes.status   === "fulfilled" ? newsRes.value   : [];
+    const eventsData = eventsRes.status === "fulfilled" ? eventsRes.value : [];
     setDeals(Array.isArray(dealsData) ? dealsData.slice(0, 2) : []);
     setAnnouncements(Array.isArray(buzzData) ? buzzData.slice(0, 2) : []);
     const articles = Array.isArray(newsData) ? newsData : (newsData?.articles ?? []);
     setNews(articles.slice(0, 2));
+    setEvents(Array.isArray(eventsData) ? eventsData.slice(0, 5) : []);
     setLoading(false);
     setRefreshing(false);
   }, []);
@@ -242,6 +253,12 @@ export default function HomeScreen() {
             {deals.length === 0 ? (
               <EmptyRow text="No active deals right now" />
             ) : deals.map(d => <DealCard key={d.id} deal={d} />)}
+
+            {/* ── Events ──────────────────────────────────────────────── */}
+            <SectionHeader title="📅 Upcoming Events" />
+            {events.length === 0 ? (
+              <EmptyRow text="No upcoming events" />
+            ) : events.map(ev => <EventCard key={ev.id} ev={ev} onPress={() => router.push(`/event/${ev.id}`)} />)}
 
             {/* ── Announcements ───────────────────────────────────────── */}
             <SectionHeader title="📢 Announcements" />
@@ -437,6 +454,38 @@ function DealCard({ deal }: { deal: Deal }) {
   );
 }
 
+const EVENT_TYPE_EMOJI: Record<string, string> = {
+  music_concert: "🎵", sports_run: "🏆", food_festival: "🍽️", culture_art: "🎨", exhibition: "📦",
+};
+
+function EventCard({ ev, onPress }: { ev: BusinessEvent; onPress: () => void }) {
+  const emoji = EVENT_TYPE_EMOJI[ev.event_type] ?? "📅";
+  const dateStr = new Date(ev.event_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+  const endStr = ev.end_date && ev.end_date !== ev.event_date
+    ? ` – ${new Date(ev.end_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`
+    : "";
+  return (
+    <TouchableOpacity style={s.card} activeOpacity={0.8} onPress={onPress}>
+      {ev.image_url && <Image source={{ uri: ev.image_url }} style={s.cardImg} resizeMode="cover" />}
+      <View style={s.cardBody}>
+        <View style={s.cardTopRow}>
+          <View style={[s.badge, { backgroundColor: "#7c3aed" }]}>
+            <Text style={s.badgeText}>{emoji} {ev.event_type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</Text>
+          </View>
+          <Text style={s.cardMeta}>{dateStr}{endStr}</Text>
+        </View>
+        <Text style={s.cardTitle} numberOfLines={2}>{ev.name}</Text>
+        <View style={s.eventFooter}>
+          {ev.businesses && <Text style={s.bizName}>{ev.businesses.name}</Text>}
+          <View style={[s.badge, ev.is_free ? { backgroundColor: "#16a34a" } : { backgroundColor: "#d97706" }]}>
+            <Text style={s.badgeText}>{ev.is_free ? "Free" : "Paid"}</Text>
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 function AnnouncementCard({ item }: { item: Announcement }) {
   const bg    = ANNOUNCE_COLOR[item.type] ?? colors.brand[600];
   const label = ANNOUNCE_LABEL[item.type] ?? "BUZZ";
@@ -561,6 +610,7 @@ const s = StyleSheet.create({
   cardTitle:  { fontSize: 15, fontWeight: "700", color: colors.gray[900], lineHeight: 21, marginBottom: 3 },
   cardSub:    { fontSize: 13, color: colors.gray[500], lineHeight: 18 },
 
+  eventFooter:      { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 8 },
   bizRow:           { flexDirection: "row", alignItems: "center", gap: 7, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.gray[100] },
   bizLogo:          { width: 22, height: 22, borderRadius: 6 },
   bizLogoPlaceholder:{ width: 22, height: 22, borderRadius: 6, backgroundColor: colors.gray[100], alignItems: "center", justifyContent: "center" },

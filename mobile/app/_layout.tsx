@@ -21,6 +21,8 @@ function RootNavigator() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="business/[id]" />
+        <Stack.Screen name="event/[id]" />
       </Stack>
     </>
   );

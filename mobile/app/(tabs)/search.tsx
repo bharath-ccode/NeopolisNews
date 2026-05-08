@@ -4,6 +4,7 @@ import {
   TextInput, ActivityIndicator, Image, Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { colors } from "@/lib/colors";
 import { TAXONOMY, INDUSTRY_EMOJI, getTypes, getSubtypes } from "@/lib/businessDirectory";
 
@@ -366,8 +367,9 @@ function CinemaView() {
 }
 
 function BizCard({ biz }: { biz: Business }) {
+  const router = useRouter();
   return (
-    <TouchableOpacity style={s.bizCard} activeOpacity={0.75}>
+    <TouchableOpacity style={s.bizCard} activeOpacity={0.75} onPress={() => router.push(`/business/${biz.id}`)}>
       <View style={s.bizLogoWrap}>
         {biz.logo ? (
           <Image source={{ uri: biz.logo }} style={s.bizLogoImg} resizeMode="cover" />
