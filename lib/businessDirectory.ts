@@ -267,6 +267,7 @@ export const TAXONOMY: Record<string, Record<string, string[]>> = {
     "Delivery": [
       "Local Courier",
       "Grocery Delivery",
+      "Milk & Dairy Delivery",
       "Medicine Delivery",
       "Laundry",
     ],
