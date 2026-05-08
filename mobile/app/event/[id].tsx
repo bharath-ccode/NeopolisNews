@@ -277,11 +277,11 @@ const s = StyleSheet.create({
 
   header: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    backgroundColor: colors.brand[950],
+    backgroundColor: "#0f766e",
     paddingHorizontal: 16, paddingVertical: 14,
   },
   backBtn: { paddingVertical: 4, paddingRight: 12 },
-  backText: { color: colors.brand[300], fontSize: 14, fontWeight: "600" },
+  backText: { color: "rgba(255,255,255,0.75)", fontSize: 14, fontWeight: "600" },
   headerTitle: { flex: 1, color: colors.white, fontSize: 16, fontWeight: "700", textAlign: "center" },
 
   eventImage: { width: "100%", height: 200 },
