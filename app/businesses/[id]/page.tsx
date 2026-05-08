@@ -19,6 +19,8 @@ import {
   Film,
   ExternalLink,
   Tag,
+  Eye,
+  MessageSquare,
 } from "lucide-react";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import ViewTracker from "./ViewTracker";
@@ -158,15 +160,22 @@ export default async function BusinessProfilePage({
   }
 
   const today = new Date().toISOString().split("T")[0];
-  const { data: activeOffers } = await supabase
-    .from("business_offers")
-    .select("id, name, description, discount_percent, discount_label, start_date, end_date, image_url")
-    .eq("business_id", params.id)
-    .eq("status", "active")
-    .lte("start_date", today)
-    .gte("end_date", today)
-    .order("end_date", { ascending: true });
+  const [{ data: activeOffers }, { count: enquiryCount }] = await Promise.all([
+    supabase
+      .from("business_offers")
+      .select("id, name, description, discount_percent, discount_label, start_date, end_date, image_url")
+      .eq("business_id", params.id)
+      .eq("status", "active")
+      .lte("start_date", today)
+      .gte("end_date", today)
+      .order("end_date", { ascending: true }),
+    supabase
+      .from("business_enquiries")
+      .select("id", { count: "exact", head: true })
+      .eq("business_id", params.id),
+  ]);
   const offers: BusinessOffer[] = activeOffers ?? [];
+  const enquiries = enquiryCount ?? 0;
 
   const social = b.social_links ?? {};
   const pictures = (b.pictures ?? []).slice(0, 2);
@@ -300,15 +309,28 @@ export default async function BusinessProfilePage({
 
               {/* Open / closed indicator */}
               {status && (
-                <div className="flex items-center gap-2 mb-6 justify-center md:justify-start">
-                  <span
-                    className={`w-2 h-2 rounded-full ${status.open ? "bg-green-400" : "bg-red-400"}`}
-                  />
+                <div className="flex items-center gap-2 mb-4 justify-center md:justify-start">
+                  <span className={`w-2 h-2 rounded-full ${status.open ? "bg-green-400" : "bg-red-400"}`} />
                   <span className={`text-sm font-medium ${status.open ? "text-green-300" : "text-red-300"}`}>
                     {status.label}
                   </span>
                 </div>
               )}
+
+              {/* Stats row */}
+              <div className="flex items-center gap-4 mb-6 justify-center md:justify-start">
+                <div className="flex items-center gap-1.5 text-white/60 text-sm">
+                  <Eye className="w-4 h-4" />
+                  <span className="font-semibold text-white/90">{b.view_count.toLocaleString("en-IN")}</span>
+                  <span>views</span>
+                </div>
+                <span className="text-white/20">·</span>
+                <div className="flex items-center gap-1.5 text-white/60 text-sm">
+                  <MessageSquare className="w-4 h-4" />
+                  <span className="font-semibold text-white/90">{enquiries.toLocaleString("en-IN")}</span>
+                  <span>enquiries</span>
+                </div>
+              </div>
 
               {/* CTAs */}
               <div className="flex flex-wrap gap-3 justify-center md:justify-start">
@@ -633,7 +655,6 @@ export default async function BusinessProfilePage({
               </Link>
             </span>
           </div>
-          <span className="text-gray-300 text-xs">{b.view_count.toLocaleString("en-IN")} profile views</span>
           {b.verified && (
             <div className="flex items-center gap-1.5 text-green-600">
               <ShieldCheck className="w-4 h-4" />
