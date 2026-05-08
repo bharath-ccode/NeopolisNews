@@ -122,3 +122,22 @@ One `auth.users` record per email/phone, always. `user_profiles` (individual dat
 - **Enquiries** — enquiries page exists as UI scaffolding with mock data; no DB table or API routes
 - **Middleware auth guards** — `middleware.ts` is a pass-through; all route protection is client-side
 - **Mobile app** — `auth.users` identity model is ready for a React Native / mobile client; not started
+
+---
+
+## Known Gotchas
+
+### Next.js data cache causes stale Supabase data on server-rendered pages
+
+`export const dynamic = "force-dynamic"` only sets `fetchCache = 'default-no-store'`, which is not strong enough — Next.js can still serve cached Supabase responses. This caused business profile pages to show a null logo even after the DB was updated.
+
+**Always apply both fixes to any server-rendered page that reads live DB data:**
+
+1. Add to the page file:
+```ts
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+```
+
+2. `createAdminClient()` in `lib/supabase/server.ts` already passes `cache: "no-store"` through the global fetch override — do not remove it.
+
