@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 import Link from "next/link";
 import {
   MapPin,

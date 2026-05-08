@@ -13,6 +13,9 @@ export function createAdminClient() {
   return _createClient(
     SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY ?? SUPABASE_ANON_KEY,
-    { auth: { autoRefreshToken: false, persistSession: false } }
+    {
+      auth: { autoRefreshToken: false, persistSession: false },
+      global: { fetch: (url, opts) => fetch(url, { ...opts, cache: "no-store" }) },
+    }
   );
 }
