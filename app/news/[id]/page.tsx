@@ -119,18 +119,21 @@ export default async function ArticlePage({ params }: { params: { id: string } }
             <ArrowLeft className="w-4 h-4" /> All News
           </Link>
           <span className={`${article.tagColor} mb-4`}>{article.tag}</span>
-          <h1 className="text-2xl md:text-4xl font-extrabold mt-3 mb-4 leading-snug">
+          <h1 className="text-2xl md:text-4xl font-extrabold mt-3 mb-3 leading-snug">
             {article.title}
           </h1>
+          <div className="flex items-center gap-1.5 mb-4">
+            <Eye className="w-4 h-4 text-brand-400" />
+            <span className="text-brand-300 font-semibold text-sm">
+              {article.views.toLocaleString("en-IN")} views
+            </span>
+          </div>
           <p className="text-gray-300 text-base leading-relaxed mb-5">{article.excerpt}</p>
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
             <span className="font-medium text-gray-300">{article.author}</span>
             <span>{article.date}</span>
             <span className="flex items-center gap-1">
               <Clock className="w-3.5 h-3.5" /> {article.readTime} read
-            </span>
-            <span className="flex items-center gap-1">
-              <Eye className="w-3.5 h-3.5" /> {article.views.toLocaleString("en-IN")} views
             </span>
             {article.sponsored && (
               <span className="bg-yellow-500/20 text-yellow-300 text-xs font-bold px-2 py-0.5 rounded-full">
