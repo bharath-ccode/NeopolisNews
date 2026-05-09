@@ -8,6 +8,9 @@ import {
   Star,
   ChevronRight,
   Tag,
+  Users,
+  ShoppingBag,
+  Zap,
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import LeadForm from "@/components/LeadForm";
@@ -210,6 +213,38 @@ export default async function RealEstatePage() {
       </SectionWrapper>
 
       {/* ── Price Trends ── */}
+      {/* ── Why NeopolisNews Scales ── */}
+      <section className="bg-gray-900 text-white">
+        <SectionWrapper>
+          <div className="text-center mb-10">
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">Why NeopolisNews Scales</h2>
+            <p className="text-gray-400 max-w-xl mx-auto text-sm">The platform flywheel: each stakeholder strengthens the next.</p>
+          </div>
+          <div className="flex flex-col md:flex-row items-center justify-center gap-0">
+            {[
+              { step: "1", title: "Developers list inventory", icon: Building2 },
+              { step: "2", title: "Buyers & tenants discover", icon: Users },
+              { step: "3", title: "Retailers gain footfall", icon: ShoppingBag },
+              { step: "4", title: "Data improves decisions", icon: BarChart3 },
+              { step: "5", title: "Platform becomes indispensable", icon: Zap },
+            ].map((f, i, arr) => (
+              <div key={f.step} className="flex flex-col md:flex-row items-center">
+                <div className="flex flex-col items-center text-center w-40 px-2">
+                  <div className={`w-12 h-12 rounded-full border-2 flex items-center justify-center mb-3 ${
+                    parseInt(f.step) % 2 === 1 ? "bg-amber-800/60 border-amber-500" : "bg-emerald-800/60 border-emerald-500"
+                  }`}>
+                    <f.icon className={`w-5 h-5 ${parseInt(f.step) % 2 === 1 ? "text-amber-300" : "text-emerald-300"}`} />
+                  </div>
+                  <span className={`text-xs font-bold mb-1 ${parseInt(f.step) % 2 === 1 ? "text-amber-400" : "text-emerald-400"}`}>STEP {f.step}</span>
+                  <span className="text-sm font-semibold text-white leading-snug">{f.title}</span>
+                </div>
+                {i < arr.length - 1 && <ArrowRight className="text-gray-600 rotate-90 md:rotate-0 my-3 md:my-0 shrink-0" />}
+              </div>
+            ))}
+          </div>
+        </SectionWrapper>
+      </section>
+
       <section className="bg-gray-50" id="prices">
         <SectionWrapper>
           <div className="mb-8">

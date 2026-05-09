@@ -13,6 +13,8 @@ import {
   CheckCircle,
   BarChart3,
   Zap,
+  Calendar,
+  Activity,
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import LeadForm from "@/components/LeadForm";
@@ -132,14 +134,6 @@ const LATEST_NEWS = [
     date: "Mar 10, 2026",
     readTime: "4 min",
   },
-];
-
-const FLYWHEEL = [
-  { step: "1", title: "Developers list inventory", icon: Building2 },
-  { step: "2", title: "Buyers & tenants discover", icon: Users },
-  { step: "3", title: "Retailers gain footfall", icon: ShoppingBag },
-  { step: "4", title: "Data improves decisions", icon: BarChart3 },
-  { step: "5", title: "Platform becomes indispensable", icon: Zap },
 ];
 
 // ─── Page ────────────────────────────────────────────────────────────────────
@@ -376,39 +370,32 @@ export default function HomePage() {
         </div>
       </SectionWrapper>
 
-      {/* ── Strategic Flywheel ── */}
+      {/* ── What's on NeopolisNews ── */}
       <section className="bg-gray-900 text-white">
         <SectionWrapper>
           <div className="text-center mb-10">
-            <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
-              Why NeopolisNews Scales
-            </h2>
-            <p className="text-gray-400 max-w-xl mx-auto text-sm">
-              The platform flywheel: each stakeholder strengthens the next.
-            </p>
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">Everything Neopolis, in One Place</h2>
+            <p className="text-gray-400 max-w-xl mx-auto text-sm">Your neighbourhood platform — news, businesses, events, wellness, rentals, and more.</p>
           </div>
-          <div className="flex flex-col md:flex-row items-center justify-center gap-0 md:gap-0">
-            {FLYWHEEL.map((f, i) => (
-              <div key={f.step} className="flex flex-col md:flex-row items-center">
-                <div className="flex flex-col items-center text-center w-40 px-2">
-                  <div className={`w-12 h-12 rounded-full border-2 flex items-center justify-center mb-3 ${
-                    parseInt(f.step) % 2 === 1
-                      ? "bg-amber-800/60 border-amber-500"
-                      : "bg-emerald-800/60 border-emerald-500"
-                  }`}>
-                    <f.icon className={`w-5 h-5 ${parseInt(f.step) % 2 === 1 ? "text-amber-300" : "text-emerald-300"}`} />
-                  </div>
-                  <span className={`text-xs font-bold mb-1 ${parseInt(f.step) % 2 === 1 ? "text-amber-400" : "text-emerald-400"}`}>
-                    STEP {f.step}
-                  </span>
-                  <span className="text-sm font-semibold text-white leading-snug">
-                    {f.title}
-                  </span>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[
+              { icon: Newspaper, label: "Local News", desc: "Hyperlocal stories, civic updates, and announcements from Neopolis.", href: "/news", color: "text-blue-400", bg: "bg-blue-900/40 border-blue-700/40" },
+              { icon: Building2, label: "Business Directory", desc: "Discover shops, restaurants, services, and studios in the district.", href: "/directory", color: "text-purple-400", bg: "bg-purple-900/40 border-purple-700/40" },
+              { icon: Calendar, label: "Events", desc: "Concerts, food festivals, sports runs, and cultural events near you.", href: "/events", color: "text-rose-400", bg: "bg-rose-900/40 border-rose-700/40" },
+              { icon: Activity, label: "Live Wellness Sessions", desc: "Book yoga, pilates, CrossFit, and meditation classes from local studios.", href: "/wellness/sessions", color: "text-emerald-400", bg: "bg-emerald-900/40 border-emerald-700/40" },
+              { icon: Home, label: "Rentals & Real Estate", desc: "Browse apartments, villas, and office spaces for rent or sale.", href: "/rentals", color: "text-amber-400", bg: "bg-amber-900/40 border-amber-700/40" },
+              { icon: ShoppingBag, label: "Deals & Offers", desc: "Exclusive discounts from businesses inside Neopolis.", href: "/deals", color: "text-orange-400", bg: "bg-orange-900/40 border-orange-700/40" },
+            ].map((item) => (
+              <Link key={item.href} href={item.href}
+                className={`flex gap-4 p-5 rounded-xl border ${item.bg} hover:brightness-110 transition-all group`}>
+                <div className={`w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center shrink-0`}>
+                  <item.icon className={`w-5 h-5 ${item.color}`} />
                 </div>
-                {i < FLYWHEEL.length - 1 && (
-                  <ArrowRight className="text-gray-600 rotate-90 md:rotate-0 my-3 md:my-0 shrink-0" />
-                )}
-              </div>
+                <div>
+                  <p className={`font-bold text-sm mb-1 ${item.color}`}>{item.label}</p>
+                  <p className="text-gray-400 text-xs leading-relaxed">{item.desc}</p>
+                </div>
+              </Link>
             ))}
           </div>
         </SectionWrapper>
