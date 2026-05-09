@@ -13,7 +13,8 @@ import {
 import SectionWrapper from "@/components/SectionWrapper";
 import LeadForm from "@/components/LeadForm";
 import InfrastructureSection from "@/components/InfrastructureSection";
-import { getPublishedArticles, Article, ArticleCategory } from "@/lib/newsStore";
+import { toArticle, Article, ArticleCategory } from "@/lib/newsStore";
+import { createAdminClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -115,7 +116,13 @@ function ArticleCard({ article }: { article: Article }) {
 }
 
 export default async function NewsPage() {
-  const allArticles = await getPublishedArticles();
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("articles")
+    .select("*")
+    .eq("status", "published")
+    .order("created_at", { ascending: false });
+  const allArticles: Article[] = (data ?? []).map(toArticle);
 
   // Group by category
   const byCategory = (cat: ArticleCategory) =>
