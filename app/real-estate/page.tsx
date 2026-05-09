@@ -14,10 +14,11 @@ import {
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import LeadForm from "@/components/LeadForm";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import type { ProjectType, ProjectTier } from "@/lib/projectsStore";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 export const metadata = {
   title: "Real Estate – NeopolisNews",
@@ -28,7 +29,7 @@ export const metadata = {
 // ─── Server data fetch ───────────────────────────────────────────────────────
 
 async function getProjects() {
-  const sb = createClient();
+  const sb = createAdminClient();
   const { data } = await sb
     .from("projects")
     .select("id, project_name, builder_id, total_land_area_acres, total_units, core_neopolis, project_logo_url, project_type, tier, price_range_min, price_range_max, builders(builder_name)")
