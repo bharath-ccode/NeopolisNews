@@ -7,7 +7,6 @@ import {
   PlusCircle, Search, Clock,
 } from "lucide-react";
 import clsx from "clsx";
-import { createClient } from "@/lib/supabase/client";
 
 interface Ad {
   id: string;
@@ -56,20 +55,17 @@ export default function ClassifiedsPage() {
   const [search,      setSearch]      = useState("");
 
   useEffect(() => {
-    const sb = createClient();
-    sb.from("ads")
-      .select("*")
-      .eq("status", "active")
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        // Filter out expired ads client-side as well
+    fetch("/api/ads")
+      .then((r) => r.json())
+      .then((data: Ad[]) => {
         const now = Date.now();
-        const live = (data as Ad[] ?? []).filter(
+        const live = (Array.isArray(data) ? data : []).filter(
           (a) => !a.expires_at || new Date(a.expires_at).getTime() > now
         );
         setAds(live);
         setLoadingData(false);
-      });
+      })
+      .catch(() => setLoadingData(false));
   }, []);
 
   const q = search.toLowerCase();

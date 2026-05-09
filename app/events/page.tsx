@@ -7,7 +7,6 @@ import {
   MapPin, Clock, ArrowRight, CheckCircle, Loader2,
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
-import { createClient } from "@/lib/supabase/client";
 
 export const dynamic = "force-dynamic";
 
@@ -89,19 +88,10 @@ export default function EventsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function load() {
-      const supabase = createClient();
-      const q = supabase
-        .from("business_events")
-        .select("*, businesses(name, address)")
-        .eq("status", "active")
-        .gte("event_date", new Date().toISOString().slice(0, 10))
-        .order("event_date", { ascending: true });
-      const { data } = await q;
-      setEvents((data ?? []) as BusinessEvent[]);
-      setLoading(false);
-    }
-    load();
+    fetch("/api/events")
+      .then((r) => r.json())
+      .then((data) => { setEvents(Array.isArray(data) ? data : []); setLoading(false); })
+      .catch(() => setLoading(false));
   }, []);
 
   const filtered = filter === "all" ? events : events.filter((e) => e.event_type === filter);
