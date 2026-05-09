@@ -20,8 +20,6 @@ import {
   ArticleCategory,
   ArticleStatus,
   CATEGORY_META,
-  createArticle,
-  updateArticle,
   extractYouTubeId,
 } from "@/lib/newsStore";
 
@@ -121,10 +119,23 @@ export default function ArticleForm({ article }: Props) {
         date:     formatDisplayDate(new Date().toISOString()),
       };
 
+      let res: Response;
       if (isEdit) {
-        await updateArticle(article.id, payload);
+        res = await fetch("/api/articles", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: article.id, ...payload }),
+        });
       } else {
-        await createArticle(payload);
+        res = await fetch("/api/articles", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      }
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.error ?? "Save failed");
       }
 
       router.push("/admin/news");
