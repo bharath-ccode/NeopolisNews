@@ -162,7 +162,7 @@ export default async function ArticlePage({ params }: { params: { id: string } }
       {article.videoUrl && (() => {
         const videoId = extractYouTubeId(article.videoUrl);
         return videoId ? (
-          <div className="bg-black">
+          <div className="bg-gray-900">
             <div className="max-w-3xl mx-auto">
               <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
                 <iframe
