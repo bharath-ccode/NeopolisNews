@@ -55,7 +55,7 @@ const NAV_ITEMS = [
     sub: [
       { label: "Project Pages",        href: "/real-estate#projects"     },
       { label: "Price Trends",         href: "/real-estate#prices"       },
-      { label: "Construction Updates", href: "/real-estate#construction" },
+      { label: "Construction Updates", href: "/real-estate/construction-updates" },
       {
         label: "Resale & Rentals",
         href: "/rentals",
