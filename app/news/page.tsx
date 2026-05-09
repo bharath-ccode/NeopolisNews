@@ -16,6 +16,7 @@ import InfrastructureSection from "@/components/InfrastructureSection";
 import { getPublishedArticles, Article, ArticleCategory } from "@/lib/newsStore";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 export const metadata = {
   title: "Local News & Updates – NeopolisNews",
