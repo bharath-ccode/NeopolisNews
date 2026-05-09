@@ -12,6 +12,7 @@ import {
   Newspaper,
   Upload,
   X,
+  Youtube,
 } from "lucide-react";
 import clsx from "clsx";
 import {
@@ -21,6 +22,7 @@ import {
   CATEGORY_META,
   createArticle,
   updateArticle,
+  extractYouTubeId,
 } from "@/lib/newsStore";
 
 interface Props {
@@ -56,6 +58,7 @@ export default function ArticleForm({ article }: Props) {
   const [source, setSource]     = useState(article?.source ?? "");
   const [readTime, setReadTime] = useState(article?.readTime ?? "3 min");
   const [imageUrl, setImageUrl] = useState(article?.imageUrl ?? "");
+  const [videoUrl, setVideoUrl] = useState(article?.videoUrl ?? "");
   const [sponsored, setSponsored] = useState(article?.sponsored ?? false);
   const [status, setStatus]     = useState<ArticleStatus>(
     article?.status ?? "draft"
@@ -111,6 +114,7 @@ export default function ArticleForm({ article }: Props) {
         source:   source.trim() || null,
         readTime: readTime.trim(),
         imageUrl: imageUrl.trim() || undefined,
+        videoUrl: videoUrl.trim() || null,
         sponsored,
         status:   submitStatus,
         views:    article?.views ?? 0,
@@ -330,6 +334,29 @@ export default function ArticleForm({ article }: Props) {
                   </button>
                 )}
               </div>
+            </div>
+
+            {/* YouTube video */}
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <Youtube className="inline w-3.5 h-3.5 mr-1 text-red-500" />
+                YouTube Video URL <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input
+                type="url"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="https://www.youtube.com/watch?v=… or https://youtu.be/…"
+                className={inputCls}
+              />
+              {videoUrl.trim() && (() => {
+                const id = extractYouTubeId(videoUrl.trim());
+                return id ? (
+                  <p className="text-xs text-green-600 mt-1">✓ Video ID detected: {id}</p>
+                ) : (
+                  <p className="text-xs text-red-500 mt-1">Could not detect a YouTube video ID from this URL</p>
+                );
+              })()}
             </div>
 
             {/* Sponsored toggle */}

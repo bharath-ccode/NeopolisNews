@@ -1,5 +1,19 @@
 import { createClient } from "@/lib/supabase/client";
 
+export function extractYouTubeId(url: string): string | null {
+  try {
+    const u = new URL(url);
+    if (u.hostname === "youtu.be") return u.pathname.slice(1).split("?")[0] || null;
+    if (u.hostname.includes("youtube.com")) {
+      if (u.searchParams.get("v")) return u.searchParams.get("v");
+      const parts = u.pathname.split("/");
+      const idx = parts.findIndex(p => p === "embed" || p === "shorts" || p === "v");
+      if (idx !== -1) return parts[idx + 1] || null;
+    }
+  } catch { /* invalid URL */ }
+  return null;
+}
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export type ArticleCategory = "construction" | "launches" | "infrastructure" | "community";
@@ -21,6 +35,7 @@ export interface Article {
   sponsored: boolean;
   status: ArticleStatus;
   imageUrl?: string;
+  videoUrl?: string | null;
   source?: string | null;
   projectId?: string | null;
   builderId?: string | null;
@@ -57,6 +72,7 @@ export function toArticle(row: any): Article {
     sponsored: row.sponsored,
     status:    row.status,
     imageUrl:  row.image_url ?? undefined,
+    videoUrl:  row.video_url ?? null,
     source:    row.source ?? null,
     projectId: row.project_id ?? null,
     builderId: row.builder_id ?? null,
@@ -111,6 +127,7 @@ export async function createArticle(
       sponsored:  payload.sponsored,
       status:     payload.status,
       image_url:  payload.imageUrl ?? null,
+      video_url:  payload.videoUrl ?? null,
       source:     payload.source ?? null,
       project_id: payload.projectId ?? null,
       builder_id: payload.builderId ?? null,
@@ -143,6 +160,7 @@ export async function updateArticle(
   if (payload.sponsored !== undefined) patch.sponsored  = payload.sponsored;
   if (payload.status    !== undefined) patch.status     = payload.status;
   if (payload.imageUrl  !== undefined) patch.image_url  = payload.imageUrl ?? null;
+  if (payload.videoUrl  !== undefined) patch.video_url  = payload.videoUrl ?? null;
   if (payload.source    !== undefined) patch.source     = payload.source ?? null;
   if (payload.projectId !== undefined) patch.project_id = payload.projectId ?? null;
   if (payload.builderId !== undefined) patch.builder_id = payload.builderId ?? null;
