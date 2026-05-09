@@ -10,7 +10,6 @@ import {
   HardHat,
   Megaphone,
   LogOut,
-  ChevronRight,
 } from "lucide-react";
 import clsx from "clsx";
 import { BuilderAuthProvider, useBuilderAuth } from "@/context/BuilderAuthContext";
@@ -18,9 +17,10 @@ import { BuilderAuthProvider, useBuilderAuth } from "@/context/BuilderAuthContex
 // ─── Nav items ────────────────────────────────────────────────────────────────
 
 const NAV = [
-  { href: "/builder",                  label: "Dashboard",        icon: LayoutDashboard },
-  { href: "/builder/projects",         label: "My Projects",      icon: FolderKanban    },
-  { href: "/builder/launches/create",  label: "Announce Launch",  icon: Megaphone       },
+  { href: "/builder",                  label: "Dashboard",             icon: LayoutDashboard },
+  { href: "/builder/projects",         label: "My Projects",           icon: FolderKanban    },
+  { href: "/builder/updates",          label: "Construction Updates",  icon: HardHat         },
+  { href: "/builder/launches/create",  label: "Announce Launch",       icon: Megaphone       },
 ];
 
 // ─── Inner shell (needs auth context) ────────────────────────────────────────
@@ -98,20 +98,6 @@ function BuilderShell({ children }: { children: React.ReactNode }) {
             );
           })}
 
-          {/* Construction Update shortcut */}
-          <div className="pt-2 border-t border-gray-100 mt-2">
-            <p className="px-3 text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
-              Quick Post
-            </p>
-            <Link
-              href="/builder/projects"
-              className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
-            >
-              <HardHat className="w-4 h-4 shrink-0" />
-              Construction Update
-              <ChevronRight className="w-3.5 h-3.5 ml-auto text-gray-300" />
-            </Link>
-          </div>
         </nav>
 
         {/* Logout */}

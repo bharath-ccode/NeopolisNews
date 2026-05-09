@@ -117,7 +117,7 @@ export default function BuilderProjectsPage() {
                   Availability
                 </Link>
                 <Link
-                  href={`/builder/projects/${p.id}/update`}
+                  href={`/builder/updates/create?project=${p.id}`}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-orange-50 text-orange-700 hover:bg-orange-100 transition-colors"
                 >
                   <HardHat className="w-3.5 h-3.5" />
