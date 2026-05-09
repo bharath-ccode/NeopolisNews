@@ -345,7 +345,7 @@ export default function Navbar() {
 
           {/* Center — text-only nav links, takes all remaining space, centered; xl+ only */}
           <div className="hidden xl:flex flex-1 items-center justify-center gap-0.5">
-            {NAV_ITEMS.filter((item) => !item.highlight && item.label !== "Deals").map((item) => {
+            {NAV_ITEMS.filter((item) => item.label !== "Deals").map((item) => {
               const active = pathname.startsWith(item.href);
               return (
                 <div
@@ -526,9 +526,7 @@ export default function Navbar() {
                 onClick={() => setMobileOpen(false)}
                 className={clsx(
                   "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium",
-                  item.highlight
-                    ? "bg-accent-500 text-white"
-                    : pathname.startsWith(item.href)
+                  pathname.startsWith(item.href)
                     ? "bg-brand-50 text-brand-700"
                     : "text-gray-700 hover:bg-gray-50"
                 )}

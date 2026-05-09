@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Clock, Eye, Newspaper } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
-import { toArticle } from "@/lib/newsStore";
+import { toArticle, extractYouTubeId } from "@/lib/newsStore";
 
 export const dynamic = "force-dynamic";
 
@@ -152,6 +152,26 @@ export default async function ArticlePage({ params }: { params: { id: string } }
           </div>
         </div>
       )}
+
+      {/* YouTube embed */}
+      {article.videoUrl && (() => {
+        const videoId = extractYouTubeId(article.videoUrl);
+        return videoId ? (
+          <div className="bg-black">
+            <div className="max-w-3xl mx-auto">
+              <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+                <iframe
+                  src={`https://www.youtube.com/embed/${videoId}`}
+                  title={article.title}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="absolute inset-0 w-full h-full"
+                />
+              </div>
+            </div>
+          </div>
+        ) : null;
+      })()}
 
       {/* Body */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 md:py-14">
