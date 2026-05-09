@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import sharp from "sharp";
 
-const BUCKET = "business-media";
+const ALLOWED_BUCKETS = ["business-media", "news-media"] as const;
+type Bucket = typeof ALLOWED_BUCKETS[number];
+
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB pre-compression
-const MAX_DIMENSION = 1920;        // cap longest edge
+const MAX_DIMENSION = 1920;
 const WEBP_QUALITY = 82;
 
 export async function POST(req: NextRequest) {
@@ -13,6 +15,10 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const folder = (formData.get("folder") as string) || "misc";
+    const bucketParam = (formData.get("bucket") as string) || "business-media";
+    const bucket: Bucket = (ALLOWED_BUCKETS as readonly string[]).includes(bucketParam)
+      ? (bucketParam as Bucket)
+      : "business-media";
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
@@ -44,11 +50,8 @@ export async function POST(req: NextRequest) {
       ext = "gif";
     } else {
       compressed = await sharp(raw)
-        .rotate()                                      // auto-orient from EXIF
-        .resize(MAX_DIMENSION, MAX_DIMENSION, {
-          fit: "inside",
-          withoutEnlargement: true,
-        })
+        .rotate()
+        .resize(MAX_DIMENSION, MAX_DIMENSION, { fit: "inside", withoutEnlargement: true })
         .webp({ quality: WEBP_QUALITY })
         .toBuffer();
       contentType = "image/webp";
@@ -59,7 +62,7 @@ export async function POST(req: NextRequest) {
 
     const supabase = createAdminClient();
     const { error } = await supabase.storage
-      .from(BUCKET)
+      .from(bucket)
       .upload(fileName, compressed, { contentType, upsert: false });
 
     if (error) {
@@ -67,7 +70,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { data: { publicUrl } } = supabase.storage
-      .from(BUCKET)
+      .from(bucket)
       .getPublicUrl(fileName);
 
     return NextResponse.json({ url: publicUrl });
