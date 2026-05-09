@@ -10,6 +10,7 @@ import { toProject, type Project, type UnitPlan } from "@/lib/projectsStore";
 import { toAnnouncement, type Announcement } from "@/lib/announcementsStore";
 import SectionWrapper from "@/components/SectionWrapper";
 import ProjectEnquiryForm from "./ProjectEnquiryForm";
+import LifecycleTimeline from "./LifecycleTimeline";
 
 export const dynamic = "force-dynamic";
 
@@ -309,6 +310,16 @@ export default async function ProjectDetailPage({
           ))}
         </div>
       </SectionWrapper>
+
+      {/* ── Lifecycle Timeline ── */}
+      {project.lifecycleStatus && (
+        <section className="bg-white border-b border-gray-100">
+          <SectionWrapper tight>
+            <h2 className="text-base font-bold text-gray-900 mb-6">Project Status</h2>
+            <LifecycleTimeline current={project.lifecycleStatus} />
+          </SectionWrapper>
+        </section>
+      )}
 
       {/* ── Availability Announcements ── */}
       {announcements.length > 0 && (

@@ -10,7 +10,8 @@ import ImageUpload from "@/components/admin/ImageUpload";
 import { getBuilders, type Builder } from "@/lib/buildersStore";
 import {
   createProject, updateProject,
-  type Project, type ProjectInput, type ProjectType, type ProjectTier,
+  type Project, type ProjectInput, type ProjectType, type ProjectTier, type LifecycleStatus,
+  LIFECYCLE_STAGES,
   type UnitFacing, type UnitPlan, type ContactPhone, type Tower, type TowerFloorPlan,
 } from "@/lib/projectsStore";
 
@@ -63,6 +64,7 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
   const [projectPlanUrl, setProjectPlanUrl] = useState(initialData?.projectPlanUrl ?? "");
   const [projectType, setProjectType]   = useState<ProjectType | "">(initialData?.projectType ?? "");
   const [tier, setTier]                 = useState<ProjectTier | "">(initialData?.tier ?? "");
+  const [lifecycleStatus, setLifecycleStatus] = useState<LifecycleStatus | "">(initialData?.lifecycleStatus ?? "");
   const [maxFloors, setMaxFloors]       = useState(initialData?.projectDetail?.maxFloors?.toString() ?? "");
   const [amenitiesSqft, setAmenitiesSqft] = useState(initialData?.projectDetail?.amenitiesSqft?.toString() ?? "");
   const [priceRangeMin, setPriceRangeMin] = useState(initialData?.priceRangeMin?.toString() ?? "");
@@ -181,6 +183,7 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
       projectPlanUrl:        projectPlanUrl || null,
       projectType:           projectType   || null,
       tier:                  tier          || null,
+      lifecycleStatus:       lifecycleStatus || null,
       priceRangeMin:         priceRangeMin ? parseFloat(priceRangeMin) : null,
       priceRangeMax:         priceRangeMax ? parseFloat(priceRangeMax) : null,
       contact: {
@@ -312,6 +315,16 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
                 <option value="uber_luxury">Uber Luxury</option>
               </select>
             </div>
+          </div>
+
+          <div>
+            <label className="label">Construction Lifecycle Status</label>
+            <select className="input" value={lifecycleStatus} onChange={e => setLifecycleStatus(e.target.value as LifecycleStatus | "")}>
+              <option value="">— Not set —</option>
+              {LIFECYCLE_STAGES.map(s => (
+                <option key={s.id} value={s.id}>{s.label}</option>
+              ))}
+            </select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
