@@ -10,7 +10,6 @@ import {
 import SectionWrapper from "@/components/SectionWrapper";
 import LeadForm from "@/components/LeadForm";
 import { getSubtypes } from "@/lib/businessDirectory";
-import { createClient } from "@/lib/supabase/client";
 
 type VenueType = "Convention Centre" | "Banquet Hall" | "Outdoor Space";
 
@@ -118,19 +117,10 @@ function EventSpacesInner() {
   }, [searchParams]);
 
   useEffect(() => {
-    async function fetch() {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("businesses")
-        .select("id, name, subtypes, address, contact_phone, description, timings")
-        .eq("status", "active")
-        .eq("industry", "Events")
-        .contains("types", ["Event Spaces"])
-        .order("name");
-      setBusinesses(data ?? []);
-      setLoading(false);
-    }
-    fetch();
+    fetch("/api/businesses?industry=Events&type=Event+Spaces")
+      .then((r) => r.json())
+      .then((data) => { setBusinesses(Array.isArray(data) ? data : []); setLoading(false); })
+      .catch(() => setLoading(false));
   }, []);
 
   const handleFilter = (s: string) => {
