@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, Clock, Eye, Newspaper } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { toArticle, extractYouTubeId } from "@/lib/newsStore";
+import ViewTracker from "./ViewTracker";
 
 export const dynamic = "force-dynamic";
 
@@ -103,6 +104,7 @@ export default async function ArticlePage({ params }: { params: { id: string } }
 
   return (
     <div className="bg-white min-h-screen">
+      <ViewTracker articleId={article.id} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
