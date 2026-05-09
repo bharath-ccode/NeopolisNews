@@ -414,49 +414,21 @@ export default function HomePage() {
         </SectionWrapper>
       </section>
 
-      {/* ── Monetisation Preview ── */}
-      <section className="bg-gradient-to-r from-accent-500 to-orange-600 text-white">
-        <SectionWrapper tight>
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div>
-              <h2 className="text-2xl font-bold mb-2">
-                Grow Your Business in Neopolis
-              </h2>
-              <p className="text-orange-100 text-sm max-w-lg">
-                Developer listings from ₹3L/yr · Sponsored content · Premium
-                analytics · Lead generation for brokers & service vendors.
-              </p>
-              <div className="flex flex-wrap gap-4 mt-4 text-sm">
-                {[
-                  "Tier-1 Developer: ₹10–25 Lakhs/yr",
-                  "Retail Brand: ₹1–5 Lakhs/yr",
-                  "Broker Plan: ₹50K–2 Lakhs/yr",
-                ].map((t) => (
-                  <span key={t} className="flex items-center gap-1.5">
-                    <Star className="w-4 h-4 text-yellow-300 fill-yellow-300" />
-                    {t}
-                  </span>
-                ))}
+      {/* Monetisation Preview — hidden until pricing is finalised */}
+      {false && (
+        <section className="bg-gradient-to-r from-accent-500 to-orange-600 text-white">
+          <SectionWrapper tight>
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div>
+                <h2 className="text-2xl font-bold mb-2">Grow Your Business in Neopolis</h2>
+                <p className="text-orange-100 text-sm max-w-lg">
+                  Developer listings from ₹3L/yr · Sponsored content · Premium analytics · Lead generation for brokers &amp; service vendors.
+                </p>
               </div>
             </div>
-            <div className="flex flex-wrap gap-3 shrink-0">
-              <Link
-                href="/advertise"
-                className="bg-white text-accent-600 font-bold px-5 py-2.5 rounded-lg hover:bg-orange-50 transition-colors inline-flex items-center gap-2"
-              >
-                <TrendingUp className="w-4 h-4" />
-                See Plans
-              </Link>
-              <Link
-                href="/advertise#contact"
-                className="border-2 border-white text-white font-bold px-5 py-2.5 rounded-lg hover:bg-white/10 transition-colors"
-              >
-                Talk to Sales
-              </Link>
-            </div>
-          </div>
-        </SectionWrapper>
-      </section>
+          </SectionWrapper>
+        </section>
+      )}
     </>
   );
 }
