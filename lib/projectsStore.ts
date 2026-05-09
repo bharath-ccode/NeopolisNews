@@ -67,6 +67,24 @@ export interface ProjectDetail {
 
 export type ProjectType = "apartments" | "independent_homes" | "residential" | "mixed_use" | "commercial";
 export type ProjectTier = "affordable" | "premium" | "luxury" | "uber_luxury";
+export type LifecycleStatus =
+  | "pre_launch"
+  | "rera_registered"
+  | "under_construction"
+  | "structure_complete"
+  | "finishing"
+  | "oc_received"
+  | "ready_to_move";
+
+export const LIFECYCLE_STAGES: { id: LifecycleStatus; label: string }[] = [
+  { id: "pre_launch",          label: "Pre-Launch"          },
+  { id: "rera_registered",     label: "RERA Registered"     },
+  { id: "under_construction",  label: "Under Construction"  },
+  { id: "structure_complete",  label: "Structure Complete"  },
+  { id: "finishing",           label: "Finishing"           },
+  { id: "oc_received",         label: "OC Received"         },
+  { id: "ready_to_move",       label: "Ready to Move"       },
+];
 
 export interface Project {
   id: string;
@@ -80,6 +98,7 @@ export interface Project {
   projectPlanUrl: string | null;
   projectType: ProjectType | null;
   tier: ProjectTier | null;
+  lifecycleStatus: LifecycleStatus | null;
   priceRangeMin: number | null;
   priceRangeMax: number | null;
   createdAt: string;
@@ -99,6 +118,7 @@ export interface ProjectInput {
   projectPlanUrl: string | null;
   projectType: ProjectType | null;
   tier: ProjectTier | null;
+  lifecycleStatus: LifecycleStatus | null;
   priceRangeMin: number | null;
   priceRangeMax: number | null;
   contact: Contact;
@@ -194,6 +214,7 @@ export function toProject(row: any): Project {
     projectPlanUrl: row.project_plan_url ?? null,
     projectType: row.project_type ?? null,
     tier: row.tier ?? null,
+    lifecycleStatus: row.lifecycle_status ?? null,
     priceRangeMin: row.price_range_min ?? null,
     priceRangeMax: row.price_range_max ?? null,
     createdAt: row.created_at,
@@ -256,6 +277,7 @@ export async function createProject(input: ProjectInput): Promise<Project> {
       project_plan_url:      input.projectPlanUrl,
       project_type:          input.projectType,
       tier:                  input.tier,
+      lifecycle_status:      input.lifecycleStatus,
       price_range_min:       input.priceRangeMin,
       price_range_max:       input.priceRangeMax,
       created_by:            user?.id ?? null,
@@ -283,6 +305,7 @@ export async function updateProject(id: string, input: ProjectInput): Promise<Pr
       project_plan_url:      input.projectPlanUrl,
       project_type:          input.projectType,
       tier:                  input.tier,
+      lifecycle_status:      input.lifecycleStatus,
       price_range_min:       input.priceRangeMin,
       price_range_max:       input.priceRangeMax,
     })
