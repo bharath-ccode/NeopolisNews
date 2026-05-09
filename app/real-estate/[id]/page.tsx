@@ -156,7 +156,7 @@ export default async function ProjectDetailPage({
   const admin = createAdminClient();
   const today = new Date().toISOString().split("T")[0];
 
-  const [{ data: projectData }, { data: annData }] = await Promise.all([
+  const [{ data: projectData }, { data: annData }, { data: updateData }] = await Promise.all([
     admin.from("projects").select(PROJECT_SELECT).eq("id", params.id).single(),
     admin
       .from("availability_announcements")
@@ -165,12 +165,19 @@ export default async function ProjectDetailPage({
       .eq("status", "active")
       .or(`valid_until.is.null,valid_until.gte.${today}`)
       .order("created_at", { ascending: false }),
+    admin
+      .from("articles")
+      .select("id, title, excerpt, image_url, date, read_time")
+      .eq("project_id", params.id)
+      .eq("status", "published")
+      .order("created_at", { ascending: false }),
   ]);
 
   if (!projectData) notFound();
 
   const project: Project = toProject(projectData);
   const announcements: Announcement[] = (annData ?? []).map(toAnnouncement);
+  const constructionUpdates = updateData ?? [];
 
   const towers    = project.projectDetail?.towers ?? [];
   const unitPlans = project.unitPlans ?? [];
@@ -436,6 +443,50 @@ export default async function ProjectDetailPage({
             <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-brand-600 transition-colors shrink-0" />
           </a>
         </SectionWrapper>
+      )}
+
+      {/* ── Construction Updates ── */}
+      {constructionUpdates.length > 0 && (
+        <section className="bg-orange-50 border-y border-orange-100">
+          <SectionWrapper tight>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-extrabold text-gray-900 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-orange-500 inline-block" />
+                Construction Updates
+              </h2>
+              <Link
+                href="/real-estate/construction-updates"
+                className="text-xs font-semibold text-orange-600 hover:text-orange-700 flex items-center gap-1"
+              >
+                All updates <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {constructionUpdates.map((u) => (
+                <Link
+                  key={u.id}
+                  href={`/news/${u.id}`}
+                  className="bg-white rounded-xl border border-orange-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden flex flex-col"
+                >
+                  {u.image_url && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={u.image_url} alt={u.title} className="w-full h-36 object-cover" />
+                  )}
+                  <div className="p-4 flex flex-col flex-1">
+                    <p className="font-semibold text-sm text-gray-900 leading-snug line-clamp-2 mb-2">
+                      {u.title}
+                    </p>
+                    <p className="text-xs text-gray-500 line-clamp-2 flex-1 mb-3">{u.excerpt}</p>
+                    <div className="flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-100">
+                      <span>{u.date}</span>
+                      <span>{u.read_time}</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </SectionWrapper>
+        </section>
       )}
 
       {/* ── Enquiry ── */}
