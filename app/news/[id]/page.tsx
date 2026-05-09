@@ -114,11 +114,13 @@ export default async function ArticlePage({ params }: { params: { id: string } }
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
           <Link
             href="/news"
-            className="inline-flex items-center gap-1.5 text-gray-400 hover:text-white text-sm mb-6 transition-colors"
+            className="inline-flex items-center gap-1.5 text-gray-400 hover:text-white text-sm transition-colors"
           >
             <ArrowLeft className="w-4 h-4" /> All News
           </Link>
-          <span className={`${article.tagColor} mb-4`}>{article.tag}</span>
+          <div className="mt-5 mb-4">
+            <span className={article.tagColor}>{article.tag}</span>
+          </div>
           <h1 className="text-2xl md:text-4xl font-extrabold mt-3 mb-3 leading-snug">
             {article.title}
           </h1>
