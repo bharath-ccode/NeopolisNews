@@ -438,54 +438,10 @@ export default async function ProjectDetailPage({
         </SectionWrapper>
       )}
 
-      {/* ── Contact & Enquiry ── */}
+      {/* ── Enquiry ── */}
       <section className="bg-brand-950 text-white">
         <SectionWrapper tight>
-          <h2 className="text-lg font-extrabold mb-5">Contact &amp; Enquiry</h2>
-          <div className="grid md:grid-cols-2 gap-8">
-            {project.contact && (
-              <div className="space-y-4">
-                {project.contact.projectOwner && (
-                  <p className="text-brand-200 text-sm">
-                    <span className="text-brand-400 text-xs uppercase tracking-wide block mb-0.5">Project Owner</span>
-                    {project.contact.projectOwner}
-                  </p>
-                )}
-                {project.contact.phones.map((ph, i) => (
-                  <div key={i}>
-                    <span className="text-brand-400 text-xs uppercase tracking-wide">{ph.role.replace("_", " ")}</span>
-                    <a href={`tel:${ph.phoneNumber}`}
-                      className="block text-white font-semibold hover:text-brand-300 transition-colors mt-0.5">
-                      {ph.phoneNumber}
-                    </a>
-                  </div>
-                ))}
-                {project.contact.email && (
-                  <a href={`mailto:${project.contact.email}`}
-                    className="block text-brand-300 hover:text-white text-sm transition-colors">
-                    {project.contact.email}
-                  </a>
-                )}
-                <div className="flex flex-col gap-2 pt-1">
-                  {project.contact.website && (
-                    <a href={project.contact.website} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-brand-300 hover:text-white text-sm transition-colors">
-                      <ExternalLink className="w-4 h-4" /> Official Website
-                    </a>
-                  )}
-                  {[
-                    { url: project.contact.facebookUrl,  label: "Facebook"  },
-                    { url: project.contact.instagramUrl, label: "Instagram" },
-                    { url: project.contact.youtubeUrl,   label: "YouTube"   },
-                  ].filter(s => s.url).map(s => (
-                    <a key={s.label} href={s.url!} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-brand-300 hover:text-white text-sm transition-colors">
-                      <ExternalLink className="w-4 h-4" /> {s.label}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
+          <div className="max-w-xl mx-auto">
             <ProjectEnquiryForm projectId={project.id} projectName={project.projectName} />
           </div>
         </SectionWrapper>
