@@ -251,8 +251,8 @@ export default function ServicesPage() {
         </SectionWrapper>
       </section>
 
-      {/* ── Membership Plans ── */}
-      <SectionWrapper id="membership">
+      {/* Membership Plans — hidden until pricing is finalised */}
+      {false && <SectionWrapper id="membership">
         <div className="text-center mb-10">
           <h2 className="section-heading">Membership Plans</h2>
           <p className="text-gray-500 mt-2">
@@ -294,7 +294,7 @@ export default function ServicesPage() {
             </div>
           ))}
         </div>
-      </SectionWrapper>
+      </SectionWrapper>}
 
       {/* ── Vendor Registration CTA ── */}
       <section className="bg-brand-950 text-white">

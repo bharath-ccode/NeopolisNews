@@ -231,8 +231,8 @@ export default async function DirectoryPage() {
         </SectionWrapper>
       </section>
 
-      {/* ── Business Plans ── */}
-      <SectionWrapper id="business-plans">
+      {/* Business Plans — hidden until pricing is finalised */}
+      {false && <SectionWrapper id="business-plans">
         <div className="text-center mb-10">
           <h2 className="section-heading">List Your Business</h2>
           <p className="text-gray-500 mt-2">
@@ -273,7 +273,7 @@ export default async function DirectoryPage() {
             </div>
           ))}
         </div>
-      </SectionWrapper>
+      </SectionWrapper>}
 
       {/* ── Lead Form ── */}
       <section className="bg-brand-950 text-white">
