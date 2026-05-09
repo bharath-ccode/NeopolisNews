@@ -249,7 +249,7 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
 
       {/* ── Tab: Project Info ── */}
       {tab === "info" && (
-        <div className="space-y-5">
+        <div className="space-y-6">
           <div>
             <label className="label">Project Logo</label>
             <ImageUpload value={projectLogoUrl} onChange={setProjectLogoUrl} folder="projects/logos" label="Upload Logo" />
@@ -366,7 +366,7 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
 
       {/* ── Tab: Contacts ── */}
       {tab === "contacts" && (
-        <div className="space-y-5">
+        <div className="space-y-6">
           <div>
             <label className="label">Project Owner</label>
             <input className="input" placeholder="Owner name or company" value={projectOwner}
