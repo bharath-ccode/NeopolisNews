@@ -244,10 +244,10 @@ export default async function ProjectDetailPage({
             <ArrowLeft className="w-4 h-4" /> All Projects
           </Link>
           <div className="flex items-start gap-5">
-            <div className="w-16 h-16 rounded-2xl border border-brand-700 bg-brand-800 flex items-center justify-center shrink-0 overflow-hidden">
+            <div className="w-24 h-24 rounded-2xl border border-brand-700 bg-brand-800 flex items-center justify-center shrink-0 overflow-hidden p-1">
               {project.projectLogoUrl
-                ? <img src={project.projectLogoUrl} alt={project.projectName} className="w-full h-full object-cover" />
-                : <Building2 className="w-8 h-8 text-brand-500" />
+                ? <img src={project.projectLogoUrl} alt={project.projectName} className="w-full h-full object-contain" />
+                : <Building2 className="w-10 h-10 text-brand-500" />
               }
             </div>
             <div className="flex-1 min-w-0">

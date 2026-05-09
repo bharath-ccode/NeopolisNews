@@ -111,11 +111,11 @@ export default function ProjectsPage() {
                         <img
                           src={p.projectLogoUrl}
                           alt={p.projectName}
-                          className="w-9 h-9 rounded-lg object-cover border border-gray-100 shrink-0"
+                          className="w-14 h-14 rounded-lg object-contain border border-gray-100 shrink-0 bg-white p-0.5"
                         />
                       ) : (
-                        <div className="w-9 h-9 rounded-lg bg-brand-50 flex items-center justify-center shrink-0">
-                          <Layers className="w-4 h-4 text-brand-400" />
+                        <div className="w-14 h-14 rounded-lg bg-brand-50 flex items-center justify-center shrink-0">
+                          <Layers className="w-6 h-6 text-brand-400" />
                         </div>
                       )}
                       <span className="font-medium text-gray-900">{p.projectName}</span>

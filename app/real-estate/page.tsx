@@ -142,7 +142,7 @@ export default async function RealEstatePage() {
                       <img
                         src={p.project_logo_url}
                         alt={p.project_name}
-                        className="h-20 w-auto object-contain"
+                        className="h-28 w-auto max-w-[80%] object-contain"
                       />
                     ) : (
                       <Building2 className="w-12 h-12 text-brand-300" />
