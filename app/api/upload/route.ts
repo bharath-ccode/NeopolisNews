@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import sharp from "sharp";
 
 const BUCKET = "business-media";
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+const MAX_BYTES = 5 * 1024 * 1024; // 5 MB pre-compression
+const MAX_DIMENSION = 1920;        // cap longest edge
+const WEBP_QUALITY = 82;
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,14 +30,37 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const raw = Buffer.from(await file.arrayBuffer());
+
+    // GIFs are left as-is (sharp drops animation); everything else → WebP
+    const isGif = file.type === "image/gif";
+    let compressed: Buffer;
+    let contentType: string;
+    let ext: string;
+
+    if (isGif) {
+      compressed = raw;
+      contentType = "image/gif";
+      ext = "gif";
+    } else {
+      compressed = await sharp(raw)
+        .rotate()                                      // auto-orient from EXIF
+        .resize(MAX_DIMENSION, MAX_DIMENSION, {
+          fit: "inside",
+          withoutEnlargement: true,
+        })
+        .webp({ quality: WEBP_QUALITY })
+        .toBuffer();
+      contentType = "image/webp";
+      ext = "webp";
+    }
+
     const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-    const buffer = Buffer.from(await file.arrayBuffer());
 
     const supabase = createAdminClient();
     const { error } = await supabase.storage
       .from(BUCKET)
-      .upload(fileName, buffer, { contentType: file.type, upsert: false });
+      .upload(fileName, compressed, { contentType, upsert: false });
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
