@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, useRef, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   Save,
@@ -10,6 +10,8 @@ import {
   AlertCircle,
   Loader2,
   Newspaper,
+  Upload,
+  X,
 } from "lucide-react";
 import clsx from "clsx";
 import {
@@ -59,8 +61,32 @@ export default function ArticleForm({ article }: Props) {
     article?.status ?? "draft"
   );
 
-  const [saving, setSaving] = useState(false);
-  const [error, setError]   = useState("");
+  const [saving, setSaving]       = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError]         = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setError("");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("folder", "news");
+      fd.append("bucket", "news-media");
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Upload failed");
+      setImageUrl(json.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Image upload failed");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
 
   const meta = CATEGORY_META[category];
 
@@ -262,19 +288,47 @@ export default function ArticleForm({ article }: Props) {
                 />
               </div>
 
-              {/* Image URL */}
+              {/* Image upload */}
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   <ImageIcon className="inline w-3.5 h-3.5 mr-1 text-gray-400" />
-                  Image URL
+                  Article Image
                 </label>
                 <input
-                  type="url"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="https://…"
-                  className={inputCls}
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handleImageUpload}
                 />
+                {imageUrl ? (
+                  <div className="relative rounded-lg overflow-hidden border border-gray-200">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={imageUrl} alt="Article" className="w-full h-48 object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setImageUrl("")}
+                      className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="w-full flex flex-col items-center gap-2 border-2 border-dashed border-gray-200 rounded-lg py-8 text-gray-400 hover:border-brand-400 hover:text-brand-500 transition-colors disabled:opacity-60"
+                  >
+                    {uploading
+                      ? <Loader2 className="w-6 h-6 animate-spin" />
+                      : <Upload className="w-6 h-6" />}
+                    <span className="text-sm font-medium">
+                      {uploading ? "Uploading…" : "Click to upload image"}
+                    </span>
+                    <span className="text-xs">JPEG, PNG or WebP · max 5 MB</span>
+                  </button>
+                )}
               </div>
             </div>
 
