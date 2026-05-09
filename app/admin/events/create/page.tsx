@@ -14,7 +14,7 @@ const EVENT_TYPES = [
 ];
 
 const INPUT = "w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 text-gray-800";
-const LABEL = "block text-xs font-semibold text-gray-500 mb-1.5";
+const LABEL = "block text-sm font-semibold text-gray-700 mb-2";
 
 interface Business { id: string; name: string; industry: string; }
 
@@ -104,7 +104,7 @@ export default function AdminCreateEventPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="card p-6 space-y-5">
+      <form onSubmit={handleSubmit} className="card p-6 space-y-6">
 
         {/* Business picker */}
         <div>

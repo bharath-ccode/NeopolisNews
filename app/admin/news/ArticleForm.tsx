@@ -179,13 +179,13 @@ export default function ArticleForm({ article }: Props) {
       )}
 
       <form>
-        <div className="space-y-5">
+        <div className="space-y-6">
           {/* Title */}
-          <div className="card p-5 space-y-4">
-            <h3 className="font-semibold text-gray-900 text-sm">Content</h3>
+          <div className="card p-6 space-y-5">
+            <h3 className="font-semibold text-gray-900 text-sm uppercase tracking-wide text-gray-500">Content</h3>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Title <span className="text-red-500">*</span>
               </label>
               <input
@@ -202,7 +202,7 @@ export default function ArticleForm({ article }: Props) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Excerpt <span className="text-red-500">*</span>
               </label>
               <textarea
@@ -219,7 +219,7 @@ export default function ArticleForm({ article }: Props) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Full Content <span className="text-red-500">*</span>
               </label>
               <textarea
@@ -233,13 +233,13 @@ export default function ArticleForm({ article }: Props) {
           </div>
 
           {/* Meta */}
-          <div className="card p-5 space-y-4">
-            <h3 className="font-semibold text-gray-900 text-sm">Details</h3>
+          <div className="card p-6 space-y-5">
+            <h3 className="font-semibold text-gray-900 text-sm uppercase tracking-wide text-gray-500">Details</h3>
 
             <div className="grid sm:grid-cols-2 gap-4">
               {/* Category */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Category <span className="text-red-500">*</span>
                 </label>
                 <select
@@ -262,7 +262,7 @@ export default function ArticleForm({ article }: Props) {
 
               {/* Author */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Author
                 </label>
                 <input
@@ -276,7 +276,7 @@ export default function ArticleForm({ article }: Props) {
 
               {/* Source */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   <Newspaper className="inline w-3.5 h-3.5 mr-1 text-gray-400" />
                   News Source
                 </label>
@@ -291,7 +291,7 @@ export default function ArticleForm({ article }: Props) {
 
               {/* Read time */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Read Time
                 </label>
                 <input
@@ -305,7 +305,7 @@ export default function ArticleForm({ article }: Props) {
 
               {/* Image upload */}
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   <ImageIcon className="inline w-3.5 h-3.5 mr-1 text-gray-400" />
                   Article Image
                 </label>
@@ -349,7 +349,7 @@ export default function ArticleForm({ article }: Props) {
 
             {/* YouTube video */}
             <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 <Youtube className="inline w-3.5 h-3.5 mr-1 text-red-500" />
                 YouTube Video URL <span className="text-gray-400 font-normal">(optional)</span>
               </label>
