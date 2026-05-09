@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { createAdminClient } from "@/lib/supabase/server";
 
-// E.164: + followed by 7–15 digits, first digit of country code is 1-9
 const E164_RE  = /^\+[1-9]\d{6,14}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -15,25 +14,14 @@ export async function POST(
 
   // ── Validate ─────────────────────────────────────────────────────────────────
   const errors: string[] = [];
-
-  if (!senderName?.trim())
-    errors.push("Name is required.");
-
+  if (!senderName?.trim())                  errors.push("Name is required.");
   const phone = senderPhone?.trim() ?? "";
-  if (!phone)
-    errors.push("Phone number is required.");
-  else if (!E164_RE.test(phone))
-    errors.push("Phone must be in international format, e.g. +91 9900000000.");
-
+  if (!phone)                               errors.push("Phone number is required.");
+  else if (!E164_RE.test(phone))            errors.push("Phone must be in international format, e.g. +91 9900000000.");
   const email = senderEmail?.trim() ?? "";
-  if (!email)
-    errors.push("Email address is required.");
-  else if (!EMAIL_RE.test(email))
-    errors.push("Please enter a valid email address.");
-
-  if (!message?.trim())
-    errors.push("Message is required.");
-
+  if (!email)                               errors.push("Email address is required.");
+  else if (!EMAIL_RE.test(email))           errors.push("Please enter a valid email address.");
+  if (!message?.trim())                     errors.push("Message is required.");
   if (errors.length)
     return NextResponse.json({ error: errors[0] }, { status: 400 });
 
@@ -41,7 +29,7 @@ export async function POST(
   const admin = createAdminClient();
   const { data: project } = await admin
     .from("projects")
-    .select("id, project_name, builder_id, contacts(email), builders(email)")
+    .select("id, project_name, contacts(email), builders(email)")
     .eq("id", params.id)
     .single();
 
@@ -52,37 +40,44 @@ export async function POST(
   const contact = Array.isArray((project as any).contacts) ? (project as any).contacts[0] : (project as any).contacts;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const builder = Array.isArray((project as any).builders) ? (project as any).builders[0] : (project as any).builders;
+  const toEmail: string = contact?.email ?? builder?.email ?? process.env.ADMIN_EMAIL ?? "";
 
-  const toEmail: string =
-    contact?.email ?? builder?.email ?? process.env.ADMIN_EMAIL ?? "";
-
-  if (!toEmail)
-    return NextResponse.json({ error: "Unable to deliver enquiry — no contact email on file." }, { status: 500 });
-
-  // ── Persist + send email (best-effort, non-blocking) ─────────────────────────
-  await Promise.allSettled([
-    admin.from("project_enquiries").insert({
+  // ── Persist + email + increment count (all best-effort) ──────────────────────
+  const tasks: Promise<unknown>[] = [
+    (admin.from("project_enquiries").insert({
       project_id:   params.id,
       sender_name:  senderName.trim(),
       sender_phone: phone,
       sender_email: email,
       message:      message.trim(),
-    }),
-    new Resend(process.env.RESEND_API_KEY).emails.send({
-      from:    "NeopolisNews <no-reply@neopolis.news>",
-      to:      toEmail,
-      replyTo: email,
-      subject: `New enquiry for ${project.project_name} — NeopolisNews`,
-      html:    buildEmail({
-        projectName: project.project_name,
-        senderName:  senderName.trim(),
-        senderPhone: phone,
-        senderEmail: email,
-        message:     message.trim(),
-      }),
-    }),
-  ]);
+    })) as unknown as Promise<unknown>,
+    (async () => {
+      const { data } = await admin.from("projects").select("enquiry_count").eq("id", params.id).single();
+      await admin.from("projects")
+        .update({ enquiry_count: (((data as any)?.enquiry_count) ?? 0) + 1 })
+        .eq("id", params.id);
+    })(),
+  ];
 
+  if (toEmail && process.env.RESEND_API_KEY) {
+    tasks.push(
+      new Resend(process.env.RESEND_API_KEY).emails.send({
+        from:    "NeopolisNews <no-reply@neopolis.news>",
+        to:      toEmail,
+        replyTo: email,
+        subject: `New enquiry for ${project.project_name} — NeopolisNews`,
+        html:    buildEmail({
+          projectName: project.project_name,
+          senderName:  senderName.trim(),
+          senderPhone: phone,
+          senderEmail: email,
+          message:     message.trim(),
+        }),
+      })
+    );
+  }
+
+  await Promise.allSettled(tasks);
   return NextResponse.json({ ok: true });
 }
 
