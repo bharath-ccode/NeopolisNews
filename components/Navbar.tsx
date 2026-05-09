@@ -161,12 +161,7 @@ const NAV_ITEMS = [
       { label: "Post a Free Ad",   href: "/dashboard/individual/classifieds"         },
     ],
   },
-  {
-    label: "Advertise",
-    href: "/advertise",
-    icon: Megaphone,
-    highlight: true,
-  },
+  // { label: "Advertise", href: "/advertise", icon: Megaphone, highlight: true },
 ];
 
 // ─── User menu ────────────────────────────────────────────────────────────────
@@ -461,13 +456,7 @@ export default function Navbar() {
             >
               <MessageSquare className="w-4 h-4" />
             </Link>
-            <Link
-              href="/advertise"
-              className="hidden xl:flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-accent-500 text-white hover:bg-accent-600 transition-colors whitespace-nowrap"
-            >
-              <Megaphone className="w-4 h-4" />
-              Advertise
-            </Link>
+            {/* Advertise button hidden until pricing is updated */}
             <div className="hidden xl:flex">
               <UserMenu />
             </div>
