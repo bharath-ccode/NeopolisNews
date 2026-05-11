@@ -291,6 +291,14 @@ export default async function ProjectDetailPage({
               )}
             </div>
           </div>
+
+          {/* ── Lifecycle Timeline ── */}
+          {project.lifecycleStatus && (
+            <div className="mt-8 pt-6 border-t border-brand-700/60">
+              <p className="text-[11px] font-bold text-brand-400 uppercase tracking-widest mb-5">Project Status</p>
+              <LifecycleTimeline current={project.lifecycleStatus} dark />
+            </div>
+          )}
         </SectionWrapper>
       </section>
 
@@ -311,16 +319,6 @@ export default async function ProjectDetailPage({
           ))}
         </div>
       </SectionWrapper>
-
-      {/* ── Lifecycle Timeline ── */}
-      {project.lifecycleStatus && (
-        <section className="bg-white border-b border-gray-100">
-          <SectionWrapper tight>
-            <h2 className="text-base font-bold text-gray-900 mb-6">Project Status</h2>
-            <LifecycleTimeline current={project.lifecycleStatus} />
-          </SectionWrapper>
-        </section>
-      )}
 
       {/* ── Availability Announcements ── */}
       {announcements.length > 0 && (
