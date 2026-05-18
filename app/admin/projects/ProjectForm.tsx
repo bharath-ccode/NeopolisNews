@@ -64,6 +64,7 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
   const [coreNeopolis, setCoreNeopolis] = useState(initialData?.coreNeopolis ?? false);
   const [projectLogoUrl, setProjectLogoUrl] = useState<string | null>(initialData?.projectLogoUrl ?? null);
   const [projectPlanUrl, setProjectPlanUrl] = useState(initialData?.projectPlanUrl ?? "");
+  const [brochureUrl, setBrochureUrl]       = useState(initialData?.brochureUrl ?? "");
   const [projectType, setProjectType]   = useState<ProjectType | "">(initialData?.projectType ?? "");
   const [tier, setTier]                 = useState<ProjectTier | "">(initialData?.tier ?? "");
   const [lifecycleStatus, setLifecycleStatus] = useState<LifecycleStatus | "">(initialData?.lifecycleStatus ?? "");
@@ -111,7 +112,8 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
   const isEdit = !!initialData;
 
   // ── Brochure import handler ──
-  function handleImport(data: ImportedProjectData) {
+  function handleImport(data: ImportedProjectData, pdfUrl: string) {
+    if (pdfUrl) setBrochureUrl(pdfUrl);
     if (data.projectName)        setProjectName(data.projectName);
     if (data.projectType)        setProjectType(data.projectType as ProjectType);
     if (data.tier)               setTier(data.tier as ProjectTier);
@@ -217,6 +219,7 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
       coreNeopolis,
       projectLogoUrl,
       projectPlanUrl:        projectPlanUrl || null,
+      brochureUrl:           brochureUrl || null,
       projectType:           projectType   || null,
       tier:                  tier          || null,
       lifecycleStatus:       lifecycleStatus || null,
@@ -327,6 +330,25 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
               )}
             </div>
             <p className="text-xs text-gray-400 mt-1">Link to the overall project layout diagram shown on the public project page.</p>
+          </div>
+
+          <div>
+            <label className="label flex items-center gap-1.5">
+              Brochure
+              <span className="text-xs text-gray-400 font-normal">(PDF URL · auto-filled on import)</span>
+            </label>
+            <div className="flex gap-2">
+              <input className="input flex-1" type="url" placeholder="https://…"
+                value={brochureUrl}
+                onChange={e => setBrochureUrl(e.target.value)} />
+              {brochureUrl && (
+                <a href={brochureUrl} target="_blank" rel="noopener noreferrer"
+                  className="p-2.5 border border-gray-200 rounded-lg text-gray-400 hover:text-brand-600 hover:border-brand-300 transition-colors">
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              )}
+            </div>
+            <p className="text-xs text-gray-400 mt-1">Users can download this brochure from the public project page.</p>
           </div>
 
           {!lockedBuilderId && (

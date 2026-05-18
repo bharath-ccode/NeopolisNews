@@ -34,7 +34,7 @@ export interface ImportedProjectData {
 }
 
 interface Props {
-  onImport: (data: ImportedProjectData) => void;
+  onImport: (data: ImportedProjectData, brochureUrl: string) => void;
 }
 
 type Status = "idle" | "loading" | "done" | "error";
@@ -72,7 +72,7 @@ export default function BrochureImporter({ onImport }: Props) {
       if (!res.ok) throw new Error(json.error ?? "Import failed.");
 
       const data = json as ImportedProjectData;
-      onImport(data);
+      onImport(data, pdfUrl);
 
       const parts: string[] = [];
       if (data.projectName)                  parts.push(`Project: ${data.projectName}`);
