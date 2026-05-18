@@ -52,6 +52,7 @@ Rules:
 - tier: infer from context ("Luxury" / "Ultra Luxury" → luxury or uber_luxury, "Affordable" → affordable, otherwise → premium).
 - towers: only list explicit tower names/counts. If the brochure says "2 towers" without naming them, return [{"towerName":"Tower 1","numFloors":N},{"towerName":"Tower 2","numFloors":N}].
 - unitPlans: one entry per distinct configuration. Do NOT duplicate plans with the same size and BHK just for different facings — instead, create one entry per unique (BHK, sizeSqft) pair and pick the most prominent facing.
+- amenitiesSqft: the clubhouse / amenities block size in sq ft. Look for phrases like "50,000 sq ft Grand Clubhouse", "clubhouse spanning X sq ft", "X sqft of amenities", "amenities area". Extract the numeric value only. This is a key field — look carefully throughout the brochure.
 - amenities: ONLY select items from this exact list that appear in the brochure:
 ${ALL_AMENITIES.map((a) => `  "${a}"`).join(",\n")}
 `.trim();
