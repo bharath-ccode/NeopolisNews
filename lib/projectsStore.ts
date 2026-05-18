@@ -95,6 +95,7 @@ export interface Project {
   totalUnits: number | null;
   coreNeopolis: boolean;
   projectLogoUrl: string | null;
+  bannerImageUrl: string | null;
   projectPlanUrl: string | null;
   brochureUrl: string | null;
   projectType: ProjectType | null;
@@ -117,6 +118,7 @@ export interface ProjectInput {
   totalUnits: number | null;
   coreNeopolis: boolean;
   projectLogoUrl: string | null;
+  bannerImageUrl: string | null;
   projectPlanUrl: string | null;
   brochureUrl: string | null;
   projectType: ProjectType | null;
@@ -215,6 +217,7 @@ export function toProject(row: any): Project {
     totalUnits: row.total_units,
     coreNeopolis: row.core_neopolis ?? false,
     projectLogoUrl: row.project_logo_url,
+    bannerImageUrl: row.banner_image_url ?? null,
     projectPlanUrl: row.project_plan_url ?? null,
     brochureUrl: row.brochure_url ?? null,
     projectType: row.project_type ?? null,
@@ -280,6 +283,7 @@ export async function createProject(input: ProjectInput): Promise<Project> {
       total_units:           input.totalUnits,
       core_neopolis:         input.coreNeopolis,
       project_logo_url:      input.projectLogoUrl,
+      banner_image_url:      input.bannerImageUrl,
       project_plan_url:      input.projectPlanUrl,
       brochure_url:          input.brochureUrl,
       project_type:          input.projectType,
@@ -310,6 +314,7 @@ export async function updateProject(id: string, input: ProjectInput): Promise<Pr
       total_units:           input.totalUnits,
       core_neopolis:         input.coreNeopolis,
       project_logo_url:      input.projectLogoUrl,
+      banner_image_url:      input.bannerImageUrl,
       project_plan_url:      input.projectPlanUrl,
       brochure_url:          input.brochureUrl,
       project_type:          input.projectType,

@@ -63,6 +63,7 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
   const [totalUnits, setTotalUnits]     = useState(initialData?.totalUnits?.toString() ?? "");
   const [coreNeopolis, setCoreNeopolis] = useState(initialData?.coreNeopolis ?? false);
   const [projectLogoUrl, setProjectLogoUrl] = useState<string | null>(initialData?.projectLogoUrl ?? null);
+  const [bannerImageUrl, setBannerImageUrl] = useState<string | null>(initialData?.bannerImageUrl ?? null);
   const [projectPlanUrl, setProjectPlanUrl] = useState(initialData?.projectPlanUrl ?? "");
   const [brochureUrl, setBrochureUrl]       = useState(initialData?.brochureUrl ?? "");
   const [projectType, setProjectType]   = useState<ProjectType | "">(initialData?.projectType ?? "");
@@ -218,6 +219,7 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
       totalUnits:            totalUnits    ? parseInt(totalUnits, 10)  : null,
       coreNeopolis,
       projectLogoUrl,
+      bannerImageUrl,
       projectPlanUrl:        projectPlanUrl || null,
       brochureUrl:           brochureUrl || null,
       projectType:           projectType   || null,
@@ -305,6 +307,12 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
           <div>
             <label className="label">Project Logo</label>
             <ImageUpload value={projectLogoUrl} onChange={setProjectLogoUrl} folder="projects/logos" label="Upload Logo" />
+          </div>
+
+          <div>
+            <label className="label">Banner Picture</label>
+            <p className="text-xs text-gray-400 mb-2">Full-width hero image shown at the top of the project page — use a high-quality render or photo of the completed project.</p>
+            <ImageUpload value={bannerImageUrl} onChange={setBannerImageUrl} folder="projects/banners" label="Upload Banner" />
           </div>
 
           <div>

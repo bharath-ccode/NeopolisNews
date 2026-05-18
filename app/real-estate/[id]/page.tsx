@@ -302,6 +302,19 @@ export default async function ProjectDetailPage({
         </SectionWrapper>
       </section>
 
+      {/* ── Banner ── */}
+      {project.bannerImageUrl && (
+        <div className="w-full overflow-hidden" style={{ maxHeight: "520px" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={project.bannerImageUrl}
+            alt={`${project.projectName} — Project View`}
+            className="w-full object-cover object-center"
+            style={{ maxHeight: "520px" }}
+          />
+        </div>
+      )}
+
       {/* ── Key Stats ── */}
       <SectionWrapper tight>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 -mt-6">
