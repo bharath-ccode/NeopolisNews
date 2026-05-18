@@ -8,7 +8,7 @@ import {
 import { createAdminClient } from "@/lib/supabase/server";
 import { toProject, type Project, type UnitPlan } from "@/lib/projectsStore";
 import { toAnnouncement, type Announcement } from "@/lib/announcementsStore";
-import { AMENITY_CATEGORIES } from "@/lib/amenitiesData";
+import { AMENITY_CATEGORIES, AMENITY_ICONS } from "@/lib/amenitiesData";
 import SectionWrapper from "@/components/SectionWrapper";
 import ProjectEnquiryForm from "./ProjectEnquiryForm";
 import LifecycleTimeline from "./LifecycleTimeline";
@@ -545,12 +545,18 @@ export default async function ProjectDetailPage({
                       {cat.category}
                     </p>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                      {present.map(item => (
-                        <div key={item} className="flex items-center gap-2 bg-white rounded-lg border border-gray-100 px-3 py-2 shadow-sm">
-                          <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" />
-                          <span className="text-xs font-medium text-gray-700">{item}</span>
-                        </div>
-                      ))}
+                      {present.map(item => {
+                        const Icon = AMENITY_ICONS[item];
+                        return (
+                          <div key={item} className="flex items-center gap-2 bg-white rounded-lg border border-gray-100 px-3 py-2 shadow-sm">
+                            {Icon
+                              ? <Icon className="w-3.5 h-3.5 text-brand-400 shrink-0" />
+                              : <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" />
+                            }
+                            <span className="text-xs font-medium text-gray-700">{item}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 );
