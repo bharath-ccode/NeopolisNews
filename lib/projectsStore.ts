@@ -101,6 +101,7 @@ export interface Project {
   lifecycleStatus: LifecycleStatus | null;
   priceRangeMin: number | null;
   priceRangeMax: number | null;
+  amenities: string[];
   createdAt: string;
   updatedAt: string;
   contact?: Contact;
@@ -121,6 +122,7 @@ export interface ProjectInput {
   lifecycleStatus: LifecycleStatus | null;
   priceRangeMin: number | null;
   priceRangeMax: number | null;
+  amenities: string[];
   contact: Contact;
   projectDetail: ProjectDetail;
   unitPlans: UnitPlan[];
@@ -217,6 +219,7 @@ export function toProject(row: any): Project {
     lifecycleStatus: row.lifecycle_status ?? null,
     priceRangeMin: row.price_range_min ?? null,
     priceRangeMax: row.price_range_max ?? null,
+    amenities: row.amenities ?? [],
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     contact,
@@ -280,6 +283,7 @@ export async function createProject(input: ProjectInput): Promise<Project> {
       lifecycle_status:      input.lifecycleStatus,
       price_range_min:       input.priceRangeMin,
       price_range_max:       input.priceRangeMax,
+      amenities:             input.amenities,
       created_by:            user?.id ?? null,
     })
     .select()
@@ -308,6 +312,7 @@ export async function updateProject(id: string, input: ProjectInput): Promise<Pr
       lifecycle_status:      input.lifecycleStatus,
       price_range_min:       input.priceRangeMin,
       price_range_max:       input.priceRangeMax,
+      amenities:             input.amenities,
     })
     .eq("id", id);
   if (projErr) throw projErr;
