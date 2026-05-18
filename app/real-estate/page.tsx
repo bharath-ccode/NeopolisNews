@@ -6,8 +6,6 @@ import {
   BarChart3,
   CheckCircle,
   Star,
-  ChevronRight,
-  Tag,
   Users,
   ShoppingBag,
   Zap,
@@ -15,7 +13,7 @@ import {
 import SectionWrapper from "@/components/SectionWrapper";
 import LeadForm from "@/components/LeadForm";
 import { createAdminClient } from "@/lib/supabase/server";
-import type { ProjectType, ProjectTier } from "@/lib/projectsStore";
+import ProjectFiltersGrid, { type ProjectListItem } from "./ProjectFiltersGrid";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -28,38 +26,18 @@ export const metadata = {
 
 // ─── Server data fetch ───────────────────────────────────────────────────────
 
-async function getProjects() {
+async function getProjects(): Promise<ProjectListItem[]> {
   const sb = createAdminClient();
   const { data } = await sb
     .from("projects")
-    .select("id, project_name, builder_id, total_land_area_acres, total_units, core_neopolis, project_logo_url, project_type, tier, price_range_min, price_range_max, builders(builder_name)")
+    .select("id, project_name, total_land_area_acres, total_units, core_neopolis, project_logo_url, project_type, tier, lifecycle_status, price_range_min, price_range_max, builders(builder_name)")
     .order("project_name");
-  return data ?? [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data ?? []).map((p: any) => ({
+    ...p,
+    builder_name: Array.isArray(p.builders) ? p.builders[0]?.builder_name ?? null : p.builders?.builder_name ?? null,
+  }));
 }
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-const TYPE_LABELS: Record<ProjectType, string> = {
-  apartments:        "Apartments",
-  independent_homes: "Independent Homes",
-  residential:       "Residential",
-  mixed_use:         "Mixed Use",
-  commercial:        "Commercial",
-};
-
-const TIER_LABELS: Record<ProjectTier, string> = {
-  affordable:  "Affordable",
-  premium:     "Premium",
-  luxury:      "Luxury",
-  uber_luxury: "Uber Luxury",
-};
-
-const TIER_COLORS: Record<ProjectTier, string> = {
-  affordable:  "tag-blue",
-  premium:     "tag-purple",
-  luxury:      "bg-amber-100 text-amber-800 text-xs font-semibold px-2 py-0.5 rounded-full",
-  uber_luxury: "bg-rose-100 text-rose-800 text-xs font-semibold px-2 py-0.5 rounded-full",
-};
 
 // ─── Static price trend data (placeholder until we have DB price history) ────
 
@@ -109,108 +87,13 @@ export default async function RealEstatePage() {
 
       {/* ── Projects Grid ── */}
       <SectionWrapper id="projects">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <div>
-            <h2 className="section-heading">All Projects</h2>
-            <p className="text-gray-500 text-sm mt-1">
-              {projects.length} project{projects.length !== 1 ? "s" : ""} · Updated regularly
-            </p>
-          </div>
+        <div className="mb-6">
+          <h2 className="section-heading">All Projects</h2>
+          <p className="text-gray-500 text-sm mt-1">
+            {projects.length} project{projects.length !== 1 ? "s" : ""} · Updated regularly
+          </p>
         </div>
-
-        {projects.length === 0 ? (
-          <div className="card p-16 text-center">
-            <Building2 className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-            <p className="font-medium text-gray-500">No projects listed yet</p>
-            <p className="text-sm text-gray-400 mt-1">Check back soon — projects are being added.</p>
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {projects.map((p: any) => {
-              const tier      = p.tier as ProjectTier | null;
-              const type      = p.project_type as ProjectType | null;
-              const builder   = p.builders?.builder_name ?? null;
-              const hasPrice  = p.price_range_min || p.price_range_max;
-
-              return (
-                <div key={p.id} className={`card overflow-hidden ${p.core_neopolis ? "ring-2 ring-brand-500" : ""}`}>
-                  {/* Image / logo area */}
-                  <div className="h-36 bg-gradient-to-br from-brand-50 to-brand-100 flex items-center justify-center relative overflow-hidden">
-                    {p.project_logo_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={p.project_logo_url}
-                        alt={p.project_name}
-                        className="h-28 w-auto max-w-[80%] object-contain"
-                      />
-                    ) : (
-                      <Building2 className="w-12 h-12 text-brand-300" />
-                    )}
-                    {p.core_neopolis && (
-                      <span className="absolute top-2 left-2 flex items-center gap-1 text-xs font-semibold bg-brand-600 text-white px-2 py-0.5 rounded-full">
-                        <CheckCircle className="w-3 h-3" /> Core Neopolis
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="p-4">
-                    {/* Name + badges */}
-                    <div className="mb-2">
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <h3 className="font-bold text-gray-900 text-sm leading-snug">
-                          {p.project_name}
-                        </h3>
-                        {tier && (
-                          <span className={TIER_COLORS[tier] ?? "tag-blue"}>
-                            {TIER_LABELS[tier]}
-                          </span>
-                        )}
-                      </div>
-                      {builder && (
-                        <p className="text-xs text-gray-400">by {builder}</p>
-                      )}
-                    </div>
-
-                    {/* Stats */}
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-500 my-3">
-                      {type && (
-                        <span>Type: <strong className="text-gray-700">{TYPE_LABELS[type]}</strong></span>
-                      )}
-                      {p.total_units && (
-                        <span>Units: <strong className="text-gray-700">{p.total_units.toLocaleString("en-IN")}</strong></span>
-                      )}
-                      {p.total_land_area_acres && (
-                        <span>Land: <strong className="text-gray-700">{p.total_land_area_acres} acres</strong></span>
-                      )}
-                    </div>
-
-                    {/* Price */}
-                    {hasPrice && (
-                      <div className="flex items-center gap-1 mb-3">
-                        <Tag className="w-3.5 h-3.5 text-brand-500" />
-                        <span className="text-sm font-extrabold text-brand-700">
-                          {p.price_range_min && p.price_range_max
-                            ? `₹${p.price_range_min.toLocaleString("en-IN")} – ₹${p.price_range_max.toLocaleString("en-IN")} /sft`
-                            : p.price_range_min
-                            ? `From ₹${p.price_range_min.toLocaleString("en-IN")} /sft`
-                            : `Up to ₹${p.price_range_max.toLocaleString("en-IN")} /sft`}
-                        </span>
-                      </div>
-                    )}
-
-                    <Link
-                      href={`/real-estate/${p.id}`}
-                      className="flex items-center justify-center gap-1 w-full border border-brand-200 text-brand-600 hover:bg-brand-50 text-sm font-semibold py-2 rounded-lg transition-colors"
-                    >
-                      View Details <ChevronRight className="w-4 h-4" />
-                    </Link>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        <ProjectFiltersGrid projects={projects} />
       </SectionWrapper>
 
       {/* ── Price Trends ── */}
