@@ -309,7 +309,7 @@ export default async function ProjectDetailPage({
             { label: "Total Units",   value: project.totalUnits?.toLocaleString("en-IN") },
             { label: "Land Area",     value: project.totalLandAreaAcres ? `${project.totalLandAreaAcres} acres` : null },
             { label: "Max Floors",    value: project.projectDetail?.maxFloors ? `${project.projectDetail.maxFloors} floors` : null },
-            { label: "Amenities",     value: project.projectDetail?.amenitiesSqft
+            { label: "Clubhouse",     value: project.projectDetail?.amenitiesSqft
                 ? `${(project.projectDetail.amenitiesSqft / 1000).toFixed(0)}k sft` : null },
           ].filter(s => s.value).map(s => (
             <div key={s.label} className="card p-4 text-center shadow-md">

@@ -415,7 +415,7 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
                 value={maxFloors} onChange={e => setMaxFloors(e.target.value)} />
             </div>
             <div>
-              <label className="label">Amenities Area (sq ft)</label>
+              <label className="label">Clubhouse Size (sq ft)</label>
               <input className="input" type="number" min="0" placeholder="e.g. 50000"
                 value={amenitiesSqft} onChange={e => setAmenitiesSqft(e.target.value)} />
             </div>
