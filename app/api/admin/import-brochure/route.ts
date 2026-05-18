@@ -62,24 +62,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "ANTHROPIC_API_KEY not configured." }, { status: 500 });
   }
 
-  let file: File | null = null;
+  let pdfUrl = "";
   try {
-    const form = await req.formData();
-    file = form.get("file") as File | null;
+    const body = await req.json();
+    pdfUrl = body?.url ?? "";
   } catch {
-    return NextResponse.json({ error: "Could not parse form data." }, { status: 400 });
+    return NextResponse.json({ error: "Could not parse request body." }, { status: 400 });
   }
 
-  if (!file) return NextResponse.json({ error: "No file uploaded." }, { status: 400 });
-  if (!file.type.includes("pdf") && !file.name.toLowerCase().endsWith(".pdf")) {
-    return NextResponse.json({ error: "Only PDF files are supported." }, { status: 400 });
-  }
-  if (file.size > 20 * 1024 * 1024) {
-    return NextResponse.json({ error: "PDF must be under 20 MB." }, { status: 400 });
-  }
-
-  const buffer = await file.arrayBuffer();
-  const base64 = Buffer.from(buffer).toString("base64");
+  if (!pdfUrl) return NextResponse.json({ error: "No PDF URL provided." }, { status: 400 });
 
   const client = new Anthropic({ apiKey });
 
@@ -94,7 +85,7 @@ export async function POST(req: NextRequest) {
           content: [
             {
               type: "document",
-              source: { type: "base64", media_type: "application/pdf", data: base64 },
+              source: { type: "url", url: pdfUrl },
             },
             { type: "text", text: EXTRACTION_PROMPT },
           ],
