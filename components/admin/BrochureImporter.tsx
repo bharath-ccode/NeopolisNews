@@ -57,11 +57,17 @@ export default function BrochureImporter({ onImport }: Props) {
     setError(null);
     setSummary(null);
 
-    const fd = new FormData();
-    fd.append("file", file);
-
     try {
-      const res = await fetch("/api/admin/import-brochure", { method: "POST", body: fd });
+      // Upload PDF directly to Supabase Storage from the browser (bypasses API size limits)
+      const { uploadImage } = await import("@/lib/uploadUtils");
+      const pdfUrl = await uploadImage(file, "brochures/temp");
+
+      // Send just the URL — no large payload through our API
+      const res = await fetch("/api/admin/import-brochure", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: pdfUrl }),
+      });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Import failed.");
 
