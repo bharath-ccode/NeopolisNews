@@ -33,7 +33,7 @@ const CATEGORY_CONFIG: {
   anchor: string;
 }[] = [
   { id: "construction",   icon: Camera,      label: "Construction Updates", color: "bg-orange-50 text-orange-600", anchor: "construction"   },
-  { id: "launches",       icon: Zap,         label: "New Launches",         color: "bg-green-50 text-green-600",  anchor: "launches"       },
+  { id: "launches",       icon: Zap,         label: "Business Launches",    color: "bg-green-50 text-green-600",  anchor: "launches"       },
   { id: "infrastructure", icon: TrendingUp,  label: "Infrastructure",       color: "bg-blue-50 text-blue-600",   anchor: "infrastructure" },
   { id: "community",      icon: Users,       label: "Community",            color: "bg-purple-50 text-purple-600",anchor: "community"      },
 ];

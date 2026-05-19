@@ -42,7 +42,7 @@ const NAV_ITEMS = [
     href: "/news",
     icon: Newspaper,
     sub: [
-      { label: "New Launches",         href: "/news#launches"      },
+      { label: "Business Launches",     href: "/news#launches"      },
       { label: "Infrastructure",       href: "/news#infrastructure" },
       { label: "Community",            href: "/news#community"     },
     ],
