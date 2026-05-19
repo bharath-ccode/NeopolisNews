@@ -5,6 +5,7 @@ import {
   DIGEST_LEVELS,
   LEVEL_LABELS,
   LEVEL_TAGS,
+  LEVEL_SCOPE,
   fetchHeadlines,
   type DigestLevel,
   type HeadlineItem,
@@ -34,12 +35,14 @@ async function generateForLevel(
 
   const prompt = `You are a journalist for NeopolisNews, a digital news platform for Hyderabad's business and IT professional community (tech workers, startup founders, corporate employees, investors).
 
-Today's ${levelLabel} news headlines:
+${LEVEL_SCOPE[level]}
+
+Today's ${levelLabel} headlines (stay strictly within the scope above):
 ${headlineText}
 
 Write one comprehensive news digest article that:
-1. Synthesizes the 3–5 most impactful stories from these headlines
-2. Explains concretely how these developments affect Hyderabad's IT employees, entrepreneurs, and business professionals
+1. Synthesizes the 3–5 most impactful stories from the headlines — only from within this geographic scope
+2. Explains concretely how these in-scope developments affect Hyderabad's IT employees, entrepreneurs, and business professionals
 3. Takes a slightly progressive, worker-friendly perspective — supportive of public services, wage growth, workers' rights, environment, and equitable growth; constructively critical of monopolistic behavior or policy failures
 4. Is factual, grounded, and analytical — not sensational
 5. Is written for educated professionals who value nuanced analysis, not clickbait
