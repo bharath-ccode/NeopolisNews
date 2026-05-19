@@ -53,6 +53,7 @@ export default function AiDigestPage() {
   const [articles, setArticles] = useState<DigestArticle[]>([]);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [generatingLevel, setGeneratingLevel] = useState<string | null>(null);
   const [genError, setGenError] = useState<string | null>(null);
 
   // Per-article state
@@ -82,15 +83,26 @@ export default function AiDigestPage() {
   async function handleGenerate() {
     setGenerating(true);
     setGenError(null);
+    const existingLevels = new Set(articles.map((a) => a.digest_level));
+    const toGenerate = DIGEST_LEVELS.filter((l) => !existingLevels.has(l));
     try {
-      const res = await fetch("/api/ai-digest/generate", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) { setGenError(data.error ?? "Generation failed"); return; }
-      await fetchArticles(date);
+      for (const level of toGenerate) {
+        setGeneratingLevel(LEVEL_LABELS[level]);
+        const res = await fetch("/api/ai-digest/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ level }),
+        });
+        const data = await res.json();
+        if (!res.ok) { setGenError(data.error ?? `Failed at ${level}`); break; }
+        // Refresh after each level so the card appears immediately
+        await fetchArticles(date);
+      }
     } catch {
       setGenError("Network error");
     } finally {
       setGenerating(false);
+      setGeneratingLevel(null);
     }
   }
 
@@ -172,7 +184,7 @@ export default function AiDigestPage() {
               className="btn-primary text-sm py-2"
             >
               {generating
-                ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating… (30–60s)</>
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> {generatingLevel ? `Writing ${generatingLevel}…` : "Starting…"}</>
                 : <><Sparkles className="w-4 h-4" /> Generate Digest</>
               }
             </button>

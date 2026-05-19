@@ -65,9 +65,9 @@ Format your response as valid JSON ONLY (no markdown fences) with this exact str
   return JSON.parse(cleaned) as GeneratedArticle;
 }
 
-// Vercel Cron hits GET; admin can also POST to trigger manually
+// Vercel Cron hits GET (generates all levels one-by-one via internal calls isn't possible,
+// so cron generates all sequentially — acceptable since it runs unattended at 4 AM)
 export async function GET(req: NextRequest) {
-  // Verify Vercel Cron secret
   const cronSecret = process.env.CRON_SECRET;
   if (cronSecret) {
     const auth = req.headers.get("authorization");
@@ -75,31 +75,41 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
   }
-  return runGenerate();
+  // Cron: generate all missing levels sequentially
+  return runGenerate(null);
 }
 
+// Admin manual: POST with { level } to generate one level at a time (avoids timeout)
 export async function POST(req: NextRequest) {
-  // Admin-triggered manual run — validate via referer or just allow (admin page is protected client-side)
-  void req;
-  return runGenerate();
+  const body = await req.json().catch(() => ({})) as { level?: string };
+  const level = (body.level ?? null) as DigestLevel | null;
+  if (level && !DIGEST_LEVELS.includes(level)) {
+    return NextResponse.json({ error: "Invalid level" }, { status: 400 });
+  }
+  return runGenerate(level);
 }
 
-async function runGenerate() {
+async function runGenerate(onlyLevel: DigestLevel | null) {
   const sb = createAdminClient();
   const todayIST = getTodayIST();
 
-  // Check if already generated today
   const { data: existing } = await sb
     .from("articles")
     .select("id, digest_level")
     .eq("digest_date", todayIST)
     .in("status", ["draft", "published"]);
 
-  const existingLevels = new Set((existing ?? []).map((r: { digest_level: string }) => r.digest_level));
-  const levelsToGenerate = DIGEST_LEVELS.filter((l) => !existingLevels.has(l));
+  const existingLevels = new Set(
+    (existing ?? []).map((r: { digest_level: string }) => r.digest_level)
+  );
+
+  // If a specific level was requested, only generate that one
+  const levelsToGenerate = onlyLevel
+    ? (existingLevels.has(onlyLevel) ? [] : [onlyLevel])
+    : DIGEST_LEVELS.filter((l) => !existingLevels.has(l));
 
   if (levelsToGenerate.length === 0) {
-    return NextResponse.json({ message: "Already generated for today", date: todayIST });
+    return NextResponse.json({ message: "Already generated", date: todayIST });
   }
 
   const results: { level: DigestLevel; articleId: string | null; error?: string }[] = [];
@@ -117,20 +127,20 @@ async function runGenerate() {
       const { data: inserted, error } = await sb
         .from("articles")
         .insert({
-          title:           generated.title,
-          excerpt:         generated.excerpt,
-          content:         generated.content,
-          category:        "community",
-          tag:             LEVEL_TAGS[level],
-          tag_color:       "tag-blue",
-          author:          "NeopolisNews AI",
-          date:            formatDisplayDate(todayIST),
-          read_time:       generated.readTime,
-          views:           0,
-          sponsored:       false,
-          status:          "draft",
-          digest_date:     todayIST,
-          digest_level:    level,
+          title:            generated.title,
+          excerpt:          generated.excerpt,
+          content:          generated.content,
+          category:         "community",
+          tag:              LEVEL_TAGS[level],
+          tag_color:        "tag-blue",
+          author:           "NeopolisNews AI",
+          date:             formatDisplayDate(todayIST),
+          read_time:        generated.readTime,
+          views:            0,
+          sponsored:        false,
+          status:           "draft",
+          digest_date:      todayIST,
+          digest_level:     level,
           digest_headlines: JSON.stringify(headlines),
         })
         .select("id")
@@ -148,7 +158,6 @@ async function runGenerate() {
 
 function getTodayIST(): string {
   const now = new Date();
-  // IST = UTC+5:30
   const ist = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
   return ist.toISOString().slice(0, 10);
 }
