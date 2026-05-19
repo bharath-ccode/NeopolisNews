@@ -5,6 +5,7 @@ import { ArrowLeft, Clock, Eye, Newspaper } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { toArticle, extractYouTubeId } from "@/lib/newsStore";
 import ViewTracker from "./ViewTracker";
+import WhatsAppShare from "@/components/WhatsAppShare";
 
 export const dynamic = "force-dynamic";
 
@@ -142,6 +143,12 @@ export default async function ArticlePage({ params }: { params: { id: string } }
                 Sponsored
               </span>
             )}
+          </div>
+          <div className="mt-5">
+            <WhatsAppShare
+              title={`📰 ${article.title} — NeopolisNews`}
+              size="sm"
+            />
           </div>
         </div>
       </div>

@@ -13,6 +13,7 @@ import SectionWrapper from "@/components/SectionWrapper";
 import ProjectEnquiryForm from "./ProjectEnquiryForm";
 import LifecycleTimeline from "./LifecycleTimeline";
 import MasterPlanModal from "./MasterPlanModal";
+import WhatsAppShare from "@/components/WhatsAppShare";
 
 export const dynamic = "force-dynamic";
 
@@ -290,6 +291,12 @@ export default async function ProjectDetailPage({
                   Total approx. {formatInr(cheapestPlan)} – {formatInr(pricestPlan)}
                 </p>
               )}
+              <div className="mt-4">
+                <WhatsAppShare
+                  title={`Check out ${project.projectName}${project.builderName ? ` by ${project.builderName}` : ""} in Neopolis, Hyderabad 🏗️`}
+                  size="sm"
+                />
+              </div>
             </div>
           </div>
 
