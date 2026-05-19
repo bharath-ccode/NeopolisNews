@@ -22,6 +22,7 @@ import {
   UserCheck,
   IndianRupee,
   CalendarDays,
+  Sparkles,
 } from "lucide-react";
 import clsx from "clsx";
 import { AdminAuthProvider, useAdminAuth } from "@/context/AdminAuthContext";
@@ -37,6 +38,7 @@ const NAV = [
   { href: "/admin/classifieds",   icon: Home,            label: "Properties"    },
   { href: "/admin/ads",           icon: Tag,             label: "Classifieds"   },
   { href: "/admin/payments",       icon: IndianRupee,     label: "Payments"      },
+  { href: "/admin/ai-digest",      icon: Sparkles,        label: "AI Digest"     },
   { href: "/admin/analytics",     icon: BarChart3,       label: "Analytics"     },
   { href: "/admin/settings",      icon: Settings,        label: "Settings"      },
 ];
