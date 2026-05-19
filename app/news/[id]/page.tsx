@@ -56,15 +56,21 @@ export default async function ArticlePage({ params }: { params: { id: string } }
   if (!articleData) notFound();
 
   const article = toArticle(articleData);
+  const digestLevel: string | null = articleData.digest_level ?? null;
 
-  const { data: related } = await admin
+  // For digest articles: match by digest_level so city stays city, etc.
+  // For regular articles: match by category.
+  const relatedQuery = admin
     .from("articles")
-    .select("id, title, excerpt, tag, tag_color, date, read_time, image_url")
+    .select("id, title, excerpt, tag, tag_color, date, read_time, image_url, digest_level")
     .eq("status", "published")
-    .eq("category", article.category)
     .neq("id", article.id)
     .order("created_at", { ascending: false })
     .limit(3);
+
+  const { data: related } = await (digestLevel
+    ? relatedQuery.eq("digest_level", digestLevel)
+    : relatedQuery.eq("category", article.category));
 
   const relatedArticles = (related ?? []) as {
     id: string;
@@ -75,7 +81,18 @@ export default async function ArticlePage({ params }: { params: { id: string } }
     date: string;
     read_time: string;
     image_url: string | null;
+    digest_level: string | null;
   }[];
+
+  const LEVEL_LABELS: Record<string, string> = {
+    international: "International",
+    national:      "National",
+    state:         "Telangana",
+    city:          "Hyderabad",
+  };
+  const relatedHeading = digestLevel
+    ? `More from ${LEVEL_LABELS[digestLevel] ?? digestLevel} Digest`
+    : `More in ${article.tag}`;
 
   const articleJsonLd = {
     "@context": "https://schema.org",
@@ -213,7 +230,7 @@ export default async function ArticlePage({ params }: { params: { id: string } }
         {relatedArticles.length > 0 && (
           <div className="mt-12 pt-8 border-t border-gray-100">
             <h2 className="text-lg font-bold text-gray-900 mb-5">
-              More in {article.tag}
+              {relatedHeading}
             </h2>
             <div className="grid sm:grid-cols-3 gap-4">
               {relatedArticles.map((r) => (
