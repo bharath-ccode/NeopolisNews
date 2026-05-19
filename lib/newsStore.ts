@@ -48,7 +48,7 @@ export const CATEGORY_META: Record<
   { label: string; tag: string; tagColor: TagColor }
 > = {
   construction:   { label: "Construction",   tag: "Construction",  tagColor: "tag-orange" },
-  launches:       { label: "New Launches",   tag: "New Launch",    tagColor: "tag-green"  },
+  launches:       { label: "Business Launches", tag: "Business Launch", tagColor: "tag-green"  },
   infrastructure: { label: "Infrastructure", tag: "Infrastructure",tagColor: "tag-blue"   },
   community:      { label: "Community",      tag: "Community",     tagColor: "tag-purple" },
 };
