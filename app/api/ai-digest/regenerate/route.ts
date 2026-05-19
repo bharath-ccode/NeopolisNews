@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createAdminClient } from "@/lib/supabase/server";
-import { LEVEL_LABELS, LEVEL_TAGS, type DigestLevel, type HeadlineItem } from "@/lib/digestSources";
+import { LEVEL_LABELS, LEVEL_TAGS, LEVEL_SCOPE, type DigestLevel, type HeadlineItem } from "@/lib/digestSources";
 
 export const maxDuration = 60;
 
@@ -46,10 +46,12 @@ export async function POST(req: NextRequest) {
 
   const prompt = `You are a journalist for NeopolisNews, a news platform for Hyderabad's business and IT professionals.
 
-The original ${levelLabel} news headlines:
+${LEVEL_SCOPE[level]}
+
+The original ${levelLabel} headlines (stay strictly within this geographic scope):
 ${headlineText}
 
-The previous version of the article:
+Previous article version:
 Title: ${article.title}
 Excerpt: ${article.excerpt}
 Content:
@@ -58,7 +60,8 @@ ${article.content}
 Admin feedback for improvement:
 "${feedback}"
 
-Please rewrite the article incorporating this feedback. Maintain the same:
+Rewrite the article incorporating this feedback. Maintain:
+- Strict geographic scope (${LEVEL_LABELS[level]} only — no news from outside this level)
 - Slightly progressive, worker-friendly perspective
 - Focus on impact for Hyderabad IT/business professionals
 - Factual and analytical tone (like The Hindu or The Wire editorial voice)

@@ -1,5 +1,17 @@
 export type DigestLevel = "international" | "national" | "state" | "city";
 
+// Geographic scope rules injected into every prompt — keeps each article on-topic
+export const LEVEL_SCOPE: Record<DigestLevel, string> = {
+  international:
+    "SCOPE: Write ONLY about global/world events. Do NOT include India-specific, Telangana-specific, or Hyderabad-specific news. Cover geopolitical, economic, tech, and climate developments that matter globally.",
+  national:
+    "SCOPE: Write ONLY about India-wide news — national economy, central government policy, pan-India industry trends, RBI/SEBI decisions. Do NOT include international events or Telangana/Hyderabad-specific local stories.",
+  state:
+    "SCOPE: Write ONLY about Telangana state-level news — state government policy, Hyderabad metro region infrastructure, Telangana industry, state budget, IT corridor developments. Do NOT cover purely national or international events.",
+  city:
+    "SCOPE: Write ONLY about Hyderabad city-level news — local civic issues, GHMC, HMDA, local business openings, Neopolis district, Hitec City, Gachibowli, specific city-level events. Do NOT include national or state-level policy news.",
+};
+
 export interface DigestSource {
   name: string;
   url: string;
