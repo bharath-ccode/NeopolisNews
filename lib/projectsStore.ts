@@ -94,6 +94,7 @@ export interface Project {
   totalLandAreaAcres: number | null;
   totalUnits: number | null;
   coreNeopolis: boolean;
+  featured: boolean;
   projectLogoUrl: string | null;
   bannerImageUrl: string | null;
   projectPlanUrl: string | null;
@@ -117,6 +118,7 @@ export interface ProjectInput {
   totalLandAreaAcres: number | null;
   totalUnits: number | null;
   coreNeopolis: boolean;
+  featured: boolean;
   projectLogoUrl: string | null;
   bannerImageUrl: string | null;
   projectPlanUrl: string | null;
@@ -216,6 +218,7 @@ export function toProject(row: any): Project {
     totalLandAreaAcres: row.total_land_area_acres,
     totalUnits: row.total_units,
     coreNeopolis: row.core_neopolis ?? false,
+    featured: row.featured ?? false,
     projectLogoUrl: row.project_logo_url,
     bannerImageUrl: row.banner_image_url ?? null,
     projectPlanUrl: row.project_plan_url ?? null,
@@ -282,6 +285,7 @@ export async function createProject(input: ProjectInput): Promise<Project> {
       total_land_area_acres: input.totalLandAreaAcres,
       total_units:           input.totalUnits,
       core_neopolis:         input.coreNeopolis,
+      featured:              input.featured,
       project_logo_url:      input.projectLogoUrl,
       banner_image_url:      input.bannerImageUrl,
       project_plan_url:      input.projectPlanUrl,
@@ -313,6 +317,7 @@ export async function updateProject(id: string, input: ProjectInput): Promise<Pr
       total_land_area_acres: input.totalLandAreaAcres,
       total_units:           input.totalUnits,
       core_neopolis:         input.coreNeopolis,
+      featured:              input.featured,
       project_logo_url:      input.projectLogoUrl,
       banner_image_url:      input.bannerImageUrl,
       project_plan_url:      input.projectPlanUrl,
