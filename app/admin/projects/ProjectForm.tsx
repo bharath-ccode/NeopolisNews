@@ -62,6 +62,7 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
   const [totalLandArea, setTotalLandArea] = useState(initialData?.totalLandAreaAcres?.toString() ?? "");
   const [totalUnits, setTotalUnits]     = useState(initialData?.totalUnits?.toString() ?? "");
   const [coreNeopolis, setCoreNeopolis] = useState(initialData?.coreNeopolis ?? false);
+  const [featured, setFeatured]         = useState(initialData?.featured ?? false);
   const [projectLogoUrl, setProjectLogoUrl] = useState<string | null>(initialData?.projectLogoUrl ?? null);
   const [bannerImageUrl, setBannerImageUrl] = useState<string | null>(initialData?.bannerImageUrl ?? null);
   const [projectPlanUrl, setProjectPlanUrl] = useState(initialData?.projectPlanUrl ?? "");
@@ -218,6 +219,7 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
       totalLandAreaAcres:    totalLandArea ? parseFloat(totalLandArea) : null,
       totalUnits:            totalUnits    ? parseInt(totalUnits, 10)  : null,
       coreNeopolis,
+      featured,
       projectLogoUrl,
       bannerImageUrl,
       projectPlanUrl:        projectPlanUrl || null,
@@ -448,6 +450,15 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
             <div>
               <span className="text-sm font-medium text-gray-900">Core Neopolis</span>
               <p className="text-xs text-gray-400">Mark if this is a core/flagship Neopolis project</p>
+            </div>
+          </label>
+
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" checked={featured} onChange={e => setFeatured(e.target.checked)}
+              className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
+            <div>
+              <span className="text-sm font-medium text-gray-900">Featured on Homepage</span>
+              <p className="text-xs text-gray-400">Show this project in the Featured Projects section on the homepage</p>
             </div>
           </label>
         </div>

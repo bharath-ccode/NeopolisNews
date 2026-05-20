@@ -18,6 +18,10 @@ import {
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import LeadForm from "@/components/LeadForm";
+import { createAdminClient } from "@/lib/supabase/server";
+
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 // ─── Static data ────────────────────────────────────────────────────────────
 
@@ -138,7 +142,25 @@ const LATEST_NEWS = [
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
-export default function HomePage() {
+const STATUS_COLORS: Record<string, string> = {
+  "Pre-Launch":        "tag-blue",
+  "Under Construction":"tag-orange",
+  "Ready to Move":     "tag-green",
+  "Completed":         "tag-green",
+};
+
+export default async function HomePage() {
+  const sb = createAdminClient();
+  const { data: featuredRows } = await sb
+    .from("projects")
+    .select("id, project_name, project_type, lifecycle_status, total_units, price_range_min, price_range_max, banner_image_url, project_logo_url")
+    .eq("featured", true)
+    .order("project_name")
+    .limit(6);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const featuredProjects = (featuredRows ?? []) as any[];
+
   return (
     <>
       {/* ── Hero ── */}
@@ -279,68 +301,66 @@ export default function HomePage() {
       </SectionWrapper>
 
       {/* ── Featured Projects ── */}
-      <section className="bg-gray-50" id="projects">
-        <SectionWrapper>
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="section-heading">Featured Projects</h2>
-            <Link
-              href="/real-estate"
-              className="text-brand-600 hover:text-brand-700 text-sm font-semibold flex items-center gap-1"
-            >
-              View all <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-          <div className="grid md:grid-cols-3 gap-5">
-            {FEATURED_PROJECTS.map((p, i) => (
-              <div key={p.name} className="card p-5">
-                {/* Placeholder image strip */}
-                <div className={`h-36 rounded-lg mb-4 flex items-center justify-center ${
-                  i === 0 ? "bg-gradient-to-br from-amber-100 to-amber-200" :
-                  i === 1 ? "bg-gradient-to-br from-emerald-100 to-emerald-200" :
-                            "bg-gradient-to-br from-brand-100 to-brand-200"
-                }`}>
-                  <Building2 className={`w-10 h-10 ${
-                    i === 0 ? "text-amber-500" :
-                    i === 1 ? "text-emerald-600" :
-                              "text-brand-400"
-                  }`} />
-                </div>
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h3 className="font-bold text-gray-900 text-sm">
-                      {p.name}
-                    </h3>
-                    <p className="text-xs text-gray-400">{p.type}</p>
-                  </div>
-                  <span className={p.statusColor}>{p.status}</span>
-                </div>
-                <div className="space-y-1 text-xs text-gray-500 mb-3">
-                  <div className="flex justify-between">
-                    <span>{p.units}</span>
-                    <span className="font-semibold text-gray-700">
-                      {p.price}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Completion</span>
-                    <span>{p.completion}</span>
-                  </div>
-                </div>
-                {/* Progress bar */}
-                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-brand-500 rounded-full transition-all"
-                    style={{ width: `${p.progress}%` }}
-                  />
-                </div>
-                <p className="text-xs text-gray-400 mt-1">
-                  {p.progress}% construction complete
-                </p>
-              </div>
-            ))}
-          </div>
-        </SectionWrapper>
-      </section>
+      {featuredProjects.length > 0 && (
+        <section className="bg-gray-50" id="projects">
+          <SectionWrapper>
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="section-heading">Featured Projects</h2>
+              <Link
+                href="/real-estate"
+                className="text-brand-600 hover:text-brand-700 text-sm font-semibold flex items-center gap-1"
+              >
+                View all <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+            <div className="grid md:grid-cols-3 gap-5">
+              {featuredProjects.map((p) => {
+                const status = p.lifecycle_status ?? "Under Construction";
+                const statusColor = STATUS_COLORS[status] ?? "tag-blue";
+                const price = p.price_range_min && p.price_range_max
+                  ? `₹${(p.price_range_min / 100).toFixed(0)}L – ₹${(p.price_range_max / 100).toFixed(0)}L`
+                  : p.price_range_min
+                  ? `From ₹${(p.price_range_min / 100).toFixed(0)}L`
+                  : null;
+                return (
+                  <Link key={p.id} href={`/real-estate/${p.id}`} className="card p-5 group hover:shadow-md transition-shadow">
+                    {p.banner_image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.banner_image_url} alt={p.project_name}
+                        className="h-36 w-full object-cover rounded-lg mb-4" />
+                    ) : (
+                      <div className="h-36 rounded-lg mb-4 bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center">
+                        {p.project_logo_url
+                          // eslint-disable-next-line @next/next/no-img-element
+                          ? <img src={p.project_logo_url} alt={p.project_name} className="h-16 w-16 object-contain" />
+                          : <Building2 className="w-10 h-10 text-brand-400" />
+                        }
+                      </div>
+                    )}
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="min-w-0 mr-2">
+                        <h3 className="font-bold text-gray-900 text-sm group-hover:text-brand-600 transition-colors leading-snug">
+                          {p.project_name}
+                        </h3>
+                        <p className="text-xs text-gray-400 mt-0.5">{p.project_type ?? "Project"}</p>
+                      </div>
+                      <span className={`${statusColor} shrink-0 text-xs`}>{status}</span>
+                    </div>
+                    <div className="space-y-1 text-xs text-gray-500">
+                      {p.total_units && (
+                        <div className="flex justify-between">
+                          <span>{p.total_units.toLocaleString("en-IN")} units</span>
+                          {price && <span className="font-semibold text-gray-700">{price}</span>}
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </SectionWrapper>
+        </section>
+      )}
 
       {/* ── What's on NeopolisNews ── */}
       <section className="bg-gray-900 text-white">
