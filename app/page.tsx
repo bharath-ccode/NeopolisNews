@@ -342,34 +342,6 @@ export default function HomePage() {
         </SectionWrapper>
       </section>
 
-      {/* ── Latest News ── */}
-      <SectionWrapper id="news-preview">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="section-heading">Latest from Neopolis</h2>
-          <Link
-            href="/news"
-            className="text-brand-600 hover:text-brand-700 text-sm font-semibold flex items-center gap-1"
-          >
-            All news <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-        <div className="grid md:grid-cols-3 gap-5">
-          {LATEST_NEWS.map((n) => (
-            <Link key={n.title} href="/news" className="card p-5 group">
-              <span className={`${n.tagColor} mb-3`}>{n.tag}</span>
-              <h3 className="font-semibold text-gray-900 text-sm mt-2 mb-3 leading-snug group-hover:text-brand-600 transition-colors">
-                {n.title}
-              </h3>
-              <div className="flex items-center gap-2 text-xs text-gray-400">
-                <span>{n.date}</span>
-                <span>·</span>
-                <span>{n.readTime} read</span>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </SectionWrapper>
-
       {/* ── What's on NeopolisNews ── */}
       <section className="bg-gray-900 text-white">
         <SectionWrapper>
