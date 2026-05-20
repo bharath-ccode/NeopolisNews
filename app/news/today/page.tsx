@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Globe, Flag, MapPin, Building2, ChevronDown, ChevronUp, ArrowLeft, Sparkles, Clock, ExternalLink } from "lucide-react";
+import { Globe, Flag, MapPin, Building2, ArrowLeft, Sparkles, Clock } from "lucide-react";
 import { DIGEST_LEVELS, LEVEL_LABELS, type DigestLevel } from "@/lib/digestSources";
 
 interface DigestArticle {
@@ -45,7 +45,6 @@ function formatDate(iso: string): string {
 export default function TodaysNewsPage() {
   const [articles, setArticles] = useState<DigestArticle[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const today = getTodayIST();
 
   useEffect(() => {
@@ -57,8 +56,6 @@ export default function TodaysNewsPage() {
       })
       .finally(() => setLoading(false));
   }, [today]);
-
-  const toggle = (id: string) => setExpanded((p) => ({ ...p, [id]: !p[id] }));
 
   const publishedLevels = new Set(articles.map((a) => a.digest_level));
 
@@ -101,54 +98,29 @@ export default function TodaysNewsPage() {
             {DIGEST_LEVELS.map((level) => {
               if (!publishedLevels.has(level)) return null;
               const article = articles.find((a) => a.digest_level === level)!;
-          const Icon = LEVEL_ICONS[level];
-          const colors = LEVEL_COLORS[level];
-          const isOpen = expanded[article.id];
+              const Icon = LEVEL_ICONS[level];
+              const colors = LEVEL_COLORS[level];
 
-          return (
-            <div key={level} className={`card border-l-4 ${colors.border} overflow-hidden`}>
-              <div className="p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${colors.badge}`}>
-                    <Icon className="w-3.5 h-3.5" />
-                    {LEVEL_LABELS[level]}
-                  </span>
-                  <span className="flex items-center gap-1 text-xs text-gray-400 ml-auto">
-                    <Clock className="w-3 h-3" /> {article.read_time}
-                  </span>
-                </div>
-                <h2 className="font-bold text-gray-900 text-lg leading-snug">{article.title}</h2>
-                <p className="text-gray-500 text-sm mt-2 leading-relaxed">{article.excerpt}</p>
-
-                <div className="flex items-center gap-3 mt-4">
-                  <button
-                    onClick={() => toggle(article.id)}
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-800 transition-colors"
-                  >
-                    {isOpen ? <><ChevronUp className="w-4 h-4" /> Collapse</> : <><ChevronDown className="w-4 h-4" /> Read article</>}
-                  </button>
-                  <Link
-                    href={`/news/${article.id}`}
-                    className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors ml-auto"
-                  >
-                    Full page <ExternalLink className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </div>
-
-              {isOpen && (
-                <div
-                  className="px-5 pb-6 text-gray-700 text-sm leading-relaxed border-t border-gray-100 pt-4
-                    [&_h2]:text-base [&_h2]:font-bold [&_h2]:text-gray-900 [&_h2]:mt-5 [&_h2]:mb-2
-                    [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-gray-900 [&_h3]:mt-4 [&_h3]:mb-1
-                    [&_p]:mb-3 [&_p]:leading-relaxed
-                    [&_ul]:pl-5 [&_ul]:space-y-1.5 [&_ul]:mb-3 [&_li]:list-disc
-                    [&_ol]:pl-5 [&_ol]:space-y-1.5 [&_ol]:mb-3
-                    [&_strong]:font-semibold [&_strong]:text-gray-900"
-                  dangerouslySetInnerHTML={{ __html: article.content }}
-                />
-              )}
-            </div>
+              return (
+                <Link
+                  key={level}
+                  href={`/news/${article.id}`}
+                  className={`card border-l-4 ${colors.border} p-5 block hover:shadow-md transition-shadow group`}
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${colors.badge}`}>
+                      <Icon className="w-3.5 h-3.5" />
+                      {LEVEL_LABELS[level]}
+                    </span>
+                    <span className="flex items-center gap-1 text-xs text-gray-400 ml-auto">
+                      <Clock className="w-3 h-3" /> {article.read_time}
+                    </span>
+                  </div>
+                  <h2 className="font-bold text-gray-900 text-base leading-snug group-hover:text-brand-600 transition-colors">
+                    {article.title}
+                  </h2>
+                  <p className="text-gray-500 text-sm mt-2 leading-relaxed line-clamp-3">{article.excerpt}</p>
+                </Link>
               );
             })}
           </div>
