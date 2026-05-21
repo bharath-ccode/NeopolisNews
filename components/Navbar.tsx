@@ -29,6 +29,32 @@ import {
   Landmark,
   Bell,
   MessageSquare,
+  Zap,
+  TrendingUp,
+  Users,
+  Layers,
+  BarChart3,
+  HardHat,
+  Stethoscope,
+  Ambulance,
+  Microscope,
+  Pill,
+  School,
+  Baby,
+  BookOpen,
+  Film,
+  Truck,
+  PartyPopper,
+  UtensilsCrossed,
+  Bike,
+  Car,
+  Sofa,
+  Tv,
+  PlusCircle,
+  Ticket,
+  Globe,
+  Flag,
+  MapPin,
 } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "@/context/AuthContext";
@@ -42,10 +68,10 @@ const NAV_ITEMS = [
     href: "/news",
     icon: Newspaper,
     sub: [
-      { label: "Today's News",         href: "/news/today"          },
-      { label: "Business Launches",    href: "/news#launches"       },
-      { label: "Infrastructure",       href: "/news#infrastructure" },
-      { label: "Community",            href: "/news#community"      },
+      { label: "Today's News",      href: "/news/today",          icon: Globe       },
+      { label: "Business Launches", href: "/news#launches",       icon: Zap         },
+      { label: "Infrastructure",    href: "/news#infrastructure", icon: TrendingUp  },
+      { label: "Community",         href: "/news#community",      icon: Users       },
     ],
   },
   {
@@ -53,9 +79,9 @@ const NAV_ITEMS = [
     href: "/real-estate",
     icon: Building2,
     sub: [
-      { label: "Project Pages",        href: "/real-estate#projects"     },
-      { label: "Price Trends",         href: "/real-estate#prices"       },
-      { label: "Construction Updates", href: "/real-estate/construction-updates" },
+      { label: "Project Pages",        href: "/real-estate#projects",              icon: Layers   },
+      { label: "Price Trends",         href: "/real-estate#prices",                icon: BarChart3 },
+      { label: "Construction Updates", href: "/real-estate/construction-updates",  icon: HardHat  },
       {
         label: "Resale & Rentals",
         href: "/rentals",
@@ -74,23 +100,23 @@ const NAV_ITEMS = [
     href: "/health",
     icon: HeartPulse,
     sub: [
-      { label: "Hospitals",          href: "/health?type=hospitals"   },
-      { label: "Ambulance Services", href: "/health?type=ambulance"   },
-      { label: "Clinics",            href: "/health?type=clinics"     },
-      { label: "Diagnostics",        href: "/health?type=diagnostics" },
-      { label: "Pharmacies",         href: "/health?type=pharmacies"  },
+      { label: "Hospitals",          href: "/health?type=hospitals",   icon: Stethoscope },
+      { label: "Ambulance Services", href: "/health?type=ambulance",   icon: Ambulance   },
+      { label: "Clinics",            href: "/health?type=clinics",     icon: PlusCircle  },
+      { label: "Diagnostics",        href: "/health?type=diagnostics", icon: Microscope  },
+      { label: "Pharmacies",         href: "/health?type=pharmacies",  icon: Pill        },
       {
         label: "Wellness",
         href: "/health/wellness",
         icon: Sparkles,
         children: [
-          { label: "Massage Spa",             href: "/health/wellness?type=spa"     },
-          { label: "Gym",                     href: "/health/wellness?type=gym"     },
-          { label: "Yoga Studio",             href: "/health/wellness?type=studio"  },
-          { label: "Dance Studio",            href: "/health/wellness?type=studio"  },
-          { label: "Personal Trainers",       href: "/health/wellness?type=trainer" },
-          { label: "Meditation & Mindfulness",href: "/health/wellness"              },
-          { label: "Nutrition & Diet",        href: "/health/wellness"              },
+          { label: "Massage Spa",              href: "/health/wellness?type=spa"     },
+          { label: "Gym",                      href: "/health/wellness?type=gym"     },
+          { label: "Yoga Studio",              href: "/health/wellness?type=studio"  },
+          { label: "Dance Studio",             href: "/health/wellness?type=studio"  },
+          { label: "Personal Trainers",        href: "/health/wellness?type=trainer" },
+          { label: "Meditation & Mindfulness", href: "/health/wellness"              },
+          { label: "Nutrition & Diet",         href: "/health/wellness"              },
         ],
       },
     ],
@@ -100,9 +126,9 @@ const NAV_ITEMS = [
     href: "/education",
     icon: GraduationCap,
     sub: [
-      { label: "Schools",           href: "/education?type=schools"  },
-      { label: "Day Care",          href: "/education?type=daycare"  },
-      { label: "Coaching & Tuition",href: "/education?type=coaching" },
+      { label: "Schools",            href: "/education?type=schools",  icon: School   },
+      { label: "Day Care",           href: "/education?type=daycare",  icon: Baby     },
+      { label: "Coaching & Tuition", href: "/education?type=coaching", icon: BookOpen },
     ],
   },
   {
@@ -120,7 +146,7 @@ const NAV_ITEMS = [
           { label: "Outdoor Spaces",     href: "/events/spaces?sub=Outdoor+Space"     },
         ],
       },
-      { label: "Upcoming Events", href: "/events" },
+      { label: "Upcoming Events", href: "/events", icon: Ticket },
     ],
   },
   {
@@ -128,7 +154,7 @@ const NAV_ITEMS = [
     href: "/entertainment/cinemas",
     icon: Clapperboard,
     sub: [
-      { label: "Cinemas", href: "/entertainment/cinemas" },
+      { label: "Cinemas", href: "/entertainment/cinemas", icon: Film },
     ],
   },
   {
@@ -136,11 +162,11 @@ const NAV_ITEMS = [
     href: "/services",
     icon: Wrench,
     sub: [
-      { label: "Moving",   href: "/services/local?type=moving"   },
-      { label: "Party",    href: "/services/local?type=party"    },
-      { label: "Home",     href: "/services/local?type=home"     },
-      { label: "Delivery", href: "/services/local?type=delivery" },
-      { label: "Driving",  href: "/services/local?type=driving"  },
+      { label: "Moving",   href: "/services/local?type=moving",   icon: Truck         },
+      { label: "Party",    href: "/services/local?type=party",    icon: PartyPopper   },
+      { label: "Home",     href: "/services/local?type=home",     icon: Home          },
+      { label: "Delivery", href: "/services/local?type=delivery", icon: UtensilsCrossed },
+      { label: "Driving",  href: "/services/local?type=driving",  icon: Bike          },
     ],
   },
   {
@@ -153,12 +179,12 @@ const NAV_ITEMS = [
     href: "/classifieds",
     icon: Tag,
     sub: [
-      { label: "All Ads",          href: "/classifieds"                              },
-      { label: "Cars & Vehicles",  href: "/classifieds?cat=cars"                     },
-      { label: "Bikes & Scooters", href: "/classifieds?cat=bikes"                    },
-      { label: "Furniture",        href: "/classifieds?cat=furniture"                },
-      { label: "Electronics",      href: "/classifieds?cat=electronics"              },
-      { label: "Post a Free Ad",   href: "/dashboard/individual/classifieds"         },
+      { label: "All Ads",          href: "/classifieds",                         icon: Tag       },
+      { label: "Cars & Vehicles",  href: "/classifieds?cat=cars",                icon: Car       },
+      { label: "Bikes & Scooters", href: "/classifieds?cat=bikes",               icon: Bike      },
+      { label: "Furniture",        href: "/classifieds?cat=furniture",           icon: Sofa      },
+      { label: "Electronics",      href: "/classifieds?cat=electronics",         icon: Tv        },
+      { label: "Post a Free Ad",   href: "/dashboard/individual/classifieds",   icon: PlusCircle },
     ],
   },
   // { label: "Advertise", href: "/advertise", icon: Megaphone, highlight: true },
@@ -398,8 +424,9 @@ export default function Navbar() {
                           <Link
                             key={s.href}
                             href={s.href}
-                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700"
+                            className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700"
                           >
+                            {"icon" in s && s.icon && <s.icon className="w-3.5 h-3.5 text-gray-400 shrink-0" />}
                             {s.label}
                           </Link>
                         )
