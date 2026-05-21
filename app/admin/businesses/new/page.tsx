@@ -126,8 +126,14 @@ export default function AdminNewBusinessPage() {
   const [ownerPhone, setOwnerPhone] = useState("");
   const [email, setEmail] = useState("");
 
+  // Step 2 — activation options
+  const [activateNow, setActivateNow] = useState(false);
+  const [verifyNow, setVerifyNow]     = useState(false);
+
   // Done
   const [created, setCreated] = useState<CreatedBiz | null>(null);
+  const [createdStatus, setCreatedStatus] = useState<"invited" | "active">("invited");
+  const [createdVerified, setCreatedVerified] = useState(false);
   const [copied, setCopied] = useState(false);
   const [creating, setCreating] = useState(false);
 
@@ -204,11 +210,15 @@ export default function AdminNewBusinessPage() {
           website: website.trim() || undefined,
           ownerEmail: email.trim() || undefined,
           ownerPhone: ownerPhone ? `+91${ownerPhone}` : undefined,
+          activateNow,
+          verifyNow,
         }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? "Failed to create business."); return; }
       setCreated({ id: data.id, name: data.name, ownerPhone: ownerPhone ? `+91${ownerPhone}` : undefined, email: email.trim() || undefined });
+      setCreatedStatus(data.status ?? (activateNow ? "active" : "invited"));
+      setCreatedVerified(data.verified ?? verifyNow);
       setStep(3);
     } catch {
       setError("Network error. Please try again.");
@@ -232,7 +242,9 @@ export default function AdminNewBusinessPage() {
   function reset() {
     setStep(1); setError("");
     setName(""); setIndustry(""); setSelectedTypes([]); setSelectedSubtypes([]);
-    setAddress(""); setWebsite(""); setOwnerPhone(""); setEmail(""); setCreated(null);
+    setAddress(""); setWebsite(""); setOwnerPhone(""); setEmail("");
+    setActivateNow(false); setVerifyNow(false);
+    setCreated(null); setCreatedStatus("invited"); setCreatedVerified(false);
   }
 
   // ── Layout ────────────────────────────────────────────────────────────────
@@ -487,6 +499,35 @@ export default function AdminNewBusinessPage() {
               </div>
             </div>
 
+            {/* Activation options */}
+            <div className="mt-5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-4 space-y-3">
+              <p className="text-xs font-bold text-amber-800 uppercase tracking-wide">Publish Options</p>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={activateNow}
+                  onChange={(e) => setActivateNow(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 shrink-0"
+                />
+                <div>
+                  <span className="text-sm font-semibold text-gray-900">Activate immediately</span>
+                  <p className="text-xs text-gray-500 mt-0.5">Set status to <strong>Active</strong> — business appears in directory for users right away.</p>
+                </div>
+              </label>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={verifyNow}
+                  onChange={(e) => setVerifyNow(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 shrink-0"
+                />
+                <div>
+                  <span className="text-sm font-semibold text-gray-900">Mark as Verified</span>
+                  <p className="text-xs text-gray-500 mt-0.5">Shows the <strong>Verified</strong> badge — use when you have confirmed the business details directly.</p>
+                </div>
+              </label>
+            </div>
+
             {/* Summary */}
             <div className="mt-5 bg-gray-50 rounded-xl px-4 py-3 text-xs space-y-1">
               <p className="font-bold text-gray-800 text-sm">{name}</p>
@@ -520,12 +561,24 @@ export default function AdminNewBusinessPage() {
             <h1 className="text-xl font-extrabold text-gray-900 mb-1">
               Business Created!
             </h1>
-            <p className="text-sm text-gray-500 mb-6">
-              Share the invite link with <strong>{created.name}</strong>.
-              {created.ownerPhone
+            <p className="text-sm text-gray-500 mb-2">
+              {createdStatus === "active"
+                ? <><strong>{created.name}</strong> is now <span className="text-green-600 font-semibold">live</span> in the directory.</>
+                : <>Share the invite link with <strong>{created.name}</strong>.</>}
+              {created.ownerPhone && createdStatus !== "active"
                 ? <> They can claim it using <strong>{created.ownerPhone}</strong> via OTP.</>
-                : <> Once you have their contact details, update the record and send them the invite link.</>}
+                : null}
             </p>
+            <div className="flex items-center justify-center gap-2 mb-5">
+              <span className={createdStatus === "active" ? "tag-green" : "tag-blue"}>
+                {createdStatus === "active" ? "Active" : "Invited"}
+              </span>
+              {createdVerified && (
+                <span className="tag-green flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3" /> Verified
+                </span>
+              )}
+            </div>
 
             {/* Invite link */}
             <div className="bg-brand-50 border border-brand-200 rounded-xl px-4 py-3 mb-5">
@@ -597,7 +650,16 @@ export default function AdminNewBusinessPage() {
               )}
               <div className="flex justify-between items-center">
                 <span className="text-gray-500">Status</span>
-                <span className="tag-blue">Invited</span>
+                <div className="flex items-center gap-1.5">
+                  <span className={createdStatus === "active" ? "tag-green" : "tag-blue"}>
+                    {createdStatus === "active" ? "Active" : "Invited"}
+                  </span>
+                  {createdVerified && (
+                    <span className="tag-green flex items-center gap-1 text-xs">
+                      <CheckCircle className="w-3 h-3" /> Verified
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-500">ID</span>
