@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
-  const { name, industry, types, subtypes, address, website, ownerEmail, ownerPhone } = body ?? {};
+  const { name, industry, types, subtypes, address, website, ownerEmail, ownerPhone, activateNow, verifyNow } = body ?? {};
 
   if (!name || !industry || !types?.length || !address) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
@@ -19,9 +19,9 @@ export async function POST(req: NextRequest) {
     types,
     subtypes: subtypes ?? [],
     address,
-    status: "invited",
+    status: activateNow ? "active" : "invited",
     created_at: new Date().toISOString(),
-    verified: false,
+    verified: verifyNow ? true : false,
     website: website || null,
     owner_email: ownerEmail || null,
     owner_phone: ownerPhone || null,
@@ -31,5 +31,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ id, name });
+  return NextResponse.json({ id, name, status: activateNow ? "active" : "invited", verified: verifyNow ? true : false });
 }
