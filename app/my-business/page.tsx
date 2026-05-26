@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { DayTiming } from "@/lib/businessStore";
+import PhoneNumbersEditor, { type PhoneEntry } from "@/components/PhoneNumbersEditor";
 import EventsTab from "./_tabs/EventsTab";
 import OffersTab from "./_tabs/OffersTab";
 import UpdatesTab from "./_tabs/UpdatesTab";
@@ -32,8 +33,7 @@ interface Business {
   logo: string | null;
   pictures: string[];
   social_links: SocialLinks;
-  contact_phone: string | null;
-  emergency_phone: string | null;
+  phone_numbers: PhoneEntry[];
   website: string | null;
   description: string | null;
   timings: DayTiming[];
@@ -95,8 +95,7 @@ function TimingsEditor({ timings, onChange }: { timings: DayTiming[]; onChange: 
 function loadFields(
   data: Business,
   setters: {
-    setContactPhone: (v: string) => void;
-    setEmergencyPhone: (v: string) => void;
+    setPhoneNumbers: (v: PhoneEntry[]) => void;
     setWebsite: (v: string) => void;
     setDescription: (v: string) => void;
     setTimings: (v: DayTiming[]) => void;
@@ -107,8 +106,7 @@ function loadFields(
     setPictures: (v: string[]) => void;
   }
 ) {
-  setters.setContactPhone(data.contact_phone?.replace(/^\+91/, "") ?? "");
-  setters.setEmergencyPhone(data.emergency_phone?.replace(/^\+91/, "") ?? "");
+  setters.setPhoneNumbers(data.phone_numbers ?? []);
   setters.setWebsite(data.website ?? "");
   setters.setDescription(data.description ?? "");
   setters.setTimings(data.timings?.length ? data.timings : []);
@@ -133,8 +131,7 @@ export default function MyBusinessPage() {
   const [activeTab, setActiveTab] = useState<Tab>("profile");
 
   // Editable fields
-  const [contactPhone, setContactPhone] = useState("");
-  const [emergencyPhone, setEmergencyPhone] = useState("");
+  const [phoneNumbers, setPhoneNumbers] = useState<PhoneEntry[]>([]);
   const [website, setWebsite] = useState("");
   const [description, setDescription] = useState("");
   const [timings, setTimings] = useState<DayTiming[]>([]);
@@ -149,7 +146,7 @@ export default function MyBusinessPage() {
   const logoRef = useRef<HTMLInputElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
 
-  const fieldSetters = { setContactPhone, setEmergencyPhone, setWebsite, setDescription, setTimings, setInstagram, setFacebook, setYoutube, setLogo, setPictures };
+  const fieldSetters = { setPhoneNumbers, setWebsite, setDescription, setTimings, setInstagram, setFacebook, setYoutube, setLogo, setPictures };
 
   function switchBusiness(b: Business) {
     setBiz(b);
@@ -198,8 +195,9 @@ export default function MyBusinessPage() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           businessId: biz.id,
-          contactPhone: contactPhone ? `+91${contactPhone}` : null,
-          emergencyPhone: emergencyPhone ? `+91${emergencyPhone}` : null,
+          phoneNumbers: phoneNumbers.filter(p => p.number.length >= 10).map(p => ({
+            ...p, number: p.number.startsWith("+91") ? p.number : `+91${p.number}`,
+          })),
           website: website.trim() || null,
           description: description.trim() || null,
           timings,
@@ -506,30 +504,12 @@ export default function MyBusinessPage() {
               </h2>
               <div className="space-y-4">
                 <div>
-                  <label className={LABEL}><Phone className="w-3.5 h-3.5 inline mr-1" />Customer Phone Number</label>
-                  <div className="flex">
-                    <span className="flex items-center px-3 border border-r-0 border-gray-200 rounded-l-lg bg-gray-50 text-sm text-gray-500">+91</span>
-                    <input
-                      type="tel"
-                      value={contactPhone}
-                      onChange={(e) => setContactPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                      placeholder="9900000000"
-                      className="flex-1 px-3 py-2.5 border border-gray-200 rounded-r-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className={LABEL}><Phone className="w-3.5 h-3.5 inline mr-1 text-red-500" />Emergency / Ambulance Number <span className="text-gray-400 font-normal">(optional)</span></label>
-                  <div className="flex">
-                    <span className="flex items-center px-3 border border-r-0 border-gray-200 rounded-l-lg bg-gray-50 text-sm text-gray-500">+91</span>
-                    <input
-                      type="tel"
-                      value={emergencyPhone}
-                      onChange={(e) => setEmergencyPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                      placeholder="Emergency contact number"
-                      className="flex-1 px-3 py-2.5 border border-gray-200 rounded-r-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
-                    />
-                  </div>
+                  <label className={LABEL}><Phone className="w-3.5 h-3.5 inline mr-1" />Phone Numbers</label>
+                  <PhoneNumbersEditor
+                    phones={phoneNumbers}
+                    onChange={setPhoneNumbers}
+                    industry={biz?.industry ?? ""}
+                  />
                 </div>
                 <div>
                   <label className={LABEL}><Globe className="w-3.5 h-3.5 inline mr-1" />Website URL <span className="font-normal text-gray-400">(optional)</span></label>

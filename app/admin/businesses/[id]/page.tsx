@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import type { SocialLinks } from "@/lib/businessStore";
 import { createClient } from "@/lib/supabase/client";
+import PhoneNumbersEditor, { type PhoneEntry } from "@/components/PhoneNumbersEditor";
 
 interface Business {
   id: string;
@@ -37,6 +38,7 @@ interface Business {
   logo: string | null;
   pictures: string[];
   social_links: SocialLinks;
+  phone_numbers: PhoneEntry[];
   contact_phone: string | null;
   description: string | null;
   timings: unknown[];
@@ -74,6 +76,8 @@ export default function AdminBusinessEditPage() {
   const [copied, setCopied] = useState(false);
   const [social, setSocial] = useState<SocialLinks>({});
   const [savingSocial, setSavingSocial] = useState(false);
+  const [phoneNumbers, setPhoneNumbers] = useState<PhoneEntry[]>([]);
+  const [savingPhones, setSavingPhones] = useState(false);
   const [verificationRequest, setVerificationRequest] = useState<VerificationRequest | null>(null);
   const [approving, setApproving] = useState(false);
   const [approveMsg, setApproveMsg] = useState("");
@@ -97,6 +101,7 @@ export default function AdminBusinessEditPage() {
         if (!data) { setNotFound(true); return; }
         setBusiness(data as Business);
         setSocial((data as Business).social_links ?? {});
+        setPhoneNumbers((data as Business).phone_numbers ?? []);
       });
 
     supabase
@@ -183,6 +188,12 @@ export default function AdminBusinessEditPage() {
     setSavingSocial(true);
     await persist({ social_links: social });
     setSavingSocial(false);
+  }
+
+  async function savePhoneNumbers() {
+    setSavingPhones(true);
+    await persist({ phone_numbers: phoneNumbers.filter(p => p.number.length >= 10) });
+    setSavingPhones(false);
   }
 
   function copyClaimLink() {
@@ -420,6 +431,22 @@ export default function AdminBusinessEditPage() {
           )}
         </div>
         <input ref={picRef} type="file" accept="image/*" className="hidden" onChange={handlePictureAdd} />
+      </div>
+
+      {/* Phone numbers */}
+      <div className="card p-5 mb-4">
+        <p className="font-semibold text-gray-900 text-sm mb-4 flex items-center gap-2">
+          <Phone className="w-4 h-4 text-brand-600" /> Phone Numbers
+        </p>
+        <PhoneNumbersEditor
+          phones={phoneNumbers}
+          onChange={setPhoneNumbers}
+          industry={business.industry}
+        />
+        <button onClick={savePhoneNumbers} disabled={savingPhones} className="mt-4 flex items-center gap-2 text-sm btn-primary py-2">
+          <Save className="w-3.5 h-3.5" />
+          {savingPhones ? "Saving…" : "Save Phone Numbers"}
+        </button>
       </div>
 
       {/* Social media links */}

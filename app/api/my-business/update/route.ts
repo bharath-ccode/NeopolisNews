@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => null);
-  const { businessId, contactPhone, emergencyPhone, website, description, timings, socialLinks } = body ?? {};
+  const { businessId, phoneNumbers, website, description, timings, socialLinks } = body ?? {};
 
   if (!businessId) {
     return NextResponse.json({ error: "businessId is required." }, { status: 400 });
@@ -39,12 +39,11 @@ export async function POST(req: NextRequest) {
   const { error: updateError } = await supabase
     .from("businesses")
     .update({
-      contact_phone: contactPhone ?? null,
-      emergency_phone: emergencyPhone ?? null,
-      website: website ?? null,
-      description: description ?? null,
-      timings: timings ?? [],
-      social_links: socialLinks ?? {},
+      phone_numbers: phoneNumbers ?? [],
+      website:       website ?? null,
+      description:   description ?? null,
+      timings:       timings ?? [],
+      social_links:  socialLinks ?? {},
     })
     .eq("id", biz.id);
 

@@ -91,6 +91,7 @@ interface BusinessRow {
   logo: string | null;
   pictures: string[];
   social_links: SocialLinks;
+  phone_numbers: { number: string; purpose: string }[] | null;
   contact_phone: string | null;
   website: string | null;
   description: string | null;
@@ -356,14 +357,15 @@ export default async function BusinessProfilePage({
 
               {/* CTAs */}
               <div className="flex flex-wrap gap-3 justify-center md:justify-start">
-                {b.contact_phone && (
+                {(b.phone_numbers && b.phone_numbers.length > 0 ? b.phone_numbers : b.contact_phone ? [{ number: b.contact_phone, purpose: "Call" }] : []).map((p, i) => (
                   <a
-                    href={`tel:${b.contact_phone}`}
+                    key={i}
+                    href={`tel:${p.number}`}
                     className="inline-flex items-center gap-2 bg-white text-[#0762cd] hover:bg-blue-50 font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg text-sm"
                   >
-                    <Phone className="w-4 h-4" /> {b.contact_phone}
+                    <Phone className="w-4 h-4" /> {p.purpose}
                   </a>
-                )}
+                ))}
                 <ContactButton businessId={b.id} businessName={b.name} />
                 {social.instagram && (
                   <a
@@ -485,23 +487,41 @@ export default async function BusinessProfilePage({
               <ReviewSection businessId={b.id} />
 
               {/* Contact & Social */}
-              {(b.contact_phone || hasSocial) && (
+              {((b.phone_numbers && b.phone_numbers.length > 0) || b.contact_phone || hasSocial) && (
                 <div className="card p-6">
                   <h2 className="font-bold text-gray-900 text-base mb-4">
                     Contact &amp; Connect
                   </h2>
                   <div className="space-y-3">
-                    {b.contact_phone && (
-                      <a
-                        href={`tel:${b.contact_phone}`}
-                        className="flex items-center gap-3 text-gray-700 hover:text-brand-600 transition-colors group"
-                      >
-                        <div className="w-9 h-9 rounded-xl bg-brand-50 flex items-center justify-center group-hover:bg-brand-100 transition-colors">
-                          <Phone className="w-4 h-4 text-brand-600" />
-                        </div>
-                        <span className="text-sm font-medium">{b.contact_phone}</span>
-                      </a>
-                    )}
+                    {/* Multi-phone numbers */}
+                    {b.phone_numbers && b.phone_numbers.length > 0
+                      ? b.phone_numbers.map((p, i) => (
+                          <a
+                            key={i}
+                            href={`tel:${p.number}`}
+                            className="flex items-center gap-3 text-gray-700 hover:text-brand-600 transition-colors group"
+                          >
+                            <div className="w-9 h-9 rounded-xl bg-brand-50 flex items-center justify-center group-hover:bg-brand-100 transition-colors shrink-0">
+                              <Phone className="w-4 h-4 text-brand-600" />
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-400 font-medium">{p.purpose}</p>
+                              <p className="text-sm font-semibold text-gray-800">{p.number}</p>
+                            </div>
+                          </a>
+                        ))
+                      : b.contact_phone && (
+                          <a
+                            href={`tel:${b.contact_phone}`}
+                            className="flex items-center gap-3 text-gray-700 hover:text-brand-600 transition-colors group"
+                          >
+                            <div className="w-9 h-9 rounded-xl bg-brand-50 flex items-center justify-center group-hover:bg-brand-100 transition-colors">
+                              <Phone className="w-4 h-4 text-brand-600" />
+                            </div>
+                            <span className="text-sm font-medium">{b.contact_phone}</span>
+                          </a>
+                        )
+                    }
                     {b.website && (
                       <a
                         href={b.website}
