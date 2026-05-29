@@ -77,6 +77,7 @@ export default function AdminBusinessEditPage() {
   const [social, setSocial] = useState<SocialLinks>({});
   const [savingSocial, setSavingSocial] = useState(false);
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneEntry[]>([]);
+  const [contactPhone, setContactPhone] = useState("");
   const [savingPhones, setSavingPhones] = useState(false);
   const [verificationRequest, setVerificationRequest] = useState<VerificationRequest | null>(null);
   const [approving, setApproving] = useState(false);
@@ -102,6 +103,7 @@ export default function AdminBusinessEditPage() {
         setBusiness(data as Business);
         setSocial((data as Business).social_links ?? {});
         setPhoneNumbers((data as Business).phone_numbers ?? []);
+        setContactPhone((data as Business).contact_phone ?? "");
       });
 
     supabase
@@ -192,7 +194,10 @@ export default function AdminBusinessEditPage() {
 
   async function savePhoneNumbers() {
     setSavingPhones(true);
-    await persist({ phone_numbers: phoneNumbers.filter(p => p.number.length >= 10) });
+    await persist({
+      phone_numbers: phoneNumbers.filter(p => p.number.length >= 10),
+      contact_phone: contactPhone.trim() || null,
+    });
     setSavingPhones(false);
   }
 
@@ -438,6 +443,18 @@ export default function AdminBusinessEditPage() {
         <p className="font-semibold text-gray-900 text-sm mb-4 flex items-center gap-2">
           <Phone className="w-4 h-4 text-brand-600" /> Phone Numbers
         </p>
+        <div className="mb-4">
+          <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+            Main / Appointments Phone <span className="text-gray-400 font-normal">(shown as Appointments on directory)</span>
+          </label>
+          <input
+            type="tel"
+            value={contactPhone}
+            onChange={(e) => setContactPhone(e.target.value)}
+            placeholder="+91 98765 43210"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+          />
+        </div>
         <PhoneNumbersEditor
           phones={phoneNumbers}
           onChange={setPhoneNumbers}
@@ -495,7 +512,7 @@ export default function AdminBusinessEditPage() {
           )}
           {business.contact_phone && (
             <div className="flex gap-2">
-              <span className="text-gray-400 w-28 shrink-0">Customer Phone</span>
+              <span className="text-gray-400 w-28 shrink-0">Appointments</span>
               <span className="text-gray-700">{business.contact_phone}</span>
             </div>
           )}
