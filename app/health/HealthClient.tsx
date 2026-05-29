@@ -71,11 +71,16 @@ function is24x7(timings: DayTiming[] | null): boolean {
 function BusinessCard({ biz, typeId }: { biz: Business; typeId: HealthType }) {
   const cfg = TYPE_MAP[typeId];
   const Icon = cfg.icon;
-  const phones: PhoneEntry[] = biz.phone_numbers?.length
-    ? biz.phone_numbers
-    : biz.contact_phone
-    ? [{ number: biz.contact_phone, purpose: "Main" }]
-    : [];
+  const hasAppointments = biz.phone_numbers?.some((p) =>
+    p.purpose.toLowerCase().includes("appointment")
+  );
+  const phones: PhoneEntry[] = [
+    // If no dedicated appointments number, prepend contact_phone as Appointments
+    ...(biz.contact_phone && !hasAppointments
+      ? [{ number: biz.contact_phone, purpose: "Appointments" }]
+      : []),
+    ...(biz.phone_numbers ?? []),
+  ];
 
   const emergencyPhones = phones.filter((p) =>
     EMERGENCY_PURPOSES.some((kw) => p.purpose.toLowerCase().includes(kw))
