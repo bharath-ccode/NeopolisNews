@@ -157,17 +157,24 @@ function BusinessCard({ biz, typeId }: { biz: Business; typeId: HealthType }) {
             <PhoneCall className="w-3.5 h-3.5" /> {p.purpose}: {p.number}
           </a>
         ))}
-        {mainPhones.slice(0, 2).map((p) => (
-          <a
-            key={p.purpose}
-            href={`tel:${p.number.replace(/\D/g, "")}`}
-            className="flex items-center justify-center gap-2 w-full border border-gray-200 hover:border-gray-400 text-gray-600 hover:text-gray-900 text-xs font-semibold py-2 rounded-lg transition-colors"
-          >
-            <Phone className="w-3.5 h-3.5" />
-            {p.purpose !== "Main" && <span className="text-gray-400">{p.purpose}:</span>}
-            {p.number}
-          </a>
-        ))}
+        {mainPhones.slice(0, 2).map((p) => {
+          const isAppt = p.purpose.toLowerCase().includes("appointment");
+          return (
+            <a
+              key={p.purpose}
+              href={`tel:${p.number.replace(/\D/g, "")}`}
+              className={`flex items-center justify-center gap-2 w-full text-xs font-bold py-2.5 rounded-xl transition-colors ${
+                isAppt
+                  ? "bg-green-600 hover:bg-green-700 text-white"
+                  : "border border-gray-200 hover:border-gray-400 text-gray-600 hover:text-gray-900 font-semibold py-2 rounded-lg"
+              }`}
+            >
+              <Phone className="w-3.5 h-3.5" />
+              {p.purpose !== "Main" && <span className={isAppt ? "text-green-100" : "text-gray-400"}>{p.purpose}:</span>}
+              {p.number}
+            </a>
+          );
+        })}
         {phones.length === 0 && (
           <span className="flex items-center justify-center gap-2 w-full border border-gray-100 text-gray-400 text-xs py-2 rounded-lg">
             <Phone className="w-3.5 h-3.5" /> Contact via profile
