@@ -257,6 +257,15 @@ export default async function ComparePage({
                 a={projA.coreNeopolis ? <span className="flex items-center gap-1 text-green-600"><CheckCircle className="w-3.5 h-3.5" /> Yes</span> : <span className="flex items-center gap-1 text-gray-400"><X className="w-3.5 h-3.5" /> No</span>}
                 b={projB.coreNeopolis ? <span className="flex items-center gap-1 text-green-600"><CheckCircle className="w-3.5 h-3.5" /> Yes</span> : <span className="flex items-center gap-1 text-gray-400"><X className="w-3.5 h-3.5" /> No</span>}
               />
+              <Row
+                label="Status"
+                a={projA.lifecycleStatus
+                  ? <span className="inline-block text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">{LIFECYCLE_STAGES.find(s => s.id === projA.lifecycleStatus)?.label ?? projA.lifecycleStatus}</span>
+                  : "—"}
+                b={projB.lifecycleStatus
+                  ? <span className="inline-block text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">{LIFECYCLE_STAGES.find(s => s.id === projB.lifecycleStatus)?.label ?? projB.lifecycleStatus}</span>
+                  : "—"}
+              />
 
               {/* ── Pricing ── */}
               <SectionHeader label="Pricing" />
