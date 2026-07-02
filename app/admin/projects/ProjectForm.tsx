@@ -70,6 +70,7 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
   const [projectType, setProjectType]   = useState<ProjectType | "">(initialData?.projectType ?? "");
   const [tier, setTier]                 = useState<ProjectTier | "">(initialData?.tier ?? "");
   const [lifecycleStatus, setLifecycleStatus] = useState<LifecycleStatus | "">(initialData?.lifecycleStatus ?? "");
+  const [expectedCompletionDate, setExpectedCompletionDate] = useState(initialData?.expectedCompletionDate ?? "");
   const [maxFloors, setMaxFloors]       = useState(initialData?.projectDetail?.maxFloors?.toString() ?? "");
   const [amenitiesSqft, setAmenitiesSqft] = useState(initialData?.projectDetail?.amenitiesSqft?.toString() ?? "");
   const [priceRangeMin, setPriceRangeMin] = useState(initialData?.priceRangeMin?.toString() ?? "");
@@ -226,8 +227,9 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
       brochureUrl:           brochureUrl || null,
       projectType:           projectType   || null,
       tier:                  tier          || null,
-      lifecycleStatus:       lifecycleStatus || null,
-      priceRangeMin:         priceRangeMin ? parseFloat(priceRangeMin) : null,
+      lifecycleStatus:         lifecycleStatus || null,
+      expectedCompletionDate:  expectedCompletionDate || null,
+      priceRangeMin:           priceRangeMin ? parseFloat(priceRangeMin) : null,
       priceRangeMax:         priceRangeMax ? parseFloat(priceRangeMax) : null,
       amenities,
       contact: {
@@ -395,14 +397,26 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
             </div>
           </div>
 
-          <div>
-            <label className="label">Construction Lifecycle Status</label>
-            <select className="input" value={lifecycleStatus} onChange={e => setLifecycleStatus(e.target.value as LifecycleStatus | "")}>
-              <option value="">— Not set —</option>
-              {LIFECYCLE_STAGES.map(s => (
-                <option key={s.id} value={s.id}>{s.label}</option>
-              ))}
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="label">Construction Lifecycle Status</label>
+              <select className="input" value={lifecycleStatus} onChange={e => setLifecycleStatus(e.target.value as LifecycleStatus | "")}>
+                <option value="">— Not set —</option>
+                {LIFECYCLE_STAGES.map(s => (
+                  <option key={s.id} value={s.id}>{s.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label">Expected Completion Date</label>
+              <input
+                className="input"
+                type="month"
+                value={expectedCompletionDate ?? ""}
+                onChange={e => setExpectedCompletionDate(e.target.value)}
+                placeholder="YYYY-MM"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
