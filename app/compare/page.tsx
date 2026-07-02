@@ -266,6 +266,21 @@ export default async function ComparePage({
                   ? <span className="inline-block text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">{LIFECYCLE_STAGES.find(s => s.id === projB.lifecycleStatus)?.label ?? projB.lifecycleStatus}</span>
                   : "—"}
               />
+              {(projA.lifecycleStatus !== "ready_to_move" || projB.lifecycleStatus !== "ready_to_move") && (
+                <Row
+                  label="Expected Completion"
+                  a={projA.lifecycleStatus === "ready_to_move"
+                    ? <span className="text-green-600 font-semibold">Ready to Move</span>
+                    : projA.expectedCompletionDate
+                    ? new Date(projA.expectedCompletionDate + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric" })
+                    : "—"}
+                  b={projB.lifecycleStatus === "ready_to_move"
+                    ? <span className="text-green-600 font-semibold">Ready to Move</span>
+                    : projB.expectedCompletionDate
+                    ? new Date(projB.expectedCompletionDate + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric" })
+                    : "—"}
+                />
+              )}
 
               {/* ── Pricing ── */}
               <SectionHeader label="Pricing" />

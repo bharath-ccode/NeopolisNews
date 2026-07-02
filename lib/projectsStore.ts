@@ -102,6 +102,7 @@ export interface Project {
   projectType: ProjectType | null;
   tier: ProjectTier | null;
   lifecycleStatus: LifecycleStatus | null;
+  expectedCompletionDate: string | null;
   priceRangeMin: number | null;
   priceRangeMax: number | null;
   amenities: string[];
@@ -126,6 +127,7 @@ export interface ProjectInput {
   projectType: ProjectType | null;
   tier: ProjectTier | null;
   lifecycleStatus: LifecycleStatus | null;
+  expectedCompletionDate: string | null;
   priceRangeMin: number | null;
   priceRangeMax: number | null;
   amenities: string[];
@@ -226,6 +228,7 @@ export function toProject(row: any): Project {
     projectType: row.project_type ?? null,
     tier: row.tier ?? null,
     lifecycleStatus: row.lifecycle_status ?? null,
+    expectedCompletionDate: row.expected_completion_date ?? null,
     priceRangeMin: row.price_range_min ?? null,
     priceRangeMax: row.price_range_max ?? null,
     amenities: row.amenities ?? [],
@@ -292,11 +295,12 @@ export async function createProject(input: ProjectInput): Promise<Project> {
       brochure_url:          input.brochureUrl,
       project_type:          input.projectType,
       tier:                  input.tier,
-      lifecycle_status:      input.lifecycleStatus,
-      price_range_min:       input.priceRangeMin,
-      price_range_max:       input.priceRangeMax,
-      amenities:             input.amenities,
-      created_by:            user?.id ?? null,
+      lifecycle_status:           input.lifecycleStatus,
+      expected_completion_date:   input.expectedCompletionDate || null,
+      price_range_min:            input.priceRangeMin,
+      price_range_max:            input.priceRangeMax,
+      amenities:                  input.amenities,
+      created_by:                 user?.id ?? null,
     })
     .select()
     .single();
@@ -324,10 +328,11 @@ export async function updateProject(id: string, input: ProjectInput): Promise<Pr
       brochure_url:          input.brochureUrl,
       project_type:          input.projectType,
       tier:                  input.tier,
-      lifecycle_status:      input.lifecycleStatus,
-      price_range_min:       input.priceRangeMin,
-      price_range_max:       input.priceRangeMax,
-      amenities:             input.amenities,
+      lifecycle_status:           input.lifecycleStatus,
+      expected_completion_date:   input.expectedCompletionDate || null,
+      price_range_min:            input.priceRangeMin,
+      price_range_max:            input.priceRangeMax,
+      amenities:                  input.amenities,
     })
     .eq("id", id);
   if (projErr) throw projErr;
