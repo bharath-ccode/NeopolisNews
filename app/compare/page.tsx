@@ -71,7 +71,7 @@ function priceLabel(min: number | null, max: number | null): string {
 function Row({
   label, a, b, highlight,
 }: {
-  label: string;
+  label: React.ReactNode;
   a: React.ReactNode;
   b: React.ReactNode;
   highlight?: "a" | "b" | "both" | "none";
