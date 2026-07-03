@@ -30,6 +30,7 @@ const INDIVIDUAL_NAV = [
   { href: "/dashboard/individual/saved", icon: Heart, label: "Saved" },
   { href: "/dashboard/individual/points", icon: Trophy, label: "Clubs & Points" },
   { href: "/dashboard/individual/sessions", icon: Video, label: "My Sessions" },
+  { href: "/dashboard/individual/messages", icon: MessageSquare, label: "Messages" },
   { href: "/dashboard/individual/enquiries", icon: MessageSquare, label: "Enquiries" },
   { href: "/dashboard/individual/profile", icon: User, label: "My Profile" },
   { href: "/register-business", icon: Building2, label: "Register Business" },

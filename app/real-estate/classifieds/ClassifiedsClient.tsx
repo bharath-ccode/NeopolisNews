@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import SaveButton from "@/components/SaveButton";
+import MessageSellerButton from "@/components/MessageSellerButton";
 import {
   Home,
   Phone,
@@ -480,6 +481,10 @@ export default function ClassifiedsClient({
                       {l.description}
                     </p>
                   )}
+
+                  <div className="mb-3">
+                    <MessageSellerButton classifiedId={l.id} />
+                  </div>
 
                   <div className="mt-auto">
                     <p className="text-xl font-extrabold text-brand-700 mb-0.5">
