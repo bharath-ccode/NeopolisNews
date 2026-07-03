@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Heart, Loader2, Building2, Home, Trash2, ExternalLink } from "lucide-react";
+import { Heart, Loader2, Building2, Home, Trash2, ExternalLink, BellRing } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 interface ProjectDetail {
@@ -30,6 +30,14 @@ interface SavedItem {
   created_at: string;
   detail: ProjectDetail | ClassifiedDetail | null;
 }
+interface SearchAlert {
+  id: string;
+  email: string;
+  sub_category: string | null;
+  listing_type: string | null;
+  bedrooms: string | null;
+  created_at: string;
+}
 
 const LIFECYCLE_LABELS: Record<string, string> = {
   pre_launch:          "Pre-Launch",
@@ -47,19 +55,32 @@ function formatCr(v: number | null) {
 export default function SavedPropertiesPage() {
   const { user, loading: authLoading } = useAuth();
   const [items, setItems]     = useState<SavedItem[]>([]);
+  const [alerts, setAlerts]   = useState<SearchAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const res = await fetch(`/api/saved-properties?user_id=${user.id}&expand=1`).catch(() => null);
-    if (res?.ok) {
-      const data = await res.json();
+    const [propsRes, alertsRes] = await Promise.all([
+      fetch(`/api/saved-properties?user_id=${user.id}&expand=1`).catch(() => null),
+      fetch(`/api/saved-searches?user_id=${user.id}`).catch(() => null),
+    ]);
+    if (propsRes?.ok) {
+      const data = await propsRes.json();
       if (Array.isArray(data)) setItems(data);
+    }
+    if (alertsRes?.ok) {
+      const data = await alertsRes.json();
+      if (Array.isArray(data)) setAlerts(data);
     }
     setLoading(false);
   }, [user]);
+
+  async function removeAlert(id: string) {
+    setAlerts((prev) => prev.filter((a) => a.id !== id));
+    await fetch(`/api/saved-searches?id=${id}&user_id=${user!.id}`, { method: "DELETE" }).catch(() => null);
+  }
 
   useEffect(() => { load(); }, [load]);
 
@@ -197,6 +218,41 @@ export default function SavedPropertiesPage() {
           )}
         </>
       )}
+
+      {/* Search alerts */}
+      <div className="space-y-3">
+        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+          <BellRing className="w-3.5 h-3.5 text-brand-500" /> Search Alerts
+        </h3>
+        {alerts.length === 0 ? (
+          <p className="text-sm text-gray-400 px-1">
+            No alerts set. Use &quot;Set Alert&quot; on the{" "}
+            <Link href="/real-estate/classifieds" className="text-brand-600 hover:underline">listings page</Link>{" "}
+            to get emailed when matching properties go live.
+          </p>
+        ) : (
+          alerts.map((a) => (
+            <div key={a.id} className="card p-4 flex items-center gap-3">
+              <BellRing className="w-4 h-4 text-brand-400 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-800 capitalize">
+                  {[a.bedrooms && `${a.bedrooms} BHK`, a.sub_category, a.listing_type && `for ${a.listing_type}`]
+                    .filter(Boolean)
+                    .join(" ") || "Any new listing"}
+                </p>
+                <p className="text-xs text-gray-400 truncate">{a.email}</p>
+              </div>
+              <button
+                onClick={() => removeAlert(a.id)}
+                className="shrink-0 text-gray-300 hover:text-red-500 transition-colors"
+                title="Stop alert"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }
