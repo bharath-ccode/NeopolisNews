@@ -5,6 +5,7 @@ import { ArrowLeft, Clock, Eye, Newspaper } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { toArticle, extractYouTubeId } from "@/lib/newsStore";
 import ViewTracker from "./ViewTracker";
+import CommentsSection from "./CommentsSection";
 import WhatsAppShare from "@/components/WhatsAppShare";
 
 export const dynamic = "force-dynamic";
@@ -225,6 +226,9 @@ export default async function ArticlePage({ params }: { params: { id: string } }
             <span className="font-medium text-gray-500">{article.source}</span>
           </p>
         )}
+
+        {/* Reactions + comments */}
+        <CommentsSection articleId={article.id} />
 
         {/* Related articles */}
         {relatedArticles.length > 0 && (

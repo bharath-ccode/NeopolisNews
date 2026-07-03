@@ -8,7 +8,7 @@ export async function GET(
   const admin = createAdminClient();
   const { data } = await admin
     .from("business_reviews")
-    .select("id, author_name, rating, comment, created_at")
+    .select("id, author_name, rating, comment, owner_response, owner_response_at, created_at")
     .eq("business_id", params.id)
     .order("created_at", { ascending: false });
   return NextResponse.json(data ?? []);
@@ -43,7 +43,7 @@ export async function POST(
       rating,
       comment: comment?.trim() || null,
     })
-    .select("id, author_name, rating, comment, created_at")
+    .select("id, author_name, rating, comment, owner_response, owner_response_at, created_at")
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

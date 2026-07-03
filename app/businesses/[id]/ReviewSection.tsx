@@ -10,6 +10,8 @@ interface Review {
   author_name: string;
   rating: number;
   comment: string | null;
+  owner_response: string | null;
+  owner_response_at: string | null;
   created_at: string;
 }
 
@@ -200,6 +202,21 @@ export default function ReviewSection({ businessId }: { businessId: string }) {
               </div>
               {r.comment && (
                 <p className="text-sm text-gray-600 leading-relaxed">{r.comment}</p>
+              )}
+              {r.owner_response && (
+                <div className="mt-2.5 ml-3 border-l-2 border-brand-200 pl-3">
+                  <p className="text-xs font-bold text-brand-700 mb-0.5">
+                    Response from the business
+                    {r.owner_response_at && (
+                      <span className="text-gray-400 font-normal ml-2">
+                        {new Date(r.owner_response_at).toLocaleDateString("en-IN", {
+                          day: "numeric", month: "short", year: "numeric",
+                        })}
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-sm text-gray-600 leading-relaxed">{r.owner_response}</p>
+                </div>
               )}
             </div>
           ))}
