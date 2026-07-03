@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/apiAuth";
 
 export const dynamic = "force-dynamic";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-/** GET ?user_id= — my active saved searches. */
+/** GET — the token user's active saved searches. */
 export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get("user_id");
-  if (!userId) return NextResponse.json({ error: "user_id required" }, { status: 400 });
+  const auth = await requireUser(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const userId = auth.user.id;
 
   const admin = createAdminClient();
   const { data, error } = await admin
@@ -22,17 +24,20 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(data ?? []);
 }
 
-/** POST { user_id, email, sub_category?, listing_type?, bedrooms? } */
+/** POST { email, sub_category?, listing_type?, bedrooms? } — token-verified. */
 export async function POST(req: NextRequest) {
+  const auth = await requireUser(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const user_id = auth.user.id;
+
   let body: unknown;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
 
-  const { user_id, email, sub_category, listing_type, bedrooms } = body as {
-    user_id?: string; email?: string;
+  const { email, sub_category, listing_type, bedrooms } = body as {
+    email?: string;
     sub_category?: string; listing_type?: string; bedrooms?: string;
   };
 
-  if (!user_id) return NextResponse.json({ error: "Sign in to save a search." }, { status: 401 });
   const cleanEmail = email?.trim().toLowerCase() ?? "";
   if (!EMAIL_RE.test(cleanEmail))
     return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
@@ -63,11 +68,13 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(data, { status: 201 });
 }
 
-/** DELETE ?id=&user_id= — deactivate an alert. */
+/** DELETE ?id= — deactivate the token user's alert. */
 export async function DELETE(req: NextRequest) {
+  const auth = await requireUser(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const userId = auth.user.id;
   const id = req.nextUrl.searchParams.get("id");
-  const userId = req.nextUrl.searchParams.get("user_id");
-  if (!id || !userId) return NextResponse.json({ error: "id and user_id required" }, { status: 400 });
+  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
   const admin = createAdminClient();
   const { error } = await admin

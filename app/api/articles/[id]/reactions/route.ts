@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { requireUser, optionalUser } from "@/lib/apiAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -7,12 +8,12 @@ const REACTIONS = ["like", "love", "insightful"] as const;
 type Reaction = (typeof REACTIONS)[number];
 
 /** GET → { counts: { like, love, insightful }, mine: "like" | null }
- *  Pass ?user_id= to get the caller's own reaction. */
+ *  "mine" is filled when a valid Authorization header is sent. */
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const userId = req.nextUrl.searchParams.get("user_id");
+  const userId = (await optionalUser(req))?.id ?? null;
   const admin = createAdminClient();
 
   const { data, error } = await admin
@@ -32,17 +33,20 @@ export async function GET(
   return NextResponse.json({ counts, mine });
 }
 
-/** POST { user_id, reaction } — toggles: same reaction removes it,
- *  a different one replaces it (one reaction per user per article). */
+/** POST { reaction } — toggles: same reaction removes it, a different one
+ *  replaces it (one per user per article). Identity from the token. */
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const auth = await requireUser(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const user_id = auth.user.id;
+
   let body: unknown;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
 
-  const { user_id, reaction } = body as { user_id?: string; reaction?: string };
-  if (!user_id) return NextResponse.json({ error: "Sign in to react." }, { status: 401 });
+  const { reaction } = body as { reaction?: string };
   if (!reaction || !REACTIONS.includes(reaction as Reaction))
     return NextResponse.json({ error: "Invalid reaction." }, { status: 400 });
 

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase/client";
+import { authHeaders } from "@/lib/authToken";
 import { CLUB_CATEGORIES } from "@/lib/clubs";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
@@ -129,8 +130,7 @@ export default function ClubPageClient() {
   const isCivic  = club?.category === "civic_green";
 
   const load = useCallback(async () => {
-    const qs = user ? `?user_id=${user.id}` : "";
-    const res = await fetch(`/api/clubs/${id}${qs}`).catch(() => null);
+    const res = await fetch(`/api/clubs/${id}`, { headers: await authHeaders() }).catch(() => null);
     if (!res?.ok) { setNotFound(true); setLoading(false); return; }
     const data = await res.json();
     setClub(data.club);
@@ -153,8 +153,8 @@ export default function ClubPageClient() {
     setError("");
     const res = await fetch(`/api/clubs/${id}/join`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: user.id, member_name: user.screen_name }),
+      headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+      body: JSON.stringify({ member_name: user.screen_name }),
     }).catch(() => null);
     if (!res?.ok) {
       const j = res ? await res.json().catch(() => ({})) : {};
@@ -224,9 +224,8 @@ export default function ClubPageClient() {
     setError("");
     const res = await fetch(`/api/clubs/${id}/events`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(await authHeaders()) },
       body: JSON.stringify({
-        user_id: user!.id,
         title: evTitle,
         description: evDesc || undefined,
         venue: evVenue || undefined,
@@ -256,9 +255,8 @@ export default function ClubPageClient() {
     setError("");
     const res = await fetch(`/api/clubs/${id}/impact`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(await authHeaders()) },
       body: JSON.stringify({
-        user_id: user!.id,
         title: imTitle,
         detail: imDetail || undefined,
         stat_label: imStatLabel || undefined,
@@ -281,8 +279,8 @@ export default function ClubPageClient() {
     setLeadBusy(true);
     await fetch(`/api/clubs/${id}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: user!.id, announcement: announcementDraft }),
+      headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+      body: JSON.stringify({ announcement: announcementDraft }),
     }).catch(() => null);
     setEditAnnouncement(false);
     setLeadBusy(false);
@@ -293,7 +291,9 @@ export default function ClubPageClient() {
   async function openAttendance(eventId: string) {
     setAttendanceFor(eventId);
     setRegistrants([]);
-    const res = await fetch(`/api/club-events/${eventId}/attendance?user_id=${user!.id}`).catch(() => null);
+    const res = await fetch(`/api/club-events/${eventId}/attendance`, {
+      headers: await authHeaders(),
+    }).catch(() => null);
     if (res?.ok) {
       const data: Registrant[] = await res.json();
       setRegistrants(data);
@@ -305,8 +305,8 @@ export default function ClubPageClient() {
     setSavingAttendance(true);
     const res = await fetch(`/api/club-events/${eventId}/attendance`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: user!.id, attendee_user_ids: Array.from(checked) }),
+      headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+      body: JSON.stringify({ attendee_user_ids: Array.from(checked) }),
     }).catch(() => null);
     if (!res?.ok) {
       const j = res ? await res.json().catch(() => ({})) : {};

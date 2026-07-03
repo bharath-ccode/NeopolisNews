@@ -2,24 +2,28 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { isClubLead } from "@/lib/clubs";
 import { DEFAULT_EVENT_POINTS } from "@/lib/points";
+import { requireUser } from "@/lib/apiAuth";
 
 export const dynamic = "force-dynamic";
 
-/** POST — lead creates a club event. */
+/** POST — lead (token-verified) creates a club event. */
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await requireUser(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const user_id = auth.user.id;
+
   let body: unknown;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
 
   const {
-    user_id, title, description, venue, event_date, start_time,
+    title, description, venue, event_date, start_time,
     fee_inr, member_fee_inr, max_participants, points_award,
   } = body as {
-    user_id?: string; title?: string; description?: string; venue?: string;
+    title?: string; description?: string; venue?: string;
     event_date?: string; start_time?: string; fee_inr?: number;
     member_fee_inr?: number; max_participants?: number; points_award?: number;
   };
 
-  if (!user_id)        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!title?.trim())  return NextResponse.json({ error: "Please add an event title." }, { status: 400 });
   if (!event_date)     return NextResponse.json({ error: "Please pick a date." }, { status: 400 });
 

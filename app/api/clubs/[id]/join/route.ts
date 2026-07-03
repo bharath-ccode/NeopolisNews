@@ -1,16 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { refreshMemberCount } from "@/lib/clubs";
+import { requireUser } from "@/lib/apiAuth";
 
 export const dynamic = "force-dynamic";
 
-/** POST { user_id, member_name } — toggle membership. Leads cannot leave. */
+/** POST { member_name } — toggle membership (token-verified). Leads cannot leave. */
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await requireUser(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const user_id = auth.user.id;
+
   let body: unknown;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
 
-  const { user_id, member_name } = body as { user_id?: string; member_name?: string };
-  if (!user_id) return NextResponse.json({ error: "Sign in to join." }, { status: 401 });
+  const { member_name } = body as { member_name?: string };
 
   const admin = createAdminClient();
 

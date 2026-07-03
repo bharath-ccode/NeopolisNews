@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Trophy, Loader2, Users, ChevronRight, Leaf, Sparkles } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase/client";
+import { authHeaders } from "@/lib/authToken";
 
 interface LedgerEntry {
   id: string;
@@ -31,7 +32,7 @@ export default function PointsPage() {
     if (!user) return;
     setLoading(true);
     const [pointsRes, clubsRes] = await Promise.all([
-      fetch(`/api/points?user_id=${user.id}`).then((r) => r.json()).catch(() => null),
+      fetch("/api/points", { headers: await authHeaders() }).then((r) => r.json()).catch(() => null),
       createClient()
         .from("club_members")
         .select("club_id, role, clubs(id, name, emoji, category, member_count)")

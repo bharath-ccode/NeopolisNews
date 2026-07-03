@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { BellRing, Loader2, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { authHeaders } from "@/lib/authToken";
 
 /** "Email me new listings like this" box — saves the current filter set as an alert. */
 export default function SaveSearchAlert({
@@ -41,9 +42,8 @@ export default function SaveSearchAlert({
     setError("");
     const res = await fetch("/api/saved-searches", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(await authHeaders()) },
       body: JSON.stringify({
-        user_id:      user.id,
         email:        email.trim(),
         sub_category: subCategory !== "all" ? subCategory : undefined,
         listing_type: listingType !== "all" ? listingType : undefined,

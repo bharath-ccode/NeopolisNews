@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Heart } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { authHeaders } from "@/lib/authToken";
 
 /**
  * Heart toggle to save/unsave a project or classified.
@@ -26,7 +27,8 @@ export default function SaveButton({
   useEffect(() => {
     if (!user) { setSaved(false); return; }
     let cancelled = false;
-    fetch(`/api/saved-properties?user_id=${user.id}`)
+    authHeaders()
+      .then((headers) => fetch("/api/saved-properties", { headers }))
       .then((r) => r.json())
       .then((data) => {
         if (cancelled || !Array.isArray(data)) return;
@@ -51,8 +53,8 @@ export default function SaveButton({
     setSaved((s) => !s); // optimistic
     const res = await fetch("/api/saved-properties", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: user.id, item_type: itemType, item_id: itemId }),
+      headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+      body: JSON.stringify({ item_type: itemType, item_id: itemId }),
     }).catch(() => null);
     if (!res?.ok) {
       setSaved((s) => !s); // roll back

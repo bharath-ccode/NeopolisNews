@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/apiAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -23,11 +24,15 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const auth = await requireUser(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const user_id = auth.user.id;
+
   let body: unknown;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
 
-  const { author_name, body: commentBody, user_id } =
-    body as { author_name?: string; body?: string; user_id?: string };
+  const { author_name, body: commentBody } =
+    body as { author_name?: string; body?: string };
 
   if (!author_name?.trim()) return NextResponse.json({ error: "author_name required" }, { status: 400 });
   if (!commentBody?.trim())  return NextResponse.json({ error: "body required" },        { status: 400 });
@@ -50,7 +55,7 @@ export async function POST(
       article_id:  params.id,
       author_name: author_name.trim(),
       body:        commentBody.trim(),
-      user_id:     user_id ?? null,
+      user_id,
     })
     .select("id, author_name, body, created_at")
     .single();

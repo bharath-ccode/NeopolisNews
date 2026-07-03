@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Heart, Loader2, Building2, Home, Trash2, ExternalLink, BellRing } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { authHeaders } from "@/lib/authToken";
 
 interface ProjectDetail {
   id: string;
@@ -62,9 +63,10 @@ export default function SavedPropertiesPage() {
   const load = useCallback(async () => {
     if (!user) return;
     setLoading(true);
+    const headers = await authHeaders();
     const [propsRes, alertsRes] = await Promise.all([
-      fetch(`/api/saved-properties?user_id=${user.id}&expand=1`).catch(() => null),
-      fetch(`/api/saved-searches?user_id=${user.id}`).catch(() => null),
+      fetch("/api/saved-properties?expand=1", { headers }).catch(() => null),
+      fetch("/api/saved-searches", { headers }).catch(() => null),
     ]);
     if (propsRes?.ok) {
       const data = await propsRes.json();
@@ -79,7 +81,10 @@ export default function SavedPropertiesPage() {
 
   async function removeAlert(id: string) {
     setAlerts((prev) => prev.filter((a) => a.id !== id));
-    await fetch(`/api/saved-searches?id=${id}&user_id=${user!.id}`, { method: "DELETE" }).catch(() => null);
+    await fetch(`/api/saved-searches?id=${id}`, {
+      method: "DELETE",
+      headers: await authHeaders(),
+    }).catch(() => null);
   }
 
   useEffect(() => { load(); }, [load]);
@@ -88,8 +93,8 @@ export default function SavedPropertiesPage() {
     setRemoving(item.id);
     const res = await fetch("/api/saved-properties", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: user!.id, item_type: item.item_type, item_id: item.item_id }),
+      headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+      body: JSON.stringify({ item_type: item.item_type, item_id: item.item_id }),
     }).catch(() => null);
     if (res?.ok) setItems((prev) => prev.filter((i) => i.id !== item.id));
     setRemoving(null);

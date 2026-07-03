@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, ChevronRight, MessageSquare, Clock, Send, AtSign, BarChart3, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { authHeaders } from "@/lib/authToken";
 import { getIndustries, getTypes } from "@/lib/businessDirectory";
 
 interface Reply {
@@ -86,8 +87,7 @@ export default function ForumThreadPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const qs = user ? `?user_id=${user.id}` : "";
-    const res = await fetch(`/api/forum/${id}${qs}`).catch(() => null);
+    const res = await fetch(`/api/forum/${id}`, { headers: await authHeaders() }).catch(() => null);
     if (!res?.ok) { setNotFound(true); setLoading(false); return; }
     const data = await res.json();
     setPost(data.post);
@@ -158,8 +158,8 @@ export default function ForumThreadPage() {
 
     const res = await fetch(`/api/forum/${id}/vote`, {
       method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ user_id: user.id, option_id: optionId }),
+      headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+      body:    JSON.stringify({ option_id: optionId }),
     }).catch(() => null);
     if (!res?.ok) load(); // roll back to server truth
     setVoting(false);

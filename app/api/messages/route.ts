@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/apiAuth";
 
 export const dynamic = "force-dynamic";
 
-/** GET ?user_id= — my threads (buyer or seller) with unread counts. */
+/** GET — the token user's threads (buyer or seller) with unread counts. */
 export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get("user_id");
-  if (!userId) return NextResponse.json({ error: "user_id required" }, { status: 400 });
+  const auth = await requireUser(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const userId = auth.user.id;
 
   const admin = createAdminClient();
   const { data: threads, error } = await admin
@@ -40,17 +42,20 @@ export async function GET(req: NextRequest) {
   );
 }
 
-/** POST { classified_id, user_id, sender_name, body } — start (or continue) a
- *  thread with a listing's seller. Seller is resolved server-side. */
+/** POST { classified_id, sender_name, body } — start (or continue) a thread
+ *  with a listing's seller. Buyer identity comes from the token. */
 export async function POST(req: NextRequest) {
+  const auth = await requireUser(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const user_id = auth.user.id;
+
   let body: unknown;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
 
-  const { classified_id, user_id, sender_name, body: msgBody } = body as {
-    classified_id?: string; user_id?: string; sender_name?: string; body?: string;
+  const { classified_id, sender_name, body: msgBody } = body as {
+    classified_id?: string; sender_name?: string; body?: string;
   };
 
-  if (!user_id)            return NextResponse.json({ error: "Sign in to message the seller." }, { status: 401 });
   if (!classified_id)      return NextResponse.json({ error: "classified_id required" }, { status: 400 });
   if (!sender_name?.trim())return NextResponse.json({ error: "sender_name required" }, { status: 400 });
   if (!msgBody?.trim())    return NextResponse.json({ error: "Please write a message." }, { status: 400 });
