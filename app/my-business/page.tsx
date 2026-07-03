@@ -7,7 +7,7 @@ import {
   Building2, Phone, Instagram, Facebook, Youtube, Globe,
   Clock, Loader2, CheckCircle, LogOut, ExternalLink,
   Image as ImageIcon, Upload, X, ShieldCheck,
-  CalendarDays, Tag, Newspaper, Eye, MessageSquare, Film, Video, Bell,
+  CalendarDays, Tag, Newspaper, Eye, MessageSquare, Film, Video, Bell, Star,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { DayTiming } from "@/lib/businessStore";
@@ -19,6 +19,7 @@ import NewsTab from "./_tabs/NewsTab";
 import EnquiriesTab from "./_tabs/EnquiriesTab";
 import NowShowingTab from "./_tabs/NowShowingTab";
 import WellnessSessionsTab from "./_tabs/WellnessSessionsTab";
+import ReviewsTab from "./_tabs/ReviewsTab";
 
 interface SocialLinks { instagram?: string; facebook?: string; youtube?: string; }
 
@@ -43,7 +44,7 @@ interface Business {
 const INPUT = "w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 text-gray-800";
 const LABEL = "block text-xs font-semibold text-gray-500 mb-1.5";
 
-type Tab = "profile" | "events" | "offers" | "updates" | "news" | "enquiries" | "now-showing" | "sessions";
+type Tab = "profile" | "events" | "offers" | "updates" | "news" | "enquiries" | "now-showing" | "sessions" | "reviews";
 
 function TimingsEditor({ timings, onChange }: { timings: DayTiming[]; onChange: (t: DayTiming[]) => void }) {
   function update(idx: number, patch: Partial<DayTiming>) {
@@ -290,6 +291,7 @@ export default function MyBusinessPage() {
     { id: "updates",      label: "Announce",     icon: Bell          },
     { id: "news",         label: "News",         icon: Newspaper     },
     { id: "enquiries",    label: "Messages",     icon: MessageSquare },
+    { id: "reviews",      label: "Reviews",      icon: Star          },
   ];
 
   return (
@@ -417,6 +419,11 @@ export default function MyBusinessPage() {
         {/* ── Enquiries tab ─────────────────────────────────────────────────── */}
         {activeTab === "enquiries" && biz && token && (
           <EnquiriesTab businessId={biz.id} token={token} />
+        )}
+
+        {/* ── Reviews tab ───────────────────────────────────────────────────── */}
+        {activeTab === "reviews" && biz && token && (
+          <ReviewsTab businessId={biz.id} token={token} />
         )}
 
         {/* ── Profile tab ─────────────────────────────────────────────────────── */}

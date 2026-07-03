@@ -23,6 +23,7 @@ import {
   IndianRupee,
   CalendarDays,
   Sparkles,
+  Megaphone,
 } from "lucide-react";
 import clsx from "clsx";
 import { AdminAuthProvider, useAdminAuth } from "@/context/AdminAuthContext";
@@ -30,6 +31,7 @@ import { AdminAuthProvider, useAdminAuth } from "@/context/AdminAuthContext";
 const NAV = [
   { href: "/admin",               icon: LayoutDashboard, label: "Dashboard"     },
   { href: "/admin/news",          icon: Newspaper,       label: "News Articles" },
+  { href: "/admin/citizen-reports", icon: Megaphone,     label: "Citizen Reports" },
   { href: "/admin/builders",      icon: HardHat,         label: "Builders"      },
   { href: "/admin/projects",      icon: Layers,          label: "Projects"      },
   { href: "/admin/businesses",    icon: Store,           label: "Businesses"    },

@@ -153,6 +153,12 @@ export default async function NewsPage() {
                 Read Latest
               </a>
               <Link
+                href="/news/report"
+                className="btn-secondary border-gray-500 text-gray-300 hover:bg-gray-700"
+              >
+                Report Local News <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
                 href="/advertise#content"
                 className="btn-secondary border-gray-500 text-gray-300 hover:bg-gray-700"
               >
