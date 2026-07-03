@@ -170,6 +170,11 @@ const NAV_ITEMS = [
     ],
   },
   {
+    label: "Clubs",
+    href: "/clubs",
+    icon: Users,
+  },
+  {
     label: "Deals",
     href: "/deals",
     icon: ShoppingBag,

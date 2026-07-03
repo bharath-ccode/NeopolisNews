@@ -32,6 +32,7 @@ const NAV = [
   { href: "/admin",               icon: LayoutDashboard, label: "Dashboard"     },
   { href: "/admin/news",          icon: Newspaper,       label: "News Articles" },
   { href: "/admin/citizen-reports", icon: Megaphone,     label: "Citizen Reports" },
+  { href: "/admin/clubs",         icon: UserCheck,       label: "Clubs"         },
   { href: "/admin/builders",      icon: HardHat,         label: "Builders"      },
   { href: "/admin/projects",      icon: Layers,          label: "Projects"      },
   { href: "/admin/businesses",    icon: Store,           label: "Businesses"    },
