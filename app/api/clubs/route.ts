@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { isClubCategory } from "@/lib/clubs";
+import { requireUser } from "@/lib/apiAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -22,17 +23,20 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(data ?? []);
 }
 
-/** POST — propose a club (lands as 'pending' for admin review). */
+/** POST — propose a club (lands as 'pending' for admin review). Token-verified. */
 export async function POST(req: NextRequest) {
+  const auth = await requireUser(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const user_id = auth.user.id;
+
   let body: unknown;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
 
-  const { user_id, lead_name, name, category, description, emoji } = body as {
-    user_id?: string; lead_name?: string; name?: string;
+  const { lead_name, name, category, description, emoji } = body as {
+    lead_name?: string; name?: string;
     category?: string; description?: string; emoji?: string;
   };
 
-  if (!user_id)           return NextResponse.json({ error: "Sign in to propose a club." },      { status: 401 });
   if (!lead_name?.trim()) return NextResponse.json({ error: "lead_name required" },              { status: 400 });
   if (!name?.trim())      return NextResponse.json({ error: "Please name your club." },          { status: 400 });
   if (name.trim().length > 60)

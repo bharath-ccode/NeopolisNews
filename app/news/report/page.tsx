@@ -7,6 +7,7 @@ import {
   AtSign, LogIn, CheckCircle2, XCircle, Hourglass, ExternalLink,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { authHeaders } from "@/lib/authToken";
 
 interface MyReport {
   id: string;
@@ -45,7 +46,7 @@ export default function ReportNewsPage() {
   const loadMine = useCallback(async () => {
     if (!user) return;
     setLoadingMine(true);
-    const res = await fetch(`/api/citizen-reports?user_id=${user.id}`).catch(() => null);
+    const res = await fetch("/api/citizen-reports", { headers: await authHeaders() }).catch(() => null);
     if (res?.ok) {
       const data = await res.json();
       if (Array.isArray(data)) setMyReports(data);
@@ -85,9 +86,8 @@ export default function ReportNewsPage() {
     setError("");
     const res = await fetch("/api/citizen-reports", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(await authHeaders()) },
       body: JSON.stringify({
-        user_id:     user!.id,
         author_name: user!.screen_name,
         title:       title.trim(),
         body:        body.trim(),

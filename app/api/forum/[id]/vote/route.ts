@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/apiAuth";
 
 export const dynamic = "force-dynamic";
 
-/** POST { user_id, option_id } — cast or change a vote (one per user per poll). */
+/** POST { option_id } — cast or change a vote (one per user per poll). Token-verified. */
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await requireUser(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const user_id = auth.user.id;
+
   let body: unknown;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
 
-  const { user_id, option_id } = body as { user_id?: string; option_id?: string };
-  if (!user_id)   return NextResponse.json({ error: "Sign in to vote." }, { status: 401 });
+  const { option_id } = body as { option_id?: string };
   if (!option_id) return NextResponse.json({ error: "option_id required" }, { status: 400 });
 
   const admin = createAdminClient();

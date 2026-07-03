@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/apiAuth";
 
 export const dynamic = "force-dynamic";
 
-/** GET ?user_id= — saved items. Add &expand=1 to include project/classified details. */
+/** GET — the token user's saved items. Add &expand=1 for project/classified details. */
 export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get("user_id");
+  const auth = await requireUser(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const userId = auth.user.id;
   const expand = req.nextUrl.searchParams.get("expand") === "1";
-  if (!userId) return NextResponse.json({ error: "user_id required" }, { status: 400 });
 
   const admin = createAdminClient();
   const { data: saved, error } = await admin
@@ -51,15 +53,18 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(items);
 }
 
-/** POST { user_id, item_type, item_id } — toggle save. Returns { saved: boolean }. */
+/** POST { item_type, item_id } — toggle save for the token user. Returns { saved }. */
 export async function POST(req: NextRequest) {
+  const auth = await requireUser(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const user_id = auth.user.id;
+
   let body: unknown;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
 
-  const { user_id, item_type, item_id } =
-    body as { user_id?: string; item_type?: string; item_id?: string };
+  const { item_type, item_id } =
+    body as { item_type?: string; item_id?: string };
 
-  if (!user_id) return NextResponse.json({ error: "Sign in to save properties." }, { status: 401 });
   if (item_type !== "project" && item_type !== "classified")
     return NextResponse.json({ error: "item_type must be 'project' or 'classified'" }, { status: 400 });
   if (!item_id) return NextResponse.json({ error: "item_id required" }, { status: 400 });

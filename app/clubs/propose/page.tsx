@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Send, Loader2, AtSign, LogIn, CheckCircle2, Users } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { authHeaders } from "@/lib/authToken";
 import { CLUB_CATEGORIES } from "@/lib/clubs";
 
 const EMOJI_CHOICES = ["🏃", "🚴", "🏸", "🧘", "🌳", "🧹", "🐕", "📚", "📷", "🎵", "🎨", "🍳", "👨‍👩‍👧", "♟️", "🌟"];
@@ -30,9 +31,8 @@ export default function ProposeClubPage() {
     setSending(true);
     const res = await fetch("/api/clubs", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(await authHeaders()) },
       body: JSON.stringify({
-        user_id:     user!.id,
         lead_name:   user!.screen_name,
         name:        name.trim(),
         category,

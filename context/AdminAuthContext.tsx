@@ -43,6 +43,20 @@ async function isBuilder(email: string | undefined): Promise<boolean> {
   return !!data;
 }
 
+/** Mirror the Supabase access token into a cookie so middleware can guard
+ *  /api/admin/* calls (supabase-js keeps sessions in localStorage, which the
+ *  server can't read). */
+function syncAdminCookie(token: string | null) {
+  if (typeof document === "undefined") return;
+  if (token) {
+    document.cookie = `admin_session=${token}; path=/; max-age=3600; SameSite=Lax${
+      location.protocol === "https:" ? "; Secure" : ""
+    }`;
+  } else {
+    document.cookie = "admin_session=; path=/; max-age=0";
+  }
+}
+
 // ─── Context ─────────────────────────────────────────────────────────────────
 
 const AdminAuthContext = createContext<AdminAuthContextValue | null>(null);
@@ -62,6 +76,10 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         const user = data.user ?? null;
         const builder = await withTimeout(isBuilder(user?.email), 4000).catch(() => false);
         setAdmin(builder ? null : user);
+        if (user && !builder) {
+          const { data: sessionData } = await supabase.auth.getSession();
+          syncAdminCookie(sessionData.session?.access_token ?? null);
+        }
       } catch {
         if (mounted) setAdmin(null);
       } finally {
@@ -88,8 +106,10 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
             try {
               const builder = await withTimeout(isBuilder(user?.email), 4000).catch(() => false);
               setAdmin(builder ? null : user);
+              syncAdminCookie(user && !builder ? session?.access_token ?? null : null);
             } catch {
               setAdmin(null);
+              syncAdminCookie(null);
             }
           })();
         }
@@ -153,6 +173,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     await createClient().auth.signOut();
     setAdmin(null);
+    syncAdminCookie(null);
   }, []);
 
   const changePassword = useCallback(

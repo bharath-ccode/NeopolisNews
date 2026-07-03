@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MessageSquare, Loader2, Send, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { authHeaders } from "@/lib/authToken";
 
 /** "Message seller" button + inline composer for a classified listing. */
 export default function MessageSellerButton({ classifiedId }: { classifiedId: string }) {
@@ -33,10 +34,9 @@ export default function MessageSellerButton({ classifiedId }: { classifiedId: st
     setError("");
     const res = await fetch("/api/messages", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(await authHeaders()) },
       body: JSON.stringify({
         classified_id: classifiedId,
-        user_id: user!.id,
         sender_name: user!.screen_name ?? user!.name,
         body: body.trim(),
       }),

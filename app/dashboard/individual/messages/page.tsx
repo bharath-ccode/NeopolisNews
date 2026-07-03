@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MessageSquare, Loader2, Send, ArrowLeft, Home } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { authHeaders } from "@/lib/authToken";
 
 interface Thread {
   id: string;
@@ -42,7 +43,7 @@ export default function MessagesPage() {
 
   const loadThreads = useCallback(async () => {
     if (!user) return;
-    const res = await fetch(`/api/messages?user_id=${user.id}`).catch(() => null);
+    const res = await fetch("/api/messages", { headers: await authHeaders() }).catch(() => null);
     if (res?.ok) {
       const data = await res.json();
       if (Array.isArray(data)) setThreads(data);
@@ -55,7 +56,7 @@ export default function MessagesPage() {
   async function openThread(t: Thread) {
     setActive(t);
     setLoadingMsgs(true);
-    const res = await fetch(`/api/messages/${t.id}?user_id=${user!.id}`).catch(() => null);
+    const res = await fetch(`/api/messages/${t.id}`, { headers: await authHeaders() }).catch(() => null);
     if (res?.ok) {
       const data = await res.json();
       setMessages(data.messages ?? []);
@@ -71,9 +72,8 @@ export default function MessagesPage() {
     setSending(true);
     const res = await fetch(`/api/messages/${active.id}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(await authHeaders()) },
       body: JSON.stringify({
-        user_id: user!.id,
         sender_name: user!.screen_name ?? user!.name,
         body: draft.trim(),
       }),

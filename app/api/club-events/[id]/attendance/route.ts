@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { isClubLead } from "@/lib/clubs";
 import { awardPoints } from "@/lib/points";
+import { requireUser } from "@/lib/apiAuth";
 
 export const dynamic = "force-dynamic";
 
-/** GET ?user_id= — lead views the registration list for attendance marking. */
+/** GET — lead views the registration list for attendance marking. */
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const userId = req.nextUrl.searchParams.get("user_id");
-  if (!userId) return NextResponse.json({ error: "user_id required" }, { status: 400 });
+  const auth = await requireUser(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const userId = auth.user.id;
 
   const admin = createAdminClient();
 
@@ -32,17 +34,19 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json(data ?? []);
 }
 
-/** POST { user_id, attendee_user_ids: string[] } — lead marks who showed up.
- *  Marks the event completed and awards each attendee the event's points
- *  (idempotent — re-marking never double-awards). */
+/** POST { attendee_user_ids: string[] } — lead (verified by token) marks who
+ *  showed up. Marks the event completed and awards each attendee the event's
+ *  points (idempotent — re-marking never double-awards). */
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await requireUser(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const user_id = auth.user.id;
+
   let body: unknown;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
 
-  const { user_id, attendee_user_ids } =
-    body as { user_id?: string; attendee_user_ids?: string[] };
+  const { attendee_user_ids } = body as { attendee_user_ids?: string[] };
 
-  if (!user_id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!Array.isArray(attendee_user_ids))
     return NextResponse.json({ error: "attendee_user_ids must be an array" }, { status: 400 });
 

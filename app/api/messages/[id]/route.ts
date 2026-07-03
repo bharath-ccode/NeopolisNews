@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/apiAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -13,10 +14,12 @@ async function getThreadForUser(admin: ReturnType<typeof createAdminClient>, thr
   return thread;
 }
 
-/** GET ?user_id= — thread messages; marks the other side's messages read. */
+/** GET — thread messages for a participant (token-verified); marks the other
+ *  side's messages read. */
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const userId = req.nextUrl.searchParams.get("user_id");
-  if (!userId) return NextResponse.json({ error: "user_id required" }, { status: 400 });
+  const auth = await requireUser(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const userId = auth.user.id;
 
   const admin = createAdminClient();
   const thread = await getThreadForUser(admin, params.id, userId);
@@ -39,15 +42,18 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json({ thread, messages: messages ?? [] });
 }
 
-/** POST { user_id, sender_name, body } — reply in a thread. */
+/** POST { sender_name, body } — reply in a thread (token-verified participant). */
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await requireUser(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const user_id = auth.user.id;
+
   let body: unknown;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
 
-  const { user_id, sender_name, body: msgBody } =
-    body as { user_id?: string; sender_name?: string; body?: string };
+  const { sender_name, body: msgBody } =
+    body as { sender_name?: string; body?: string };
 
-  if (!user_id)             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!sender_name?.trim()) return NextResponse.json({ error: "sender_name required" }, { status: 400 });
   if (!msgBody?.trim())     return NextResponse.json({ error: "Please write a message." }, { status: 400 });
 

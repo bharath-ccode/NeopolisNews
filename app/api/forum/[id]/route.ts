@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { optionalUser } from "@/lib/apiAuth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const userId = req.nextUrl.searchParams.get("user_id");
+  const userId = (await optionalUser(req))?.id ?? null;
   const admin = createAdminClient();
 
   const [postRes, repliesRes] = await Promise.all([

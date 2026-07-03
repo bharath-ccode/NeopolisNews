@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { isClubLead } from "@/lib/clubs";
+import { requireUser, optionalUser } from "@/lib/apiAuth";
 
 export const dynamic = "force-dynamic";
 
-/** GET ?user_id= — full club page payload: club, events, members, impact, my membership. */
+/** GET — full club page payload: club, events, members, impact; personalized
+ *  (my_role, my_registrations) when a valid Authorization header is sent. */
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const userId = req.nextUrl.searchParams.get("user_id");
+  const userId = (await optionalUser(req))?.id ?? null;
   const admin = createAdminClient();
 
   const { data: club, error } = await admin
@@ -78,18 +80,19 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   });
 }
 
-/** PATCH { user_id, announcement?, description? } — lead-only edits. */
+/** PATCH { announcement?, description? } — lead-only edits (token-verified). */
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await requireUser(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
   let body: unknown;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
 
-  const { user_id, announcement, description } =
-    body as { user_id?: string; announcement?: string | null; description?: string };
-
-  if (!user_id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { announcement, description } =
+    body as { announcement?: string | null; description?: string };
 
   const admin = createAdminClient();
-  if (!(await isClubLead(admin, params.id, user_id)))
+  if (!(await isClubLead(admin, params.id, auth.user.id)))
     return NextResponse.json({ error: "Only the club lead can do this." }, { status: 403 });
 
   const update: Record<string, unknown> = {};

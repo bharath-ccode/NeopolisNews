@@ -7,6 +7,7 @@ import {
   ThumbsUp, Heart, Lightbulb,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { authHeaders } from "@/lib/authToken";
 
 interface Comment {
   id: string;
@@ -48,8 +49,9 @@ export default function CommentsSection({ articleId }: { articleId: string }) {
   const [error, setError]     = useState("");
 
   const loadReactions = useCallback(async () => {
-    const qs = user ? `?user_id=${user.id}` : "";
-    const res = await fetch(`/api/articles/${articleId}/reactions${qs}`).catch(() => null);
+    const res = await fetch(`/api/articles/${articleId}/reactions`, {
+      headers: await authHeaders(),
+    }).catch(() => null);
     if (!res?.ok) return;
     const data = await res.json();
     setCounts(data.counts);
@@ -86,8 +88,8 @@ export default function CommentsSection({ articleId }: { articleId: string }) {
 
     const res = await fetch(`/api/articles/${articleId}/reactions`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: user.id, reaction }),
+      headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+      body: JSON.stringify({ reaction }),
     }).catch(() => null);
     if (!res?.ok) loadReactions(); // roll back to server truth
     setReacting(false);
@@ -100,11 +102,10 @@ export default function CommentsSection({ articleId }: { articleId: string }) {
     setError("");
     const res = await fetch(`/api/articles/${articleId}/comments`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(await authHeaders()) },
       body: JSON.stringify({
         author_name: user!.screen_name,
         body: body.trim(),
-        user_id: user!.id,
       }),
     }).catch(() => null);
     if (!res?.ok) {
