@@ -39,9 +39,9 @@ async function getProjects(): Promise<ProjectListItem[]> {
   }));
 }
 
-// ─── Static price trend data (placeholder until we have DB price history) ────
+// ─── Price trend data (admin-curated in price_trends; static fallback) ───────
 
-const PRICE_TRENDS = [
+const FALLBACK_TRENDS = [
   { quarter: "Q1 2024", residential: 7200, office: 82, retail: 110 },
   { quarter: "Q2 2024", residential: 7600, office: 85, retail: 118 },
   { quarter: "Q3 2024", residential: 7900, office: 88, retail: 122 },
@@ -52,11 +52,42 @@ const PRICE_TRENDS = [
   { quarter: "Q4 2025", residential: 10400, office: 108, retail: 160 },
 ];
 
+async function getPriceTrends() {
+  const sb = createAdminClient();
+  const { data } = await sb
+    .from("price_trends")
+    .select("period, period_date, segment, price")
+    .order("period_date", { ascending: true });
+
+  if (!data?.length) return FALLBACK_TRENDS;
+
+  // Pivot rows (period x segment) into the shape the section renders
+  const byPeriod = new Map<string, { quarter: string; residential: number; office: number; retail: number }>();
+  for (const row of data) {
+    const entry = byPeriod.get(row.period) ?? { quarter: row.period, residential: 0, office: 0, retail: 0 };
+    if (row.segment === "residential") entry.residential = Number(row.price);
+    if (row.segment === "office")      entry.office      = Number(row.price);
+    if (row.segment === "retail")      entry.retail      = Number(row.price);
+    byPeriod.set(row.period, entry);
+  }
+  return Array.from(byPeriod.values()).filter((e) => e.residential > 0);
+}
+
+function pctChange(first: number, last: number) {
+  if (!first) return null;
+  return Math.round(((last - first) / first) * 100);
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function RealEstatePage() {
-  const projects = await getProjects();
+  const [projects, PRICE_TRENDS] = await Promise.all([getProjects(), getPriceTrends()]);
   const maxPrice = Math.max(...PRICE_TRENDS.map((d) => d.residential));
+  const first = PRICE_TRENDS[0];
+  const last  = PRICE_TRENDS[PRICE_TRENDS.length - 1];
+  const resChange    = pctChange(first.residential, last.residential);
+  const officeChange = pctChange(first.office, last.office);
+  const retailChange = pctChange(first.retail, last.retail);
 
   return (
     <>
@@ -145,12 +176,14 @@ export default async function RealEstatePage() {
                 <h3 className="font-bold text-gray-900">Residential</h3>
               </div>
               <p className="text-3xl font-extrabold text-gray-900">
-                ₹{PRICE_TRENDS[PRICE_TRENDS.length - 1].residential.toLocaleString()}
+                ₹{last.residential.toLocaleString()}
               </p>
-              <p className="text-xs text-gray-500 mt-0.5">per sq ft (Q4 2025)</p>
-              <p className="text-xs text-green-600 font-semibold mt-2">
-                +44% appreciation since Q1 2024
-              </p>
+              <p className="text-xs text-gray-500 mt-0.5">per sq ft ({last.quarter})</p>
+              {resChange !== null && (
+                <p className={`text-xs font-semibold mt-2 ${resChange >= 0 ? "text-green-600" : "text-red-500"}`}>
+                  {resChange >= 0 ? "+" : ""}{resChange}% since {first.quarter}
+                </p>
+              )}
             </div>
             <div className="card p-5">
               <div className="flex items-center gap-2 mb-3">
@@ -158,12 +191,14 @@ export default async function RealEstatePage() {
                 <h3 className="font-bold text-gray-900">Grade A Office</h3>
               </div>
               <p className="text-3xl font-extrabold text-gray-900">
-                ₹{PRICE_TRENDS[PRICE_TRENDS.length - 1].office}
+                ₹{last.office}
               </p>
-              <p className="text-xs text-gray-500 mt-0.5">per sq ft / month (Q4 2025)</p>
-              <p className="text-xs text-green-600 font-semibold mt-2">
-                +32% appreciation since Q1 2024
-              </p>
+              <p className="text-xs text-gray-500 mt-0.5">per sq ft / month ({last.quarter})</p>
+              {officeChange !== null && (
+                <p className={`text-xs font-semibold mt-2 ${officeChange >= 0 ? "text-green-600" : "text-red-500"}`}>
+                  {officeChange >= 0 ? "+" : ""}{officeChange}% since {first.quarter}
+                </p>
+              )}
             </div>
             <div className="card p-5">
               <div className="flex items-center gap-2 mb-3">
@@ -171,12 +206,14 @@ export default async function RealEstatePage() {
                 <h3 className="font-bold text-gray-900">Retail</h3>
               </div>
               <p className="text-3xl font-extrabold text-gray-900">
-                ₹{PRICE_TRENDS[PRICE_TRENDS.length - 1].retail}
+                ₹{last.retail}
               </p>
-              <p className="text-xs text-gray-500 mt-0.5">per sq ft / month (Q4 2025)</p>
-              <p className="text-xs text-green-600 font-semibold mt-2">
-                +45% appreciation since Q1 2024
-              </p>
+              <p className="text-xs text-gray-500 mt-0.5">per sq ft / month ({last.quarter})</p>
+              {retailChange !== null && (
+                <p className={`text-xs font-semibold mt-2 ${retailChange >= 0 ? "text-green-600" : "text-red-500"}`}>
+                  {retailChange >= 0 ? "+" : ""}{retailChange}% since {first.quarter}
+                </p>
+              )}
             </div>
           </div>
 

@@ -42,6 +42,7 @@ const NAV = [
   { href: "/admin/ads",           icon: Tag,             label: "Classifieds"   },
   { href: "/admin/payments",       icon: IndianRupee,     label: "Payments"      },
   { href: "/admin/ai-digest",      icon: Sparkles,        label: "AI Digest"     },
+  { href: "/admin/price-trends",   icon: BarChart3,       label: "Price Trends"  },
   { href: "/admin/analytics",     icon: BarChart3,       label: "Analytics"     },
   { href: "/admin/settings",      icon: Settings,        label: "Settings"      },
 ];
