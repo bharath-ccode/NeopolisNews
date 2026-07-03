@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ChevronDown, AtSign } from "lucide-react";
+import { ArrowLeft, ChevronDown, AtSign, BarChart3, Plus, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { getIndustries, getTypes } from "@/lib/businessDirectory";
 
@@ -18,6 +18,8 @@ export default function NewForumPostPage() {
   const [type,       setType]       = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState("");
+  const [showPoll,   setShowPoll]   = useState(false);
+  const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -73,6 +75,11 @@ export default function NewForumPostPage() {
       setError("Please fill in the title and your question.");
       return;
     }
+    const filledOptions = pollOptions.map((o) => o.trim()).filter(Boolean);
+    if (showPoll && filledOptions.length < 2) {
+      setError("A poll needs at least 2 options — or remove the poll.");
+      return;
+    }
     setSubmitting(true);
     setError("");
 
@@ -86,6 +93,7 @@ export default function NewForumPostPage() {
         industry:    industry || null,
         type:        type || null,
         user_id:     user!.id,
+        ...(showPoll && filledOptions.length >= 2 ? { poll_options: filledOptions } : {}),
       }),
     });
 
@@ -155,6 +163,67 @@ export default function NewForumPostPage() {
               className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 resize-none"
             />
             <p className="text-xs text-gray-400 mt-1">{body.length}/2000</p>
+          </div>
+
+          {/* Poll — optional */}
+          <div className="border-t border-gray-100 pt-5">
+            {!showPoll ? (
+              <button
+                type="button"
+                onClick={() => setShowPoll(true)}
+                className="flex items-center gap-2 text-sm font-semibold text-brand-600 hover:text-brand-800 transition-colors"
+              >
+                <BarChart3 size={15} /> Add a poll
+                <span className="text-gray-400 font-normal">(let neighbours vote)</span>
+              </button>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <BarChart3 size={15} className="text-brand-500" /> Poll options
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => { setShowPoll(false); setPollOptions(["", ""]); }}
+                    className="flex items-center gap-1 text-xs text-gray-400 hover:text-red-500 font-semibold"
+                  >
+                    <X size={12} /> Remove poll
+                  </button>
+                </div>
+                {pollOptions.map((opt, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={opt}
+                      onChange={(e) =>
+                        setPollOptions((prev) => prev.map((o, j) => (j === i ? e.target.value : o)))
+                      }
+                      maxLength={80}
+                      placeholder={`Option ${i + 1}`}
+                      className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
+                    />
+                    {pollOptions.length > 2 && (
+                      <button
+                        type="button"
+                        onClick={() => setPollOptions((prev) => prev.filter((_, j) => j !== i))}
+                        className="text-gray-300 hover:text-red-500 transition-colors"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {pollOptions.length < 5 && (
+                  <button
+                    type="button"
+                    onClick={() => setPollOptions((prev) => [...prev, ""])}
+                    className="flex items-center gap-1.5 text-xs font-semibold text-brand-600 hover:text-brand-800 transition-colors"
+                  >
+                    <Plus size={13} /> Add option
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Category — optional */}

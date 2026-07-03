@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, ChevronRight, MessageSquare, Clock, Send, AtSign } from "lucide-react";
+import { ArrowLeft, ChevronRight, MessageSquare, Clock, Send, AtSign, BarChart3, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { getIndustries, getTypes } from "@/lib/businessDirectory";
 
@@ -23,6 +23,11 @@ interface Post {
   reply_count: number;
   status: string;
   created_at: string;
+}
+interface Poll {
+  options: { id: string; label: string; votes: number }[];
+  total: number;
+  my_vote: string | null;
 }
 
 const INDUSTRY_EMOJI: Record<string, string> = {
@@ -59,6 +64,8 @@ export default function ForumThreadPage() {
 
   const [post,       setPost]       = useState<Post | null>(null);
   const [replies,    setReplies]    = useState<Reply[]>([]);
+  const [poll,       setPoll]       = useState<Poll | null>(null);
+  const [voting,     setVoting]     = useState(false);
   const [loading,    setLoading]    = useState(true);
   const [notFound,   setNotFound]   = useState(false);
 
@@ -79,15 +86,17 @@ export default function ForumThreadPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`/api/forum/${id}`).catch(() => null);
+    const qs = user ? `?user_id=${user.id}` : "";
+    const res = await fetch(`/api/forum/${id}${qs}`).catch(() => null);
     if (!res?.ok) { setNotFound(true); setLoading(false); return; }
     const data = await res.json();
     setPost(data.post);
     setReplies(data.replies);
+    setPoll(data.poll ?? null);
     setNewIndustry(data.post.industry ?? "");
     setNewType(data.post.type ?? "");
     setLoading(false);
-  }, [id]);
+  }, [id, user]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -120,6 +129,40 @@ export default function ForumThreadPage() {
     setReplyBody("");
     setSending(false);
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+  }
+
+  async function vote(optionId: string) {
+    if (!user) {
+      window.location.href = `/auth/login?next=/forum/${id}`;
+      return;
+    }
+    if (voting || poll?.my_vote === optionId) return;
+    setVoting(true);
+
+    // Optimistic update
+    setPoll((prev) => {
+      if (!prev) return prev;
+      const hadVote = prev.my_vote !== null;
+      return {
+        options: prev.options.map((o) => ({
+          ...o,
+          votes:
+            o.id === optionId ? o.votes + 1 :
+            o.id === prev.my_vote ? Math.max(0, o.votes - 1) :
+            o.votes,
+        })),
+        total: hadVote ? prev.total : prev.total + 1,
+        my_vote: optionId,
+      };
+    });
+
+    const res = await fetch(`/api/forum/${id}/vote`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ user_id: user.id, option_id: optionId }),
+    }).catch(() => null);
+    if (!res?.ok) load(); // roll back to server truth
+    setVoting(false);
   }
 
   async function saveCategory() {
@@ -177,6 +220,58 @@ export default function ForumThreadPage() {
               </div>
               <h1 className="text-xl font-extrabold text-gray-900 leading-snug mb-3">{post.title}</h1>
               <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">{post.body}</p>
+
+              {/* Poll */}
+              {poll && (
+                <div className="mt-5 border border-gray-100 rounded-xl p-4 bg-gray-50/50">
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                    <BarChart3 size={13} className="text-brand-500" /> Poll
+                    <span className="normal-case font-medium text-gray-400 tracking-normal ml-auto">
+                      {poll.total} {poll.total === 1 ? "vote" : "votes"}
+                    </span>
+                  </p>
+                  <div className="space-y-2">
+                    {poll.options.map((o) => {
+                      const pct = poll.total > 0 ? Math.round((o.votes / poll.total) * 100) : 0;
+                      const isMine = poll.my_vote === o.id;
+                      return (
+                        <button
+                          key={o.id}
+                          onClick={() => vote(o.id)}
+                          disabled={post.status !== "active"}
+                          className={`relative w-full text-left rounded-lg border overflow-hidden transition-colors disabled:cursor-default ${
+                            isMine
+                              ? "border-brand-400 bg-white"
+                              : "border-gray-200 bg-white hover:border-brand-300"
+                          }`}
+                        >
+                          <div
+                            className={`absolute inset-y-0 left-0 ${isMine ? "bg-brand-100" : "bg-gray-100"}`}
+                            style={{ width: `${pct}%` }}
+                          />
+                          <div className="relative flex items-center gap-2 px-3.5 py-2.5">
+                            {isMine && <CheckCircle2 size={14} className="text-brand-600 shrink-0" />}
+                            <span className={`text-sm ${isMine ? "font-bold text-brand-800" : "font-medium text-gray-700"}`}>
+                              {o.label}
+                            </span>
+                            <span className="ml-auto text-xs font-semibold text-gray-400">
+                              {pct}%
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {!user && (
+                    <p className="text-xs text-gray-400 mt-2.5">
+                      <Link href={`/auth/login?next=/forum/${id}`} className="text-brand-600 hover:underline font-semibold">
+                        Sign in
+                      </Link>{" "}
+                      to vote.
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Category badge */}
               <div className="mt-4 flex flex-wrap items-center gap-2">

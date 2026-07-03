@@ -17,6 +17,7 @@ import {
   Loader2,
   Briefcase,
   Video,
+  Heart,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import clsx from "clsx";
@@ -25,6 +26,7 @@ const INDIVIDUAL_NAV = [
   { href: "/dashboard/individual", icon: LayoutDashboard, label: "Overview" },
   { href: "/dashboard/individual/post", icon: PlusCircle, label: "Post Listing" },
   { href: "/dashboard/individual/listings", icon: Home, label: "My Listings" },
+  { href: "/dashboard/individual/saved", icon: Heart, label: "Saved" },
   { href: "/dashboard/individual/sessions", icon: Video, label: "My Sessions" },
   { href: "/dashboard/individual/enquiries", icon: MessageSquare, label: "Enquiries" },
   { href: "/dashboard/individual/profile", icon: User, label: "My Profile" },
