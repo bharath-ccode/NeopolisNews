@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { notifyProjectSubscribers } from "@/lib/projectSubscriptions";
 
 export const dynamic = "force-dynamic";
 
@@ -62,6 +63,18 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Construction update published for a project → email its subscribers
+  if ((body.status ?? "draft") === "published" && body.category === "construction" && body.projectId) {
+    await notifyProjectSubscribers(admin, {
+      id:         data.id,
+      title:      body.title,
+      excerpt:    body.excerpt,
+      image_url:  body.imageUrl ?? null,
+      project_id: body.projectId,
+    });
+  }
+
   return NextResponse.json({ id: data.id });
 }
 
@@ -87,13 +100,32 @@ export async function PATCH(req: NextRequest) {
   if (fields.builderId !== undefined) patch.builder_id = fields.builderId ?? null;
 
   const admin = createAdminClient();
+
+  // Capture prior status so we can detect a draft → published transition
+  const { data: before } = await admin
+    .from("articles")
+    .select("status")
+    .eq("id", id)
+    .single();
+
   const { data, error } = await admin
     .from("articles")
     .update(patch)
     .eq("id", id)
-    .select("id")
+    .select("id, title, excerpt, image_url, category, status, project_id")
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Construction update newly published for a project → email its subscribers
+  if (
+    before?.status !== "published" &&
+    data.status === "published" &&
+    data.category === "construction" &&
+    data.project_id
+  ) {
+    await notifyProjectSubscribers(admin, data);
+  }
+
   return NextResponse.json({ id: data.id });
 }

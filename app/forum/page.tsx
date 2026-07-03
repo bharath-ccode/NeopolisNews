@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { MessageSquare, Plus, Clock, ChevronRight } from "lucide-react";
+import { MessageSquare, Plus, Clock, ChevronRight, BarChart3 } from "lucide-react";
 import { getIndustries } from "@/lib/businessDirectory";
 
 interface ForumPost {
@@ -14,6 +14,7 @@ interface ForumPost {
   industry: string | null;
   type: string | null;
   reply_count: number;
+  has_poll?: boolean;
   created_at: string;
 }
 
@@ -193,6 +194,11 @@ function PostCard({ post }: { post: ForumPost }) {
             <p className="text-gray-500 text-sm mt-1 line-clamp-2">{post.body}</p>
 
             <div className="flex flex-wrap items-center gap-3 mt-2.5">
+              {post.has_poll && (
+                <span className="inline-flex items-center gap-1 bg-purple-50 text-purple-700 text-xs font-semibold px-2.5 py-1 rounded-full">
+                  <BarChart3 size={11} /> Poll
+                </span>
+              )}
               {post.industry && (
                 <span className="inline-flex items-center gap-1 bg-brand-50 text-brand-700 text-xs font-semibold px-2.5 py-1 rounded-full">
                   {INDUSTRY_EMOJI[post.industry] ?? "📌"} {post.industry}

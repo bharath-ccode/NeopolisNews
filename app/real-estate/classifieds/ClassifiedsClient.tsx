@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import SaveButton from "@/components/SaveButton";
 import {
   Home,
   Phone,
@@ -413,6 +414,9 @@ export default function ClassifiedsClient({
                   <span className="absolute top-3 right-3 text-xs bg-white/80 text-gray-500 px-2 py-0.5 rounded-full">
                     {daysAgo(l.created_at)}
                   </span>
+                  <div className="absolute bottom-3 right-3">
+                    <SaveButton itemType="classified" itemId={l.id} size="sm" className="bg-white/90" />
+                  </div>
                   <span className="absolute bottom-3 left-3 text-xs font-semibold bg-white/90 text-gray-700 px-2 py-0.5 rounded-full capitalize">
                     {l.sub_category}
                   </span>

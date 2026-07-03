@@ -11,9 +11,12 @@ import { toAnnouncement, type Announcement } from "@/lib/announcementsStore";
 import { AMENITY_CATEGORIES, AMENITY_ICONS } from "@/lib/amenitiesData";
 import SectionWrapper from "@/components/SectionWrapper";
 import ProjectEnquiryForm from "./ProjectEnquiryForm";
+import SiteVisitForm from "./SiteVisitForm";
+import ProjectSubscribeBox from "./ProjectSubscribeBox";
 import LifecycleTimeline from "./LifecycleTimeline";
 import MasterPlanModal from "./MasterPlanModal";
 import WhatsAppShare from "@/components/WhatsAppShare";
+import SaveButton from "@/components/SaveButton";
 
 export const dynamic = "force-dynamic";
 
@@ -291,11 +294,12 @@ export default async function ProjectDetailPage({
                   Total approx. {formatInr(cheapestPlan)} – {formatInr(pricestPlan)}
                 </p>
               )}
-              <div className="mt-4">
+              <div className="mt-4 flex flex-wrap items-center gap-2">
                 <WhatsAppShare
                   title={`Check out ${project.projectName}${project.builderName ? ` by ${project.builderName}` : ""} in Neopolis, Hyderabad 🏗️`}
                   size="sm"
                 />
+                <SaveButton itemType="project" itemId={project.id!} size="sm" />
               </div>
             </div>
           </div>
@@ -573,11 +577,15 @@ export default async function ProjectDetailPage({
         </section>
       )}
 
-      {/* ── Enquiry ── */}
+      {/* ── Site visit + Enquiry ── */}
       <section className="bg-brand-950 text-white">
         <SectionWrapper tight>
-          <div className="max-w-xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-8 max-w-4xl mx-auto items-start">
+            <SiteVisitForm projectId={project.id!} projectName={project.projectName} />
             <ProjectEnquiryForm projectId={project.id} projectName={project.projectName} />
+          </div>
+          <div className="max-w-4xl mx-auto mt-8">
+            <ProjectSubscribeBox projectId={project.id!} projectName={project.projectName} />
           </div>
         </SectionWrapper>
       </section>

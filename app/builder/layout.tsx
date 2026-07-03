@@ -9,6 +9,7 @@ import {
   FolderKanban,
   HardHat,
   Megaphone,
+  CalendarCheck,
   LogOut,
 } from "lucide-react";
 import clsx from "clsx";
@@ -20,6 +21,7 @@ const NAV = [
   { href: "/builder",                  label: "Dashboard",             icon: LayoutDashboard },
   { href: "/builder/projects",         label: "My Projects",           icon: FolderKanban    },
   { href: "/builder/updates",          label: "Construction Updates",  icon: HardHat         },
+  { href: "/builder/site-visits",      label: "Site Visits",           icon: CalendarCheck   },
   { href: "/builder/launches/create",  label: "Announce Launch",       icon: Megaphone       },
 ];
 
