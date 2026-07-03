@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import SaveButton from "@/components/SaveButton";
 import MessageSellerButton from "@/components/MessageSellerButton";
+import SaveSearchAlert from "@/components/SaveSearchAlert";
 import {
   Home,
   Phone,
@@ -370,6 +371,13 @@ export default function ClassifiedsClient({
 
       {/* Listing grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-6">
+          <SaveSearchAlert
+            subCategory={subTab}
+            listingType={typeFilter}
+            bedrooms={bhkFilter}
+          />
+        </div>
         {filtered.length === 0 ? (
           <div className="text-center py-20">
             <Home className="w-12 h-12 text-gray-200 mx-auto mb-3" />
