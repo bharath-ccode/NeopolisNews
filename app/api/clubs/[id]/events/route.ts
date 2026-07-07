@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { isClubLead } from "@/lib/clubs";
 import { DEFAULT_EVENT_POINTS } from "@/lib/points";
 import { requireUser } from "@/lib/apiAuth";
+import { pushToUsers } from "@/lib/push";
 
 export const dynamic = "force-dynamic";
 
@@ -72,5 +73,24 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Notify club members (excluding the lead who created it)
+  const { data: members } = await admin
+    .from("club_members")
+    .select("user_id")
+    .eq("club_id", params.id)
+    .neq("user_id", user_id);
+  const { data: clubName } = await admin.from("clubs").select("name").eq("id", params.id).single();
+  await pushToUsers(
+    admin,
+    (members ?? []).map((m) => m.user_id),
+    {
+      title: `📅 ${clubName?.name ?? "Your club"}: new event`,
+      body:  `${title.trim()} — ${new Date(event_date).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })}. Registration open.`,
+      url:   `/clubs/${params.id}`,
+      tag:   `club-event-${data.id}`,
+    }
+  );
+
   return NextResponse.json({ id: data.id }, { status: 201 });
 }

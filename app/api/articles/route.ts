@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { notifyProjectSubscribers } from "@/lib/projectSubscriptions";
+import { pushToTopic } from "@/lib/push";
 
 export const dynamic = "force-dynamic";
 
@@ -64,14 +65,23 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Construction update published for a project → email its subscribers
-  if ((body.status ?? "draft") === "published" && body.category === "construction" && body.projectId) {
-    await notifyProjectSubscribers(admin, {
-      id:         data.id,
-      title:      body.title,
-      excerpt:    body.excerpt,
-      image_url:  body.imageUrl ?? null,
-      project_id: body.projectId,
+  if ((body.status ?? "draft") === "published") {
+    // Construction update published for a project → email its subscribers
+    if (body.category === "construction" && body.projectId) {
+      await notifyProjectSubscribers(admin, {
+        id:         data.id,
+        title:      body.title,
+        excerpt:    body.excerpt,
+        image_url:  body.imageUrl ?? null,
+        project_id: body.projectId,
+      });
+    }
+    // Push to news subscribers
+    await pushToTopic(admin, "news", {
+      title: `📰 ${body.title}`,
+      body:  body.excerpt,
+      url:   `/news/${data.id}`,
+      tag:   `article-${data.id}`,
     });
   }
 
@@ -117,14 +127,18 @@ export async function PATCH(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Construction update newly published for a project → email its subscribers
-  if (
-    before?.status !== "published" &&
-    data.status === "published" &&
-    data.category === "construction" &&
-    data.project_id
-  ) {
-    await notifyProjectSubscribers(admin, data);
+  if (before?.status !== "published" && data.status === "published") {
+    // Construction update newly published for a project → email its subscribers
+    if (data.category === "construction" && data.project_id) {
+      await notifyProjectSubscribers(admin, data);
+    }
+    // Push to news subscribers
+    await pushToTopic(admin, "news", {
+      title: `📰 ${data.title}`,
+      body:  data.excerpt,
+      url:   `/news/${data.id}`,
+      tag:   `article-${data.id}`,
+    });
   }
 
   return NextResponse.json({ id: data.id });

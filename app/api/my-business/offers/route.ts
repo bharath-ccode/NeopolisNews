@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { resolveBusinessAuth } from "@/lib/myBusinessAuth";
+import { pushToTopic } from "@/lib/push";
 
 export async function GET(req: NextRequest) {
   const businessId = req.nextUrl.searchParams.get("businessId");
@@ -49,5 +50,14 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Notify deal subscribers (no-op when VAPID keys aren't configured)
+  await pushToTopic(admin, "deals", {
+    title: `🏷️ New deal at ${auth.data.businessName}`,
+    body:  discount_label ?? (discount_percent ? `${discount_percent}% off — ${name}` : name),
+    url:   "/deals",
+    tag:   `offer-${data.id}`,
+  });
+
   return NextResponse.json(data);
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Tag, ShieldCheck, Building2, Clock, Sparkles } from "lucide-react";
+import PushPrompt from "@/components/PushPrompt";
 
 interface BusinessSnippet {
   id: string;
@@ -124,6 +125,12 @@ export default function DealsPage() {
 
       {/* Content */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+        <div className="mb-6">
+          <PushPrompt
+            topic="deals"
+            message="New deals from Neopolis businesses drop without warning. Want an alert the moment one goes live?"
+          />
+        </div>
         {loading ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {[1, 2, 3, 4, 5, 6].map((i) => (
