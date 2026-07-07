@@ -20,6 +20,7 @@ import EnquiriesTab from "./_tabs/EnquiriesTab";
 import NowShowingTab from "./_tabs/NowShowingTab";
 import WellnessSessionsTab from "./_tabs/WellnessSessionsTab";
 import ReviewsTab from "./_tabs/ReviewsTab";
+import BookingsTab from "./_tabs/BookingsTab";
 
 interface SocialLinks { instagram?: string; facebook?: string; youtube?: string; }
 
@@ -36,6 +37,7 @@ interface Business {
   social_links: SocialLinks;
   phone_numbers: PhoneEntry[];
   website: string | null;
+  booking_url: string | null;
   description: string | null;
   timings: DayTiming[];
   view_count: number;
@@ -44,7 +46,7 @@ interface Business {
 const INPUT = "w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 text-gray-800";
 const LABEL = "block text-xs font-semibold text-gray-500 mb-1.5";
 
-type Tab = "profile" | "events" | "offers" | "updates" | "news" | "enquiries" | "now-showing" | "sessions" | "reviews";
+type Tab = "profile" | "events" | "offers" | "updates" | "news" | "enquiries" | "now-showing" | "sessions" | "reviews" | "bookings";
 
 function TimingsEditor({ timings, onChange }: { timings: DayTiming[]; onChange: (t: DayTiming[]) => void }) {
   function update(idx: number, patch: Partial<DayTiming>) {
@@ -98,6 +100,7 @@ function loadFields(
   setters: {
     setPhoneNumbers: (v: PhoneEntry[]) => void;
     setWebsite: (v: string) => void;
+    setBookingUrl: (v: string) => void;
     setDescription: (v: string) => void;
     setTimings: (v: DayTiming[]) => void;
     setInstagram: (v: string) => void;
@@ -109,6 +112,7 @@ function loadFields(
 ) {
   setters.setPhoneNumbers(data.phone_numbers ?? []);
   setters.setWebsite(data.website ?? "");
+  setters.setBookingUrl(data.booking_url ?? "");
   setters.setDescription(data.description ?? "");
   setters.setTimings(data.timings?.length ? data.timings : []);
   setters.setInstagram(data.social_links?.instagram ?? "");
@@ -134,6 +138,7 @@ export default function MyBusinessPage() {
   // Editable fields
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneEntry[]>([]);
   const [website, setWebsite] = useState("");
+  const [bookingUrl, setBookingUrl] = useState("");
   const [description, setDescription] = useState("");
   const [timings, setTimings] = useState<DayTiming[]>([]);
   const [instagram, setInstagram] = useState("");
@@ -147,7 +152,7 @@ export default function MyBusinessPage() {
   const logoRef = useRef<HTMLInputElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
 
-  const fieldSetters = { setPhoneNumbers, setWebsite, setDescription, setTimings, setInstagram, setFacebook, setYoutube, setLogo, setPictures };
+  const fieldSetters = { setPhoneNumbers, setWebsite, setBookingUrl, setDescription, setTimings, setInstagram, setFacebook, setYoutube, setLogo, setPictures };
 
   function switchBusiness(b: Business) {
     setBiz(b);
@@ -200,6 +205,7 @@ export default function MyBusinessPage() {
             ...p, number: p.number.startsWith("+91") ? p.number : `+91${p.number}`,
           })),
           website: website.trim() || null,
+          bookingUrl: bookingUrl.trim() || null,
           description: description.trim() || null,
           timings,
           socialLinks: {
@@ -291,6 +297,7 @@ export default function MyBusinessPage() {
     { id: "updates",      label: "Announce",     icon: Bell          },
     { id: "news",         label: "News",         icon: Newspaper     },
     { id: "enquiries",    label: "Messages",     icon: MessageSquare },
+    { id: "bookings",     label: "Bookings",     icon: CalendarDays  },
     { id: "reviews",      label: "Reviews",      icon: Star          },
   ];
 
@@ -426,6 +433,11 @@ export default function MyBusinessPage() {
           <ReviewsTab businessId={biz.id} token={token} />
         )}
 
+        {/* ── Bookings tab ──────────────────────────────────────────────────── */}
+        {activeTab === "bookings" && biz && token && (
+          <BookingsTab businessId={biz.id} token={token} />
+        )}
+
         {/* ── Profile tab ─────────────────────────────────────────────────────── */}
         {activeTab === "profile" && (
           <>
@@ -522,6 +534,15 @@ export default function MyBusinessPage() {
                   <label className={LABEL}><Globe className="w-3.5 h-3.5 inline mr-1" />Website URL <span className="font-normal text-gray-400">(optional)</span></label>
                   <input type="url" value={website} onChange={(e) => setWebsite(e.target.value)}
                     placeholder="https://www.yourbusiness.com" className={INPUT} />
+                </div>
+                <div>
+                  <label className={LABEL}><CalendarDays className="w-3.5 h-3.5 inline mr-1" />Booking Link <span className="font-normal text-gray-400">(optional)</span></label>
+                  <input type="url" value={bookingUrl} onChange={(e) => setBookingUrl(e.target.value)}
+                    placeholder="Your Fresha / booking page link" className={INPUT} />
+                  <p className="text-xs text-gray-400 mt-1">
+                    If you use a booking system, customers are sent there. Leave empty to receive
+                    appointment requests in the Bookings tab instead.
+                  </p>
                 </div>
                 <div>
                   <label className={LABEL}><Instagram className="w-3.5 h-3.5 inline mr-1" />Instagram URL</label>

@@ -26,6 +26,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import ViewTracker from "./ViewTracker";
 import ContactButton from "./ContactButton";
 import ReviewSection from "./ReviewSection";
+import BookAppointment from "./BookAppointment";
 import BusinessCarousels from "./BusinessCarousels";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -94,6 +95,7 @@ interface BusinessRow {
   phone_numbers: { number: string; purpose: string }[] | null;
   contact_phone: string | null;
   website: string | null;
+  booking_url: string | null;
   description: string | null;
   timings: DayTiming[];
   completed_at: string | null;
@@ -487,6 +489,12 @@ export default async function BusinessProfilePage({
               <ReviewSection businessId={b.id} />
 
               {/* Contact & Social */}
+              <BookAppointment
+                businessId={b.id}
+                businessName={b.name}
+                bookingUrl={b.booking_url}
+              />
+
               {((b.phone_numbers && b.phone_numbers.length > 0) || b.contact_phone || hasSocial) && (
                 <div className="card p-6">
                   <h2 className="font-bold text-gray-900 text-base mb-4">
