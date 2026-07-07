@@ -26,6 +26,10 @@ OTP_SECRET=...                    # HMAC secret for signing business OTP cookies
 
 # Recommended
 ADMIN_EMAIL=...                   # receives business verification notifications
+ADMIN_EMAILS=...                  # comma-separated admin allowlist for /api/admin/* (middleware); falls back to ADMIN_EMAIL
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=...  # web push — generate with: npx web-push generate-vapid-keys
+VAPID_PRIVATE_KEY=...             # web push private key (server only)
+VAPID_SUBJECT=mailto:admin@neopolis.news  # web push contact
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 NEXT_PUBLIC_SITE_URL=...          # defaults to https://neopolis.news

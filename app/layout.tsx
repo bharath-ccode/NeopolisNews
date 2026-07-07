@@ -6,6 +6,7 @@ import ConditionalShell from "@/components/ConditionalShell";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neopolis.news";
 
 export const metadata: Metadata = {
+  manifest: "/manifest.json",
   title: {
     default: "Neopolis News – Kokapet & Narsingi Local News, Real Estate & Business Directory",
     template: "%s | Neopolis News",

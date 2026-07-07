@@ -1,4 +1,5 @@
 import Link from "next/link";
+import PushPrompt from "@/components/PushPrompt";
 import {
   Newspaper,
   Camera,
@@ -166,6 +167,16 @@ export default async function NewsPage() {
               </Link>
             </div>
           </div>
+        </SectionWrapper>
+      </section>
+
+      {/* ── Push opt-in ── */}
+      <section className="bg-gray-50 pt-6">
+        <SectionWrapper tight>
+          <PushPrompt
+            topic="news"
+            message="Breaking local news — road closures, outages, new launches. Get an alert when something happens in Neopolis?"
+          />
         </SectionWrapper>
       </section>
 

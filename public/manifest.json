@@ -1,0 +1,17 @@
+{
+  "name": "NeopolisNews",
+  "short_name": "Neopolis",
+  "description": "Hyperlocal news, real estate, deals, clubs and community for Neopolis.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#1d4ed8",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
