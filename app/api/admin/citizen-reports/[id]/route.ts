@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { awardPoints, CITIZEN_REPORT_POINTS } from "@/lib/points";
 
 export const dynamic = "force-dynamic";
 
@@ -103,6 +104,17 @@ export async function PATCH(
     })
     .eq("id", params.id);
   if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 });
+
+  // Published local reporting earns points (idempotent per report)
+  if (report.user_id) {
+    await awardPoints(admin, {
+      userId:      report.user_id,
+      points:      CITIZEN_REPORT_POINTS,
+      sourceType:  "citizen_report_published",
+      sourceId:    report.id,
+      description: `Local report published: ${report.title}`,
+    });
+  }
 
   return NextResponse.json({ ok: true, status: "approved", article_id: article.id });
 }
