@@ -18,6 +18,9 @@ export const APPOINTMENT_VISIT_POINTS = 10;
 /** A citizen report approved and published by the admin. */
 export const CITIZEN_REPORT_POINTS = 15;
 
+/** Winning the cartoon caption contest. */
+export const CAPTION_CONTEST_POINTS = 25;
+
 /** Ledger source types that count as "showing up" for streaks/badges. */
 export const ACTIVITY_SOURCES = [
   "club_event_attendance",

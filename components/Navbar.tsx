@@ -69,6 +69,7 @@ const NAV_ITEMS = [
     icon: Newspaper,
     sub: [
       { label: "Today's News",      href: "/news/today",          icon: Globe       },
+      { label: "Daily Cartoon",     href: "/cartoon",             icon: Zap         },
       { label: "Business Launches", href: "/news#launches",       icon: Zap         },
       { label: "Infrastructure",    href: "/news#infrastructure", icon: TrendingUp  },
       { label: "Community",         href: "/news#community",      icon: Users       },
