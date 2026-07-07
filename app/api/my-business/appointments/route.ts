@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { resolveBusinessAuth } from "@/lib/myBusinessAuth";
+import { awardPoints, APPOINTMENT_VISIT_POINTS } from "@/lib/points";
 
 export const dynamic = "force-dynamic";
 
@@ -37,12 +38,27 @@ export async function PATCH(req: NextRequest) {
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const admin = createAdminClient();
-  const { error } = await admin
+  const { data: updated, error } = await admin
     .from("appointment_requests")
     .update({ status })
     .eq("id", id)
-    .eq("business_id", businessId);
+    .eq("business_id", businessId)
+    .select("id, user_id")
+    .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Visit verified by the business → award points to the signed-in booker.
+  // Idempotent per appointment, so flipping statuses never double-awards.
+  if (status === "completed" && updated?.user_id) {
+    await awardPoints(admin, {
+      userId:      updated.user_id,
+      points:      APPOINTMENT_VISIT_POINTS,
+      sourceType:  "appointment_visit",
+      sourceId:    updated.id,
+      description: `Visited ${auth.data.businessName}`,
+    });
+  }
+
   return NextResponse.json({ ok: true });
 }

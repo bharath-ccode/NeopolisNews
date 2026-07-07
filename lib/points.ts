@@ -9,6 +9,12 @@ export const DEFAULT_EVENT_POINTS: Record<string, number> = {
   kids_family:     20,
 };
 
+/** Attending a paid wellness session (marked by the trainer/business). */
+export const WELLNESS_ATTENDANCE_POINTS = 20;
+
+/** Visiting a business for a confirmed appointment (marked done by the business). */
+export const APPOINTMENT_VISIT_POINTS = 10;
+
 export interface AwardInput {
   userId: string;
   points: number;

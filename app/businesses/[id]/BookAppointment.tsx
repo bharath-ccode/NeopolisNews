@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarCheck, ExternalLink, Loader2, CheckCircle, Sun, Sunset, Moon, ChevronUp } from "lucide-react";
+import Link from "next/link";
+import { CalendarCheck, ExternalLink, Loader2, CheckCircle, Sun, Sunset, Moon, ChevronUp, Trophy } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 const SLOTS = [
   { id: "morning",   label: "Morning",   time: "9 AM – 12 PM", icon: Sun    },
@@ -36,6 +38,7 @@ export default function BookAppointment({
   businessName: string;
   bookingUrl: string | null;
 }) {
+  const { user } = useAuth();
   const [open, setOpen]       = useState(false);
   const [name, setName]       = useState("");
   const [phone, setPhone]     = useState("");
@@ -121,9 +124,19 @@ export default function BookAppointment({
       </p>
 
       {!open ? (
-        <button onClick={() => setOpen(true)} className="btn-primary text-sm w-full justify-center">
-          <CalendarCheck className="w-4 h-4" /> Request Appointment
-        </button>
+        <>
+          <button onClick={() => setOpen(true)} className="btn-primary text-sm w-full justify-center">
+            <CalendarCheck className="w-4 h-4" /> Request Appointment
+          </button>
+          <p className="text-[11px] text-gray-400 mt-2 flex items-center gap-1">
+            <Trophy className="w-3 h-3 text-amber-400 shrink-0" />
+            {user ? (
+              <>Earn Neopolis Points when your visit is completed.</>
+            ) : (
+              <><Link href="/auth/login" className="text-brand-600 hover:underline font-semibold">Sign in</Link>&nbsp;first to earn Neopolis Points when you visit.</>
+            )}
+          </p>
+        </>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-3">
           <input
