@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Trophy, Loader2, Users, ChevronRight, Leaf, Sparkles } from "lucide-react";
+import { Trophy, Loader2, Users, ChevronRight, Leaf, Sparkles, Flame, Medal, CalendarCheck } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase/client";
 import { authHeaders } from "@/lib/authToken";
@@ -15,6 +15,14 @@ interface LedgerEntry {
   description: string;
   created_at: string;
 }
+interface Badge { id: string; emoji: string; label: string; detail: string; }
+interface Stats {
+  month_points: number;
+  month_activities: number;
+  streak_months: number;
+  total_activities: number;
+  badges: Badge[];
+}
 interface MyClub {
   club_id: string;
   role: string;
@@ -25,6 +33,7 @@ export default function PointsPage() {
   const { user, loading: authLoading } = useAuth();
   const [balance, setBalance] = useState(0);
   const [entries, setEntries] = useState<LedgerEntry[]>([]);
+  const [stats, setStats]     = useState<Stats | null>(null);
   const [myClubs, setMyClubs] = useState<MyClub[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -41,6 +50,7 @@ export default function PointsPage() {
     if (pointsRes && typeof pointsRes.balance === "number") {
       setBalance(pointsRes.balance);
       setEntries(pointsRes.entries ?? []);
+      setStats(pointsRes.stats ?? null);
     }
     if (Array.isArray(clubsRes?.data)) setMyClubs(clubsRes.data as unknown as MyClub[]);
     setLoading(false);
@@ -77,6 +87,64 @@ export default function PointsPage() {
           Redemption at local businesses is coming — your balance carries over.
         </p>
       </div>
+
+      {/* Stats: this month / streak / activities */}
+      {stats && (
+        <div className="grid grid-cols-3 gap-3">
+          <div className="card p-4 text-center">
+            <Medal className="w-4 h-4 text-brand-500 mx-auto mb-1" />
+            <p className="text-xl font-extrabold text-gray-900">{stats.month_points}</p>
+            <p className="text-[11px] text-gray-400">pts this month</p>
+          </div>
+          <div className="card p-4 text-center">
+            <Flame className={`w-4 h-4 mx-auto mb-1 ${stats.streak_months > 0 ? "text-orange-500" : "text-gray-300"}`} />
+            <p className="text-xl font-extrabold text-gray-900">
+              {stats.streak_months}<span className="text-sm font-bold text-gray-400"> mo</span>
+            </p>
+            <p className="text-[11px] text-gray-400">active streak</p>
+          </div>
+          <div className="card p-4 text-center">
+            <CalendarCheck className="w-4 h-4 text-green-500 mx-auto mb-1" />
+            <p className="text-xl font-extrabold text-gray-900">{stats.total_activities}</p>
+            <p className="text-[11px] text-gray-400">activities attended</p>
+          </div>
+        </div>
+      )}
+
+      {/* Badges */}
+      {stats && stats.badges.length > 0 && (
+        <div className="card p-4">
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2.5">My Badges</p>
+          <div className="flex flex-wrap gap-2">
+            {stats.badges.map((b) => (
+              <span
+                key={b.id}
+                title={b.detail}
+                className="inline-flex items-center gap-1.5 bg-amber-50 border border-amber-100 text-amber-800 text-xs font-semibold px-3 py-1.5 rounded-full cursor-default"
+              >
+                <span className="text-sm">{b.emoji}</span> {b.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Leaderboard link */}
+      <Link
+        href="/leaderboard"
+        className="card p-4 flex items-center gap-3 hover:shadow-md transition-shadow group"
+      >
+        <div className="w-9 h-9 rounded-xl bg-yellow-50 flex items-center justify-center shrink-0">
+          <Trophy className="w-4 h-4 text-yellow-500" />
+        </div>
+        <div className="flex-1">
+          <p className="font-bold text-sm text-gray-900 group-hover:text-brand-700 transition-colors">
+            Neopolis Leaderboard
+          </p>
+          <p className="text-xs text-gray-400">See where you rank this month</p>
+        </div>
+        <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-brand-400" />
+      </Link>
 
       {/* My clubs */}
       <div>

@@ -48,9 +48,9 @@ export default function ClubsPage() {
             Neopolis Points.
           </p>
           <div className="flex flex-wrap gap-6 mt-6 text-sm">
-            <span className="flex items-center gap-2 text-gray-300">
-              <Trophy className="w-4 h-4 text-yellow-400" /> Points for attending
-            </span>
+            <Link href="/leaderboard" className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors">
+              <Trophy className="w-4 h-4 text-yellow-400" /> Points for attending — see the leaderboard →
+            </Link>
             <span className="flex items-center gap-2 text-gray-300">
               <Sparkles className="w-4 h-4 text-brand-400" /> Member fee waivers
             </span>
