@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rateLimit";
 import { createAdminClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -7,6 +8,9 @@ const SLOTS = ["morning", "afternoon", "evening"] as const;
 
 /** POST — book a site visit for a project (public). */
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  const limited = rateLimit(req, "site-visits", { limit: 3 });
+  if (limited) return limited;
+
   let body: unknown;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
 

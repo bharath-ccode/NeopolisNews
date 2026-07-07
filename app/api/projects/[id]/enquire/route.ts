@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rateLimit";
 import { Resend } from "resend";
 import { createAdminClient } from "@/lib/supabase/server";
 
@@ -9,6 +10,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const limited = rateLimit(req, "proj-enquire", { limit: 5 });
+  if (limited) return limited;
+
   const body = await req.json().catch(() => null);
   const { senderName, senderPhone, senderEmail, message } = (body ?? {}) as Record<string, string>;
 

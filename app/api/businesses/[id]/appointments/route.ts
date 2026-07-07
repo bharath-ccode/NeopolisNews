@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rateLimit";
 import { createAdminClient } from "@/lib/supabase/server";
 import { optionalUser } from "@/lib/apiAuth";
 
@@ -8,6 +9,9 @@ const SLOTS = ["morning", "afternoon", "evening"] as const;
 
 /** POST — request an appointment with a business (public). */
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  const limited = rateLimit(req, "appointments", { limit: 3 });
+  if (limited) return limited;
+
   const user = await optionalUser(req);
 
   const body = await req.json().catch(() => null);
