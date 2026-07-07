@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rateLimit";
 import { createAdminClient } from "@/lib/supabase/server";
 
 export async function GET(
@@ -18,6 +19,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const limited = rateLimit(req, "reviews", { limit: 3 });
+  if (limited) return limited;
+
   const body = await req.json().catch(() => null);
   const { author_name, rating, comment } = body ?? {};
 

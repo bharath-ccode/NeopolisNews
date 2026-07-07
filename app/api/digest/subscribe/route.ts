@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rateLimit";
 import { createAdminClient } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimit(req, "digest-sub", { limit: 5 });
+  if (limited) return limited;
+
   const body = await req.json().catch(() => null);
   const { email, name } = body ?? {};
 

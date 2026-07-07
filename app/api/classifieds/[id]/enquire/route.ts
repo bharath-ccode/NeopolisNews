@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rateLimit";
 import { createAdminClient } from "@/lib/supabase/server";
 import { Resend } from "resend";
 
 
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  const limited = rateLimit(req, "cls-enquire", { limit: 5 });
+  if (limited) return limited;
+
   const resend = new Resend(process.env.RESEND_API_KEY);
   const body = await req.json().catch(() => null);
   const { senderName, senderPhone, message } = body ?? {};

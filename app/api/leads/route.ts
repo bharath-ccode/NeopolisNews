@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rateLimit";
 import { Resend } from "resend";
 
 
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimit(req, "leads", { limit: 5 });
+  if (limited) return limited;
+
   const resend = new Resend(process.env.RESEND_API_KEY);
   const body = await req.json().catch(() => null);
   const { name, phone, email, message, purpose } = body ?? {};
