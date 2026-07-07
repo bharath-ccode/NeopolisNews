@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Video, Plus, Trash2, Loader2, Zap, Square, ExternalLink, Users } from "lucide-react";
+import { Video, Plus, Trash2, Loader2, Zap, Square, ExternalLink, Users, ClipboardCheck } from "lucide-react";
 import { detectProvider } from "@/lib/videoProviders";
 
 interface WellnessSession {
@@ -34,6 +34,12 @@ const SESSION_TYPES = [
 ];
 const LANGUAGES = ["English", "Hindi", "Telugu", "Tamil", "Kannada", "Malayalam"];
 
+interface Enrollee {
+  user_id: string;
+  user_email: string | null;
+  attended: boolean;
+}
+
 const STATUS_STYLE: Record<string, string> = {
   draft:     "bg-gray-100 text-gray-600",
   live:      "bg-green-100 text-green-700",
@@ -58,6 +64,46 @@ export default function WellnessSessionsTab({ businessId, token }: { businessId:
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Attendance marking
+  const [attendanceFor, setAttendanceFor] = useState<string | null>(null);
+  const [enrollees, setEnrollees] = useState<Enrollee[]>([]);
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [savingAttendance, setSavingAttendance] = useState(false);
+  const [attendanceMsg, setAttendanceMsg] = useState("");
+
+  async function openAttendance(sessionId: string) {
+    setAttendanceFor(sessionId);
+    setEnrollees([]);
+    setAttendanceMsg("");
+    const res = await fetch(
+      `/api/my-business/wellness-sessions/attendance?businessId=${businessId}&sessionId=${sessionId}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    ).catch(() => null);
+    if (res?.ok) {
+      const data: Enrollee[] = await res.json();
+      setEnrollees(data);
+      setChecked(new Set(data.filter((e) => e.attended).map((e) => e.user_id)));
+    }
+  }
+
+  async function saveAttendance(sessionId: string) {
+    setSavingAttendance(true);
+    setAttendanceMsg("");
+    const res = await fetch("/api/my-business/wellness-sessions/attendance", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ businessId, sessionId, attendee_user_ids: Array.from(checked) }),
+    }).catch(() => null);
+    if (res?.ok) {
+      const data = await res.json();
+      setAttendanceMsg(`Saved — ${data.attended} attendee${data.attended === 1 ? "" : "s"} earned ${data.points_each} points each.`);
+    } else {
+      const j = res ? await res.json().catch(() => ({})) : {};
+      setAttendanceMsg((j as { error?: string }).error ?? "Failed to save attendance.");
+    }
+    setSavingAttendance(false);
+  }
   const [actionId, setActionId] = useState<string | null>(null);
 
   const [trainerName, setTrainerName] = useState("");
@@ -391,6 +437,70 @@ export default function WellnessSessionsTab({ businessId, token }: { businessId:
                   )}
                 </div>
               </div>
+
+              {/* Attendance → points (only paid enrollees are listed) */}
+              {s.seats_taken > 0 && s.status !== "cancelled" && (
+                <div className="mt-3 pt-3 border-t border-gray-50">
+                  {attendanceFor !== s.id ? (
+                    <button
+                      onClick={() => openAttendance(s.id)}
+                      className="flex items-center gap-1.5 text-xs font-bold text-brand-600 hover:text-brand-800"
+                    >
+                      <ClipboardCheck className="w-3.5 h-3.5" /> Mark attendance &amp; award points
+                    </button>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-xs font-bold text-gray-600">
+                        Tick who attended — each earns 20 Neopolis Points:
+                      </p>
+                      {enrollees.length === 0 ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-gray-300" />
+                      ) : (
+                        <div className="grid sm:grid-cols-2 gap-1.5">
+                          {enrollees.map((e) => (
+                            <label
+                              key={e.user_id}
+                              className="flex items-center gap-2 text-xs text-gray-700 bg-gray-50 rounded-lg px-3 py-2 cursor-pointer hover:bg-gray-100"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked.has(e.user_id)}
+                                onChange={(ev) => {
+                                  setChecked((prev) => {
+                                    const next = new Set(prev);
+                                    if (ev.target.checked) next.add(e.user_id); else next.delete(e.user_id);
+                                    return next;
+                                  });
+                                }}
+                                className="accent-brand-600"
+                              />
+                              <span className="truncate">{e.user_email ?? "Enrolled member"}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                      {attendanceMsg && (
+                        <p className="text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2">{attendanceMsg}</p>
+                      )}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => saveAttendance(s.id)}
+                          disabled={savingAttendance || enrollees.length === 0}
+                          className="btn-primary text-xs py-2 disabled:opacity-60"
+                        >
+                          {savingAttendance ? "Saving…" : `Save & Award (${checked.size})`}
+                        </button>
+                        <button
+                          onClick={() => setAttendanceFor(null)}
+                          className="text-xs font-semibold text-gray-500 px-3"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>

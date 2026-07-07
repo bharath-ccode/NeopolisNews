@@ -73,7 +73,8 @@ export default function BookingsTab({
         <h3 className="text-base font-bold text-gray-900">Appointment Requests</h3>
         <p className="text-xs text-gray-400 mt-0.5">
           {bookings.length} total · {pending} awaiting confirmation. Call the customer to
-          confirm, then mark the request.
+          confirm, then mark the request. Marking Done awards the customer Neopolis Points
+          for the visit.
         </p>
       </div>
 
