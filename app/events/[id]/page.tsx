@@ -80,8 +80,48 @@ export default async function EventDetailPage({ params }: { params: { id: string
   const availableSlots = ev.total_slots != null ? ev.total_slots - ev.claimed_slots : null;
   const soldOut = availableSlots !== null && availableSlots <= 0;
 
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neopolis.news";
+  const eventJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    name: ev.name,
+    startDate: ev.start_time ? `${ev.event_date}T${ev.start_time}` : ev.event_date,
+    ...(ev.end_date || ev.end_time
+      ? { endDate: ev.end_time ? `${ev.end_date ?? ev.event_date}T${ev.end_time}` : ev.end_date }
+      : {}),
+    eventStatus: "https://schema.org/EventScheduled",
+    eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+    ...(ev.description ? { description: ev.description } : {}),
+    ...(ev.image_url ? { image: [ev.image_url] } : {}),
+    location: {
+      "@type": "Place",
+      name: ev.businesses?.name ?? "Neopolis",
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: ev.businesses?.address ?? "Neopolis, Kokapet",
+        addressLocality: "Hyderabad",
+        addressRegion: "Telangana",
+        addressCountry: "IN",
+      },
+    },
+    ...(ev.businesses
+      ? { organizer: { "@type": "Organization", name: ev.businesses.name, url: `${SITE_URL}/businesses/${ev.businesses.id}` } }
+      : {}),
+    offers: {
+      "@type": "Offer",
+      price: ev.is_free ? 0 : ev.ticket_price ?? 0,
+      priceCurrency: "INR",
+      availability: soldOut ? "https://schema.org/SoldOut" : "https://schema.org/InStock",
+      url: `${SITE_URL}/events/${ev.id}`,
+    },
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(eventJsonLd) }}
+      />
 
       {/* Hero */}
       <section className="bg-gradient-to-br from-violet-950 via-violet-900 to-violet-800 text-white">
