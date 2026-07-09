@@ -34,8 +34,42 @@ export const metadata: Metadata = {
     type: "website",
     url: SITE_URL,
     siteName: "Neopolis News",
+    images: [{ url: `${SITE_URL}/banner.png` }],
   },
+  metadataBase: new URL(SITE_URL),
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
+  },
+  ...(process.env.GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } }
+    : {}),
   alternates: { canonical: SITE_URL },
+};
+
+// Social profiles (comma-separated URLs) strengthen the brand-entity signal.
+const SAME_AS = (process.env.NEXT_PUBLIC_SOCIAL_LINKS ?? "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "NewsMediaOrganization",
+  "@id": `${SITE_URL}/#organization`,
+  name: "Neopolis News",
+  alternateName: "NeopolisNews",
+  url: SITE_URL,
+  logo: { "@type": "ImageObject", url: `${SITE_URL}/logo.png` },
+  description:
+    "Hyperlocal news, real estate, business directory, community clubs and deals for the Neopolis urban district — Kokapet & Narsingi, Hyderabad.",
+  areaServed: [
+    { "@type": "Place", name: "Kokapet, Hyderabad" },
+    { "@type": "Place", name: "Narsingi, Hyderabad" },
+    { "@type": "Place", name: "Neopolis, Hyderabad" },
+  ],
+  ...(SAME_AS.length ? { sameAs: SAME_AS } : {}),
 };
 
 const websiteJsonLd = {
@@ -61,6 +95,10 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
         />
       </head>
       <body className="min-h-screen flex flex-col">
