@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createAdminClient } from "@/lib/supabase/server";
-import { LEVEL_LABELS, LEVEL_TAGS, LEVEL_SCOPE, type DigestLevel, type HeadlineItem } from "@/lib/digestSources";
+import { LEVEL_LABELS, LEVEL_TAGS, LEVEL_SCOPE, type StoryLevel, type HeadlineItem } from "@/lib/digestSources";
 
 export const maxDuration = 60;
 
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Draft article not found" }, { status: 404 });
   }
 
-  const level = article.digest_level as DigestLevel;
+  const level = article.digest_level as StoryLevel;
   const headlines: HeadlineItem[] = JSON.parse(
     typeof article.digest_headlines === "string"
       ? article.digest_headlines
