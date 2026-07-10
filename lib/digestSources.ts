@@ -1,7 +1,14 @@
 export type DigestLevel = "international" | "national" | "state" | "city";
 
+/** All story levels the review queue can hold: the four auto-generated
+ *  digest levels plus "editor" — stories composed from an editor's brief
+ *  (headlines + pointer) rather than fetched RSS headlines. */
+export type StoryLevel = DigestLevel | "editor";
+
 // Geographic scope rules injected into every prompt — keeps each article on-topic
-export const LEVEL_SCOPE: Record<DigestLevel, string> = {
+export const LEVEL_SCOPE: Record<StoryLevel, string> = {
+  editor:
+    "SCOPE: This story was briefed by the NeopolisNews editor. Follow the editor's pointer faithfully — it defines the angle, scope and emphasis. Where relevant, frame impact for residents and professionals of the Neopolis district (Kokapet & Narsingi, Hyderabad).",
   international:
     "SCOPE: Write ONLY about global/world events. Do NOT include India-specific, Telangana-specific, or Hyderabad-specific news. Cover geopolitical, economic, tech, and climate developments that matter globally.",
   national:
@@ -38,18 +45,20 @@ export const DIGEST_SOURCES: DigestSource[] = [
 
 export const DIGEST_LEVELS: DigestLevel[] = ["international", "national", "state", "city"];
 
-export const LEVEL_LABELS: Record<DigestLevel, string> = {
+export const LEVEL_LABELS: Record<StoryLevel, string> = {
   international: "International",
   national:      "National (India)",
   state:         "State (Telangana)",
   city:          "City (Hyderabad)",
+  editor:        "Editor's Desk",
 };
 
-export const LEVEL_TAGS: Record<DigestLevel, string> = {
+export const LEVEL_TAGS: Record<StoryLevel, string> = {
   international: "World",
   national:      "India",
   state:         "Telangana",
   city:          "Hyderabad",
+  editor:        "Editor's Desk",
 };
 
 // Simple RSS XML parser — no dependencies needed

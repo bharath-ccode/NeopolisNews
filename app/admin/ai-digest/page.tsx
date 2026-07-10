@@ -14,8 +14,11 @@ import {
   ChevronDown,
   ChevronUp,
   Send,
+  PenLine,
+  Plus,
+  X,
 } from "lucide-react";
-import { LEVEL_LABELS, DIGEST_LEVELS, type DigestLevel } from "@/lib/digestSources";
+import { LEVEL_LABELS, DIGEST_LEVELS, type DigestLevel, type StoryLevel } from "@/lib/digestSources";
 
 interface DigestArticle {
   id: string;
@@ -23,24 +26,33 @@ interface DigestArticle {
   excerpt: string;
   content: string;
   read_time: string;
-  digest_level: DigestLevel;
+  digest_level: StoryLevel;
   digest_date: string;
   status: "draft" | "published";
 }
 
-const LEVEL_ICONS: Record<DigestLevel, React.ElementType> = {
+const LEVEL_ICONS: Record<StoryLevel, React.ElementType> = {
   international: Globe,
   national:      Flag,
   state:         MapPin,
   city:          Building2,
+  editor:        PenLine,
 };
 
-const LEVEL_COLORS: Record<DigestLevel, string> = {
+const LEVEL_COLORS: Record<StoryLevel, string> = {
   international: "bg-purple-100 text-purple-700 border-purple-200",
   national:      "bg-blue-100 text-blue-700 border-blue-200",
   state:         "bg-emerald-100 text-emerald-700 border-emerald-200",
   city:          "bg-orange-100 text-orange-700 border-orange-200",
+  editor:        "bg-amber-100 text-amber-800 border-amber-200",
 };
+
+const COMPOSE_CATEGORIES = [
+  { id: "community",      label: "Community"       },
+  { id: "infrastructure", label: "Infrastructure"  },
+  { id: "construction",   label: "Construction"    },
+  { id: "launches",       label: "Business Launch" },
+];
 
 function getTodayIST(): string {
   const now = new Date();
@@ -62,6 +74,14 @@ export default function AiDigestPage() {
   const [regenerating, setRegenerating] = useState<Record<string, boolean>>({});
   const [publishing, setPublishing] = useState<Record<string, boolean>>({});
   const [actionMsg, setActionMsg] = useState<Record<string, string>>({});
+
+  // Editor's Desk (compose from pointers)
+  const [showCompose, setShowCompose] = useState(false);
+  const [composeHeadlines, setComposeHeadlines] = useState<string[]>(["", ""]);
+  const [composePointer, setComposePointer] = useState("");
+  const [composeCategory, setComposeCategory] = useState("community");
+  const [composing, setComposing] = useState(false);
+  const [composeError, setComposeError] = useState("");
 
   const fetchArticles = useCallback(async (d: string) => {
     setLoading(true);
@@ -153,6 +173,34 @@ export default function AiDigestPage() {
     }
   }
 
+  async function handleCompose(e: React.FormEvent) {
+    e.preventDefault();
+    setComposing(true);
+    setComposeError("");
+    try {
+      const res = await fetch("/api/ai-digest/compose", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          headlines: composeHeadlines.map((h) => h.trim()).filter(Boolean),
+          pointer: composePointer.trim(),
+          category: composeCategory,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setComposeError(data.error ?? "Failed to compose."); return; }
+      setComposeHeadlines(["", ""]);
+      setComposePointer("");
+      setShowCompose(false);
+      setDate(getTodayIST()); // composed drafts land on today
+      await fetchArticles(getTodayIST());
+    } catch {
+      setComposeError("Network error");
+    } finally {
+      setComposing(false);
+    }
+  }
+
   const existingLevels = new Set(articles.map((a) => a.digest_level));
   const allGenerated = DIGEST_LEVELS.every((l) => existingLevels.has(l));
 
@@ -195,6 +243,115 @@ export default function AiDigestPage() {
       {genError && (
         <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-600">{genError}</div>
       )}
+
+      {/* Editor's Desk — compose from pointers */}
+      <div className="card p-5 border-amber-200 bg-amber-50/40">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-bold text-gray-900 text-sm flex items-center gap-2">
+              <PenLine className="w-4 h-4 text-amber-600" /> Editor&apos;s Desk
+            </h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              You give the headlines and the angle — the AI only writes. Drafts land in
+              today&apos;s review queue below.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowCompose((s) => !s)}
+            className="flex items-center gap-1.5 text-xs font-bold text-amber-700 hover:text-amber-900 transition-colors"
+          >
+            {showCompose ? <><X className="w-3.5 h-3.5" /> Close</> : <><PenLine className="w-3.5 h-3.5" /> Compose a Story</>}
+          </button>
+        </div>
+
+        {showCompose && (
+          <form onSubmit={handleCompose} className="mt-4 space-y-3">
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-gray-600">
+                Headlines / leads (1–3) *
+              </label>
+              {composeHeadlines.map((h, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={h}
+                    onChange={(e) =>
+                      setComposeHeadlines((prev) => prev.map((v, j) => (j === i ? e.target.value : v)))
+                    }
+                    maxLength={200}
+                    placeholder={`Headline ${i + 1} — e.g. "GHMC approves new link road from Kokapet to ORR exit 17"`}
+                    className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+                  />
+                  {composeHeadlines.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setComposeHeadlines((prev) => prev.filter((_, j) => j !== i))}
+                      className="text-gray-300 hover:text-red-500 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+              {composeHeadlines.length < 3 && (
+                <button
+                  type="button"
+                  onClick={() => setComposeHeadlines((prev) => [...prev, ""])}
+                  className="flex items-center gap-1 text-xs font-semibold text-amber-700 hover:text-amber-900"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add headline
+                </button>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                Pointer — how to develop the story *
+              </label>
+              <textarea
+                value={composePointer}
+                onChange={(e) => setComposePointer(e.target.value)}
+                rows={3}
+                maxLength={2000}
+                placeholder="e.g. Focus on what this means for daily commuters from Neopolis towers; mention the current 40-min detour via Narsingi; keep it hopeful but note the completion timeline is unconfirmed."
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none bg-white"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-end gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Category</label>
+                <select
+                  value={composeCategory}
+                  onChange={(e) => setComposeCategory(e.target.value)}
+                  className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+                >
+                  {COMPOSE_CATEGORIES.map((c) => (
+                    <option key={c.id} value={c.id}>{c.label}</option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="submit"
+                disabled={
+                  composing ||
+                  !composePointer.trim() ||
+                  composeHeadlines.every((h) => !h.trim())
+                }
+                className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-colors"
+              >
+                {composing
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Writing…</>
+                  : <><Sparkles className="w-4 h-4" /> Compose Draft</>}
+              </button>
+            </div>
+
+            {composeError && (
+              <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">{composeError}</p>
+            )}
+          </form>
+        )}
+      </div>
 
       {/* Status overview */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
