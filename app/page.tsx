@@ -17,7 +17,7 @@ import {
   Activity,
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
-import DailyCartoonPanel from "@/components/DailyCartoonPanel";
+import HomeNewsAndCartoon from "@/components/HomeNewsAndCartoon";
 import LeadForm from "@/components/LeadForm";
 import { createAdminClient } from "@/lib/supabase/server";
 
@@ -242,8 +242,8 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── Daily Cartoon ── */}
-      <DailyCartoonPanel />
+      {/* ── Latest headlines + Daily Cartoon ── */}
+      <HomeNewsAndCartoon />
 
       {/* ── Stats ── */}
       <section className="bg-gradient-to-r from-amber-50 via-white to-emerald-50 border-b border-amber-100">
