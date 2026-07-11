@@ -17,7 +17,7 @@ import {
   Activity,
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
-import HeroLiveDesk from "@/components/HeroLiveDesk";
+import HomeNewsAndCartoon from "@/components/HomeNewsAndCartoon";
 import LeadForm from "@/components/LeadForm";
 import { createAdminClient } from "@/lib/supabase/server";
 
@@ -164,15 +164,30 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* ── Hero (banner image as background, live news desk on the right) ── */}
-      <section className="relative bg-gray-950 text-white overflow-hidden">
+      {/* ── Latest headlines + Daily Cartoon ── */}
+      <HomeNewsAndCartoon />
+
+      {/* ── Banner ── */}
+      <section className="relative w-full overflow-hidden" style={{ height: "clamp(220px, 40vw, 560px)" }}>
         <img
           src="/banner.png"
-          alt="Neopolis Urban District skyline"
+          alt="Neopolis Urban District"
           className="absolute inset-0 w-full h-full object-cover object-center"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-gray-950/95 via-gray-950/80 to-brand-950/70" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-20">
+        {/* bottom fade into stats section */}
+        <div className="absolute inset-0 bg-gradient-to-t from-amber-50/80 via-transparent to-transparent" />
+        {/* tagline overlay — centered */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <h2 className="text-white text-3xl md:text-5xl font-extrabold leading-tight drop-shadow-lg text-center px-6">
+            Neopolis. Financial District. Surroundings.
+          </h2>
+        </div>
+      </section>
+
+      {/* ── Hero ── */}
+      <section className="relative bg-gradient-to-br from-gray-950 via-brand-950 to-brand-900 text-white overflow-hidden">
+        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-amber-500 via-transparent to-transparent" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Copy */}
             <div>
@@ -215,35 +230,17 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* Live news + cartoon desk */}
-            <HeroLiveDesk />
-          </div>
-        </div>
-      </section>
-
-      {/* ── Expert advice lead form ── */}
-      <section className="bg-white border-b border-gray-100">
-        <SectionWrapper tight>
-          <div className="grid lg:grid-cols-2 gap-8 items-center">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Buying, renting or investing in Neopolis?
-              </h2>
-              <p className="text-gray-500 leading-relaxed max-w-md">
-                Neopolis. Financial District. Surroundings. Our advisors know every
-                project, price trend and rental pocket in the district — and the
-                advice is free for buyers.
-              </p>
-            </div>
-            <div className="bg-gray-50 rounded-2xl border border-gray-100 p-6">
+            {/* Lead form */}
+            <div className="bg-black/25 backdrop-blur rounded-2xl border border-white/10 p-6">
               <LeadForm
                 title="Get Free Expert Advice"
                 subtitle="Buy, rent, or invest in Neopolis — our advisors will guide you."
                 purpose="homepage-hero"
+                dark
               />
             </div>
           </div>
-        </SectionWrapper>
+        </div>
       </section>
 
       {/* ── Stats ── */}
