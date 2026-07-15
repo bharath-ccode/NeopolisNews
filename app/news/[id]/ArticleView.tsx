@@ -12,7 +12,10 @@ import WhatsAppShare from "@/components/WhatsAppShare";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neopolis.news";
 
-const TELUGU_FONT = { fontFamily: '"Noto Sans Telugu", "Gautami", "Nirmala UI", sans-serif' };
+// --font-telugu is the self-hosted Noto Sans Telugu loaded in the root layout.
+const TELUGU_FONT = {
+  fontFamily: 'var(--font-telugu), "Noto Sans Telugu", "Nirmala UI", sans-serif',
+};
 
 export type ArticleLang = "en" | "te";
 
@@ -160,15 +163,6 @@ export default async function ArticleView(
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
       />
-      {wantsTelugu && (
-        <>
-          {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-          <link
-            href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;600;800&display=swap"
-            rel="stylesheet"
-          />
-        </>
-      )}
       {wantsTelugu && !translation && <AutoTranslate articleId={article.id} />}
       {/* Hero */}
       <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white py-12 md:py-16">

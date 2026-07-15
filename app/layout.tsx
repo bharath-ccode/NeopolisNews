@@ -1,7 +1,16 @@
 import type { Metadata } from "next";
+import { Noto_Sans_Telugu } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import ConditionalShell from "@/components/ConditionalShell";
+
+// Self-hosted Telugu UI font — clean and highly legible for headings and body.
+const notoTelugu = Noto_Sans_Telugu({
+  subsets: ["telugu"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-telugu",
+  display: "swap",
+});
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neopolis.news";
 
@@ -90,7 +99,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={notoTelugu.variable}>
       <head>
         <script
           type="application/ld+json"
