@@ -2,8 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { notifyProjectSubscribers } from "@/lib/projectSubscriptions";
 import { pushToTopic } from "@/lib/push";
+import { getOrCreateTeluguTranslation } from "@/lib/translate";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
+
+/** Publish-time Telugu translation — best-effort, never blocks the publish
+ *  (readers can still trigger it lazily from the article page). */
+async function translateOnPublish(admin: SupabaseClient, articleId: string) {
+  try {
+    const { data: article } = await admin
+      .from("articles")
+      .select("id, title, excerpt, content")
+      .eq("id", articleId)
+      .single();
+    if (article) await getOrCreateTeluguTranslation(admin, article);
+  } catch (err) {
+    console.error("translateOnPublish:", err);
+  }
+}
 
 function formatDisplayDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-IN", {
@@ -83,6 +100,7 @@ export async function POST(req: NextRequest) {
       url:   `/news/${data.id}`,
       tag:   `article-${data.id}`,
     });
+    await translateOnPublish(admin, data.id);
   }
 
   return NextResponse.json({ id: data.id });
@@ -139,6 +157,7 @@ export async function PATCH(req: NextRequest) {
       url:   `/news/${data.id}`,
       tag:   `article-${data.id}`,
     });
+    await translateOnPublish(admin, data.id);
   }
 
   return NextResponse.json({ id: data.id });

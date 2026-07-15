@@ -19,7 +19,6 @@ import clsx from "clsx";
 import {
   getArticles,
   deleteArticle,
-  updateArticle,
   Article,
   ArticleCategory,
 } from "@/lib/newsStore";
@@ -71,7 +70,13 @@ export default function AdminNewsPage() {
 
   async function handleToggleStatus(article: Article) {
     const newStatus = article.status === "published" ? "draft" : "published";
-    await updateArticle(article.id, { status: newStatus });
+    // Via the API route (not direct Supabase) so publish-time side effects run:
+    // push notifications, subscriber emails, Telugu translation.
+    await fetch("/api/articles", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: article.id, status: newStatus }),
+    });
     refresh();
   }
 
@@ -264,6 +269,13 @@ export default function AdminNewsPage() {
                           title="Edit"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
+                        </Link>
+                        <Link
+                          href={`/admin/news/${article.id}/telugu`}
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-brand-600 hover:bg-brand-50 transition-colors text-[11px] font-bold leading-none"
+                          title="Review Telugu translation"
+                        >
+                          తె
                         </Link>
                         {deleteConfirm === article.id ? (
                           <div className="flex items-center gap-1">

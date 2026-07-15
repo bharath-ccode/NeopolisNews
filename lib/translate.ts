@@ -1,20 +1,8 @@
-import Anthropic from "@anthropic-ai/sdk";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-const client = new Anthropic();
-
-// Sonnet (same model as the digest routes): translation must finish well inside
-// Vercel's 60s function window — a single slow full-article call 504s.
-const MODEL = "claude-sonnet-4-6";
-
-const TRANSLATOR_ROLE = `You are a professional Telugu news translator for NeopolisNews, a hyperlocal news platform for the Neopolis urban district (Kokapet & Narsingi, Hyderabad).
-
-Rules:
-1. Write natural, fluent Telugu in the register of a quality Telugu newspaper (like Eenadu or Andhra Jyothi) — not a word-for-word literal translation
-2. Preserve any HTML structure EXACTLY — keep every tag (<p>, <h2>, <ul>, <li>, <strong>, <a> with its href, etc.) in place and translate only the text inside them
-3. Keep proper nouns recognizable: place names, project names, company names and person names may be transliterated into Telugu script, but keep well-known brand/product names, abbreviations (IT, ORR, HMDA, GHMC), and numbers as they are
-4. Keep "NeopolisNews" in Latin script
-5. Do not add, remove, or reorder any information`;
+// Google Cloud Translation API v2 — requires GOOGLE_TRANSLATE_API_KEY
+// (Cloud Console → enable "Cloud Translation API" → create API key).
+const ENDPOINT = "https://translation.googleapis.com/language/translate/v2";
 
 export interface ArticleTranslation {
   title: string;
@@ -29,97 +17,61 @@ interface TranslatableArticle {
   content: string;
 }
 
-async function complete(prompt: string, maxTokens: number): Promise<string> {
-  // Streaming avoids SDK HTTP timeouts (Telugu output is token-heavy).
-  const message = await client.messages
-    .stream({
-      model: MODEL,
-      max_tokens: maxTokens,
-      messages: [{ role: "user", content: prompt }],
-    })
-    .finalMessage();
+/** The v2 API returns translatedText with HTML entities even in text mode. */
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
+}
 
-  const textBlock = message.content.find((b) => b.type === "text");
-  if (textBlock?.type !== "text") {
-    throw new Error("Translation response contained no text");
+async function googleTranslate(
+  q: string[],
+  format: "text" | "html"
+): Promise<string[]> {
+  const apiKey = process.env.GOOGLE_TRANSLATE_API_KEY;
+  if (!apiKey) throw new Error("GOOGLE_TRANSLATE_API_KEY is not set");
+
+  const res = await fetch(`${ENDPOINT}?key=${apiKey}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ q, source: "en", target: "te", format }),
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`Google Translate ${res.status}: ${body.slice(0, 300)}`);
   }
-  return textBlock.text
-    .trim()
-    .replace(/^```(?:html|json)?\s*/i, "")
-    .replace(/```\s*$/i, "");
-}
 
-/** Split flat article HTML into chunks on top-level block boundaries so the
- *  chunks can be translated in parallel and re-joined without altering markup. */
-function chunkHtml(html: string, targetChars = 2200): string[] {
-  const segments = html
-    .split(/(?=<(?:p|h[1-6]|ul|ol|blockquote|table|figure)\b)/gi)
-    .filter((s) => s.trim());
-
-  const chunks: string[] = [];
-  let current = "";
-  for (const seg of segments) {
-    if (current && current.length + seg.length > targetChars) {
-      chunks.push(current);
-      current = "";
-    }
-    current += seg;
-  }
-  if (current.trim()) chunks.push(current);
-  return chunks.length > 0 ? chunks : [html];
-}
-
-async function translateHtmlChunk(chunk: string): Promise<string> {
-  const prompt = `${TRANSLATOR_ROLE}
-
-Translate the following HTML fragment of a news article from English to Telugu.
-
-Respond with ONLY the translated HTML fragment — no markdown fences, no commentary, no extra text.
-
-HTML FRAGMENT:
-${chunk}`;
-  return complete(prompt, 4096);
-}
-
-async function translateMeta(
-  title: string,
-  excerpt: string
-): Promise<{ title: string; excerpt: string }> {
-  const prompt = `${TRANSLATOR_ROLE}
-
-Translate this news article's title and excerpt from English to Telugu.
-
-ENGLISH TITLE:
-${title}
-
-ENGLISH EXCERPT:
-${excerpt}
-
-Format your response as valid JSON ONLY (no markdown fences) with this exact structure:
-{
-  "title": "Telugu translation of the title",
-  "excerpt": "Telugu translation of the excerpt"
-}`;
-  const parsed = JSON.parse(await complete(prompt, 1024)) as {
-    title: string;
-    excerpt: string;
+  const json = (await res.json()) as {
+    data?: { translations?: { translatedText: string }[] };
   };
-  if (!parsed.title || !parsed.excerpt) {
-    throw new Error("Translation response missing fields");
+  const translations = json.data?.translations;
+  if (!translations || translations.length !== q.length) {
+    throw new Error("Google Translate returned an unexpected response shape");
   }
-  return parsed;
+  return translations.map((t) => t.translatedText);
 }
 
 /** Translate an article's title, excerpt and HTML body into Telugu.
- *  Body chunks run in parallel so wall time stays inside serverless limits. */
+ *  format:"html" makes Google preserve the markup and translate only text nodes. */
 export async function translateToTelugu(
   article: Pick<TranslatableArticle, "title" | "excerpt" | "content">
 ): Promise<ArticleTranslation> {
-  const [meta, ...contentChunks] = await Promise.all([
-    translateMeta(article.title, article.excerpt),
-    ...chunkHtml(article.content).map(translateHtmlChunk),
+  const [[title, excerpt], [content]] = await Promise.all([
+    googleTranslate([article.title, article.excerpt], "text"),
+    googleTranslate([article.content], "html"),
   ]);
-  return { ...meta, content: contentChunks.join("") };
+  return {
+    title: decodeEntities(title),
+    excerpt: decodeEntities(excerpt),
+    content,
+  };
 }
 
 /** Fetch the cached Telugu translation for an article, or null if none exists. */

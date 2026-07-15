@@ -296,8 +296,8 @@ export default async function ArticlePage(
 
         {isTelugu && (
           <p className="text-xs text-gray-400 mt-6 pt-4 border-t border-gray-100">
-            ఈ కథనం ఆంగ్ల మూలం నుండి AI సహాయంతో అనువదించబడింది. (This article was
-            translated from the English original with AI assistance.){" "}
+            ఈ కథనం ఆంగ్ల మూలం నుండి స్వయంచాలకంగా అనువదించబడింది. (This article was
+            automatically translated from the English original.){" "}
             <Link href={`/news/${article.id}`} className="text-brand-600 underline">
               Read the original in English
             </Link>
