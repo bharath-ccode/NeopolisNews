@@ -1,19 +1,25 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Clock, Eye, Newspaper } from "lucide-react";
+import { ArrowLeft, Clock, Eye, Languages, Newspaper } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { toArticle, extractYouTubeId } from "@/lib/newsStore";
+import { getTranslation } from "@/lib/translate";
 import ViewTracker from "./ViewTracker";
 import CommentsSection from "./CommentsSection";
+import AutoTranslate from "./AutoTranslate";
 import WhatsAppShare from "@/components/WhatsAppShare";
 
 export const dynamic = "force-dynamic";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neopolis.news";
 
+const TELUGU_FONT = { fontFamily: '"Noto Sans Telugu", "Gautami", "Nirmala UI", sans-serif' };
+
+type PageSearchParams = { lang?: string };
+
 export async function generateMetadata(
-  { params }: { params: { id: string } }
+  { params, searchParams }: { params: { id: string }; searchParams: PageSearchParams }
 ): Promise<Metadata> {
   const admin = createAdminClient();
   const { data } = await admin
@@ -25,22 +31,33 @@ export async function generateMetadata(
 
   if (!data) return { title: "Article Not Found — NeopolisNews" };
 
+  const url = `${SITE_URL}/news/${params.id}`;
+  const isTelugu = searchParams.lang === "te";
+  const translation = isTelugu ? await getTranslation(admin, params.id, "te") : null;
+  const title = translation?.title ?? data.title;
+  const excerpt = translation?.excerpt ?? data.excerpt;
+
   return {
-    title: `${data.title} | NeopolisNews`,
-    description: data.excerpt,
+    title: `${title} | NeopolisNews`,
+    description: excerpt,
     openGraph: {
-      title: data.title,
-      description: data.excerpt,
-      url: `${SITE_URL}/news/${params.id}`,
+      title,
+      description: excerpt,
+      url: isTelugu ? `${url}?lang=te` : url,
       siteName: "NeopolisNews",
       type: "article",
       ...(data.image_url ? { images: [{ url: data.image_url }] } : {}),
     },
-    alternates: { canonical: `${SITE_URL}/news/${params.id}` },
+    alternates: {
+      canonical: url,
+      languages: { en: url, te: `${url}?lang=te` },
+    },
   };
 }
 
-export default async function ArticlePage({ params }: { params: { id: string } }) {
+export default async function ArticlePage(
+  { params, searchParams }: { params: { id: string }; searchParams: PageSearchParams }
+) {
   const admin = createAdminClient();
 
   const [{ data: articleData }, { data: relatedData }] = await Promise.all([
@@ -58,6 +75,16 @@ export default async function ArticlePage({ params }: { params: { id: string } }
 
   const article = toArticle(articleData);
   const digestLevel: string | null = articleData.digest_level ?? null;
+
+  // Telugu view: server-render the cached translation when it exists;
+  // otherwise fall back to English and let <AutoTranslate> generate + refresh.
+  const wantsTelugu = searchParams.lang === "te";
+  const translation = wantsTelugu ? await getTranslation(admin, article.id, "te") : null;
+  const isTelugu = wantsTelugu && translation !== null;
+  const displayTitle = translation?.title ?? article.title;
+  const displayExcerpt = translation?.excerpt ?? article.excerpt;
+  const displayContent = translation?.content ?? article.content;
+  const teluguStyle = isTelugu ? TELUGU_FONT : undefined;
 
   // For digest articles: match by digest_level so city stays city, etc.
   // For regular articles: match by category.
@@ -98,9 +125,10 @@ export default async function ArticlePage({ params }: { params: { id: string } }
   const articleJsonLd = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
-    headline: article.title,
-    description: article.excerpt,
-    articleBody: article.content,
+    headline: displayTitle,
+    description: displayExcerpt,
+    articleBody: displayContent,
+    inLanguage: isTelugu ? "te" : "en",
     datePublished: article.createdAt,
     dateModified: article.updatedAt,
     author: {
@@ -128,20 +156,58 @@ export default async function ArticlePage({ params }: { params: { id: string } }
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
       />
+      {wantsTelugu && (
+        <>
+          {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+          <link
+            href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;600;800&display=swap"
+            rel="stylesheet"
+          />
+        </>
+      )}
+      {wantsTelugu && !translation && <AutoTranslate articleId={article.id} />}
       {/* Hero */}
       <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white py-12 md:py-16">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
-          <Link
-            href="/news"
-            className="inline-flex items-center gap-1.5 text-gray-400 hover:text-white text-sm transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" /> All News
-          </Link>
+          <div className="flex items-center justify-between gap-3">
+            <Link
+              href="/news"
+              className="inline-flex items-center gap-1.5 text-gray-400 hover:text-white text-sm transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" /> All News
+            </Link>
+            {/* Language toggle */}
+            <div className="inline-flex items-center gap-1 bg-white/10 rounded-full p-1 text-xs font-semibold">
+              <Languages className="w-3.5 h-3.5 text-gray-300 ml-1.5" aria-hidden />
+              <Link
+                href={`/news/${article.id}`}
+                className={`px-2.5 py-1 rounded-full transition-colors ${
+                  !wantsTelugu ? "bg-white text-gray-900" : "text-gray-300 hover:text-white"
+                }`}
+              >
+                English
+              </Link>
+              <Link
+                href={`/news/${article.id}?lang=te`}
+                lang="te"
+                className={`px-2.5 py-1 rounded-full transition-colors ${
+                  wantsTelugu ? "bg-white text-gray-900" : "text-gray-300 hover:text-white"
+                }`}
+                style={TELUGU_FONT}
+              >
+                తెలుగు
+              </Link>
+            </div>
+          </div>
           <div className="mt-5 mb-4">
             <span className={article.tagColor}>{article.tag}</span>
           </div>
-          <h1 className="text-2xl md:text-4xl font-extrabold mt-3 mb-3 leading-snug">
-            {article.title}
+          <h1
+            className="text-2xl md:text-4xl font-extrabold mt-3 mb-3 leading-snug"
+            lang={isTelugu ? "te" : "en"}
+            style={teluguStyle}
+          >
+            {displayTitle}
           </h1>
           <div className="flex items-center gap-1.5 mb-4">
             <Eye className="w-4 h-4 text-brand-400" />
@@ -149,7 +215,13 @@ export default async function ArticlePage({ params }: { params: { id: string } }
               {article.views.toLocaleString("en-IN")} views
             </span>
           </div>
-          <p className="text-gray-300 text-base leading-relaxed mb-5">{article.excerpt}</p>
+          <p
+            className="text-gray-300 text-base leading-relaxed mb-5"
+            lang={isTelugu ? "te" : "en"}
+            style={teluguStyle}
+          >
+            {displayExcerpt}
+          </p>
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
             <span className="font-medium text-gray-300">{article.author}</span>
             <span>{article.date}</span>
@@ -164,7 +236,7 @@ export default async function ArticlePage({ params }: { params: { id: string } }
           </div>
           <div className="mt-5">
             <WhatsAppShare
-              title={`📰 ${article.title} — NeopolisNews`}
+              title={`📰 ${displayTitle} — NeopolisNews`}
               size="sm"
             />
           </div>
@@ -208,6 +280,8 @@ export default async function ArticlePage({ params }: { params: { id: string } }
       {/* Body */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 md:py-14">
         <div
+          lang={isTelugu ? "te" : "en"}
+          style={teluguStyle}
           className="article-body text-gray-700 leading-relaxed text-base space-y-4
             [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-gray-900 [&_h2]:mt-8 [&_h2]:mb-3
             [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-gray-900 [&_h3]:mt-6 [&_h3]:mb-2
@@ -217,8 +291,18 @@ export default async function ArticlePage({ params }: { params: { id: string } }
             [&_li]:text-gray-700
             [&_strong]:font-semibold [&_strong]:text-gray-900
             [&_a]:text-brand-600 [&_a]:underline"
-          dangerouslySetInnerHTML={{ __html: article.content }}
+          dangerouslySetInnerHTML={{ __html: displayContent }}
         />
+
+        {isTelugu && (
+          <p className="text-xs text-gray-400 mt-6 pt-4 border-t border-gray-100">
+            ఈ కథనం ఆంగ్ల మూలం నుండి AI సహాయంతో అనువదించబడింది. (This article was
+            translated from the English original with AI assistance.){" "}
+            <Link href={`/news/${article.id}`} className="text-brand-600 underline">
+              Read the original in English
+            </Link>
+          </p>
+        )}
 
         {article.source && (
           <p className="text-sm text-gray-400 mt-8 pt-6 border-t border-gray-100">
