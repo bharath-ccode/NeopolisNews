@@ -55,8 +55,7 @@ export default function AutoTranslate({ articleId }: { articleId: string }) {
   return (
     <div className="bg-brand-50 border-b border-brand-100 text-brand-800 text-sm px-4 py-3 flex items-center justify-center gap-2">
       <Languages className="w-4 h-4 animate-pulse" />
-      తెలుగు అనువాదం సిద్ధమవుతోంది… మొదటిసారి కాస్త సమయం పట్టవచ్చు. (Preparing the Telugu
-      translation — the first time can take a little while.)
+      తెలుగు అనువాదం సిద్ధమవుతోంది… (Preparing the Telugu translation — just a moment.)
     </div>
   );
 }
