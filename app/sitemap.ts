@@ -36,7 +36,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const admin = createAdminClient();
     const [
       { data: articles }, { data: businesses }, { data: projects },
-      { data: clubs }, { data: threads },
+      { data: clubs }, { data: threads }, { data: translations },
     ] = await Promise.all([
       admin.from("articles").select("id, updated_at").eq("status", "published"),
       admin.from("businesses").select("id, completed_at").eq("status", "active"),
@@ -48,10 +48,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .eq("status", "active")
         .order("created_at", { ascending: false })
         .limit(500),
+      admin.from("article_translations").select("article_id, updated_at").eq("lang", "te"),
     ]);
+
+    // Telugu article URLs — only for published articles with a cached translation
+    const publishedIds = new Set((articles ?? []).map((a) => a.id));
+    const teluguPages = (translations ?? [])
+      .filter((t) => publishedIds.has(t.article_id))
+      .map((t) => ({
+        url: `${BASE}/news/te/${t.article_id}`,
+        lastModified: t.updated_at ?? undefined,
+        changeFrequency: "monthly" as const,
+        priority: 0.6,
+      }));
 
     dynamic_pages = [
       ...(articles   ?? []).map((a) => ({ url: `${BASE}/news/${a.id}`,         lastModified: a.updated_at   ?? undefined, changeFrequency: "monthly" as const, priority: 0.7 })),
+      ...teluguPages,
       ...(businesses ?? []).map((b) => ({ url: `${BASE}/businesses/${b.id}`,   lastModified: b.completed_at ?? undefined, changeFrequency: "weekly"  as const, priority: 0.6 })),
       ...(projects   ?? []).map((p) => ({ url: `${BASE}/real-estate/${p.id}`,  lastModified: p.updated_at   ?? undefined, changeFrequency: "weekly"  as const, priority: 0.7 })),
       ...(clubs      ?? []).map((c) => ({ url: `${BASE}/clubs/${c.id}`,        lastModified: c.created_at   ?? undefined, changeFrequency: "weekly"  as const, priority: 0.6 })),
