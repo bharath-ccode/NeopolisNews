@@ -5,7 +5,9 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, CheckCircle2, Eye, Languages, RefreshCw, Save } from "lucide-react";
 
-const TELUGU_FONT = { fontFamily: '"Noto Sans Telugu", "Gautami", "Nirmala UI", sans-serif' };
+const TELUGU_FONT = {
+  fontFamily: 'var(--font-telugu), "Noto Sans Telugu", "Nirmala UI", sans-serif',
+};
 
 interface EnglishArticle {
   id: string;
