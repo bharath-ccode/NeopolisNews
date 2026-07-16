@@ -29,6 +29,7 @@ const CATEGORIES: { value: "" | ArticleCategory; label: string }[] = [
   { value: "launches",       label: "New Launches"   },
   { value: "infrastructure", label: "Infrastructure" },
   { value: "community",      label: "Community"      },
+  { value: "editorial",      label: "Editorial"      },
 ];
 
 const STATUS_FILTERS = [

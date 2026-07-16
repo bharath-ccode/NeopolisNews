@@ -7,24 +7,18 @@ export const maxDuration = 60;
 
 const client = new Anthropic();
 
-const CATEGORIES = ["community", "infrastructure", "construction", "launches"] as const;
-type Category = (typeof CATEGORIES)[number];
+// Editor's Desk pieces are opinion/analysis — always filed under Editorial.
+const EDITORIAL = { tag: "Editorial", tagColor: "tag-slate" };
 
-const CATEGORY_TAGS: Record<Category, { tag: string; tagColor: string }> = {
-  community:      { tag: "Community",      tagColor: "tag-purple" },
-  infrastructure: { tag: "Infrastructure", tagColor: "tag-blue"   },
-  construction:   { tag: "Construction",   tagColor: "tag-orange" },
-  launches:       { tag: "Business Launch", tagColor: "tag-green" },
-};
-
-/** POST { headlines: string[] (1–3), pointer: string, category? }
+/** POST { headlines: string[] (1–3), pointer: string }
  *  Editor's Desk mode: the editor supplies the leads and the angle; the AI
- *  only does the writing. Draft lands in the same review queue as the
- *  auto-generated digest (regenerate-with-feedback and approve work as-is). */
+ *  only does the writing. Output is always categorised as Editorial. Draft
+ *  lands in the same review queue as the auto-generated digest
+ *  (regenerate-with-feedback and approve work as-is). */
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
-  const { headlines, pointer, category } = (body ?? {}) as {
-    headlines?: string[]; pointer?: string; category?: string;
+  const { headlines, pointer } = (body ?? {}) as {
+    headlines?: string[]; pointer?: string;
   };
 
   const cleanHeadlines = (Array.isArray(headlines) ? headlines : [])
@@ -37,10 +31,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "The pointer (story direction) is required." }, { status: 400 });
   if (pointer.trim().length > 2000)
     return NextResponse.json({ error: "Pointer is too long (max 2000 characters)." }, { status: 400 });
-
-  const cat: Category = CATEGORIES.includes(category as Category)
-    ? (category as Category)
-    : "community";
 
   const headlineText = cleanHeadlines.map((h, i) => `${i + 1}. ${h}`).join("\n");
 
@@ -99,9 +89,9 @@ Format your response as valid JSON ONLY (no markdown fences) with this exact str
       title:            generated.title,
       excerpt:          generated.excerpt,
       content:          generated.content,
-      category:         cat,
-      tag:              CATEGORY_TAGS[cat].tag,
-      tag_color:        CATEGORY_TAGS[cat].tagColor,
+      category:         "editorial",
+      tag:              EDITORIAL.tag,
+      tag_color:        EDITORIAL.tagColor,
       author:           "NeopolisNews Desk",
       date:             formatDisplayDate(todayIST),
       read_time:        generated.readTime,

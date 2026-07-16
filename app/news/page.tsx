@@ -10,6 +10,7 @@ import {
   CheckCircle,
   Clock,
   Eye,
+  PenLine,
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import LeadForm from "@/components/LeadForm";
@@ -37,9 +38,10 @@ const CATEGORY_CONFIG: {
   { id: "launches",       icon: Zap,         label: "Business Launches",    color: "bg-green-50 text-green-600",  anchor: "launches"       },
   { id: "infrastructure", icon: TrendingUp,  label: "Infrastructure",       color: "bg-blue-50 text-blue-600",   anchor: "infrastructure" },
   { id: "community",      icon: Users,       label: "Community",            color: "bg-purple-50 text-purple-600",anchor: "community"      },
+  { id: "editorial",      icon: PenLine,     label: "Editorial",            color: "bg-slate-100 text-slate-600", anchor: "editorial"      },
 ];
 
-const NON_INFRA_CATEGORIES: ArticleCategory[] = ["construction", "launches", "community"];
+const NON_INFRA_CATEGORIES: ArticleCategory[] = ["construction", "launches", "community", "editorial"];
 
 const CONTENT_PACKAGES = [
   {

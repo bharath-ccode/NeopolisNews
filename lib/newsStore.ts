@@ -16,9 +16,9 @@ export function extractYouTubeId(url: string): string | null {
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type ArticleCategory = "construction" | "launches" | "infrastructure" | "community";
+export type ArticleCategory = "construction" | "launches" | "infrastructure" | "community" | "editorial";
 export type ArticleStatus = "draft" | "published";
-export type TagColor = "tag-orange" | "tag-green" | "tag-blue" | "tag-purple";
+export type TagColor = "tag-orange" | "tag-green" | "tag-blue" | "tag-purple" | "tag-slate";
 
 export interface Article {
   id: string;
@@ -51,6 +51,7 @@ export const CATEGORY_META: Record<
   launches:       { label: "Business Launches", tag: "Business Launch", tagColor: "tag-green"  },
   infrastructure: { label: "Infrastructure", tag: "Infrastructure",tagColor: "tag-blue"   },
   community:      { label: "Community",      tag: "Community",     tagColor: "tag-purple" },
+  editorial:      { label: "Editorial",      tag: "Editorial",     tagColor: "tag-slate"  },
 };
 
 // ─── Row mapper: Supabase snake_case → Article camelCase ─────────────────────
