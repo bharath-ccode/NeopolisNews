@@ -32,6 +32,7 @@ const CATEGORIES: ArticleCategory[] = [
   "launches",
   "infrastructure",
   "community",
+  "editorial",
 ];
 
 function formatDisplayDate(iso: string): string {

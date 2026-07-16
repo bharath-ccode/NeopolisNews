@@ -47,13 +47,6 @@ const LEVEL_COLORS: Record<StoryLevel, string> = {
   editor:        "bg-amber-100 text-amber-800 border-amber-200",
 };
 
-const COMPOSE_CATEGORIES = [
-  { id: "community",      label: "Community"       },
-  { id: "infrastructure", label: "Infrastructure"  },
-  { id: "construction",   label: "Construction"    },
-  { id: "launches",       label: "Business Launch" },
-];
-
 function getTodayIST(): string {
   const now = new Date();
   const ist = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
@@ -79,7 +72,6 @@ export default function AiDigestPage() {
   const [showCompose, setShowCompose] = useState(false);
   const [composeHeadlines, setComposeHeadlines] = useState<string[]>(["", ""]);
   const [composePointer, setComposePointer] = useState("");
-  const [composeCategory, setComposeCategory] = useState("community");
   const [composing, setComposing] = useState(false);
   const [composeError, setComposeError] = useState("");
 
@@ -184,7 +176,6 @@ export default function AiDigestPage() {
         body: JSON.stringify({
           headlines: composeHeadlines.map((h) => h.trim()).filter(Boolean),
           pointer: composePointer.trim(),
-          category: composeCategory,
         }),
       });
       const data = await res.json();
@@ -318,19 +309,10 @@ export default function AiDigestPage() {
               />
             </div>
 
-            <div className="flex flex-wrap items-end gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Category</label>
-                <select
-                  value={composeCategory}
-                  onChange={(e) => setComposeCategory(e.target.value)}
-                  className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
-                >
-                  {COMPOSE_CATEGORIES.map((c) => (
-                    <option key={c.id} value={c.id}>{c.label}</option>
-                  ))}
-                </select>
-              </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-slate-200 px-2.5 py-1 rounded-full">
+                Filed under Editorial
+              </span>
               <button
                 type="submit"
                 disabled={
