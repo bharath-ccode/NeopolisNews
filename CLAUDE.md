@@ -23,6 +23,7 @@ Create `.env.local` with:
 SUPABASE_SERVICE_ROLE_KEY=...     # bypasses RLS — server/API routes only
 RESEND_API_KEY=...                # email delivery (Resend)
 GOOGLE_TRANSLATE_API_KEY=...      # Cloud Translation API v2 — Telugu article translations
+GOOGLE_AI_API_KEY=...             # Gemini API key (Imagen) — AI editorial illustrations; needs billing
 OTP_SECRET=...                    # HMAC secret for signing business OTP cookies
 
 # Recommended
