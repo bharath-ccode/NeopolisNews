@@ -275,9 +275,13 @@ export default function HomeScreen() {
             <SectionHeader title="📰 News" />
             {news.length === 0 ? (
               <EmptyRow text="No news articles yet" />
-            ) : news.map(n => (
-              <NewsCard key={n.id} item={n} onPress={() => router.push(`/news/${n.id}`)} />
-            ))}
+            ) : (
+              <View style={s.newsListCard}>
+                {news.slice(0, 5).map(n => (
+                  <NewsCard key={n.id} item={n} onPress={() => router.push(`/news/${n.id}`)} />
+                ))}
+              </View>
+            )}
 
             {/* ── Today's Cartoon ──────────────────────────────────────── */}
             {cartoon && (
@@ -529,20 +533,16 @@ function AnnouncementCard({ item }: { item: Announcement }) {
 
 function NewsCard({ item, onPress }: { item: NewsItem; onPress: () => void }) {
   return (
-    <TouchableOpacity style={s.card} activeOpacity={0.8} onPress={onPress}>
-      {item.image_url && <Image source={{ uri: item.image_url }} style={s.cardImg} resizeMode="cover" />}
-      <View style={s.cardBody}>
-        <View style={s.cardTopRow}>
-          {item.tag && (
-            <View style={[s.badge, { backgroundColor: item.tag_color ?? colors.gray[700] }]}>
-              <Text style={s.badgeText}>{item.tag}</Text>
-            </View>
-          )}
-          {item.date && <Text style={s.cardMeta}>{item.date}</Text>}
-        </View>
-        <Text style={s.cardTitle} numberOfLines={2}>{item.title}</Text>
-        {item.excerpt ? <Text style={s.cardSub} numberOfLines={2}>{item.excerpt}</Text> : null}
+    <TouchableOpacity style={s.newsCard} activeOpacity={0.75} onPress={onPress}>
+      <View style={s.newsCardInner}>
+        {item.tag && (
+          <View style={[s.newsBadge, { backgroundColor: item.tag_color ?? colors.gray[600] }]}>
+            <Text style={s.newsBadgeText}>{item.tag}</Text>
+          </View>
+        )}
+        <Text style={s.newsTitle} numberOfLines={1}>{item.title}</Text>
       </View>
+      <Text style={s.newsArrow}>›</Text>
     </TouchableOpacity>
   );
 }
@@ -638,6 +638,30 @@ const s = StyleSheet.create({
   },
   cardImg:    { width: "100%", height: 160 },
   cartoonImg: { width: "100%", height: 220 },
+
+  // Compact news list
+  newsListCard: {
+    marginHorizontal: 16, marginBottom: 10,
+    backgroundColor: colors.white, borderRadius: 16, overflow: "hidden",
+    shadowColor: colors.black, shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07, shadowRadius: 6, elevation: 3,
+  },
+  newsCard: {
+    flexDirection: "row", alignItems: "center",
+    paddingHorizontal: 14, paddingVertical: 12,
+    borderBottomWidth: 1, borderBottomColor: colors.gray[100],
+  },
+    flexDirection: "row", alignItems: "center",
+    backgroundColor: colors.white,
+    marginHorizontal: 16, marginBottom: 1,
+    paddingHorizontal: 14, paddingVertical: 11,
+    borderBottomWidth: 1, borderBottomColor: colors.gray[100],
+  },
+  newsCardInner: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8, marginRight: 6 },
+  newsBadge:     { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  newsBadgeText: { color: colors.white, fontSize: 9, fontWeight: "800", letterSpacing: 0.3 },
+  newsTitle:     { flex: 1, fontSize: 13, fontWeight: "600", color: colors.gray[800] },
+  newsArrow:     { fontSize: 18, color: colors.gray[300], lineHeight: 20 },
   cardBody:   { padding: 12 },
   cardTopRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 7 },
   badge:      { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
