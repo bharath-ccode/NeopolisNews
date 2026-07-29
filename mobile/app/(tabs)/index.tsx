@@ -191,12 +191,9 @@ export default function HomeScreen() {
       }
     }).catch(() => {});
 
-    fetch(
-      "https://air-quality-api.open-meteo.com/v1/air-quality" +
-      "?latitude=17.4126&longitude=78.3338&current=us_aqi&timezone=Asia%2FKolkata"
-    )
+    fetch("https://api.waqi.info/feed/geo:17.4126;78.3338/?token=demo")
       .then(r => r.json())
-      .then(j => { if (j?.current?.us_aqi != null) setWx(prev => ({ ...prev, aqi: Number(j.current.us_aqi) })); })
+      .then(j => { if (j?.status === "ok" && j?.data?.aqi != null) setWx(prev => ({ ...prev, aqi: Number(j.data.aqi) })); })
       .catch(() => {});
   }, []);
 
