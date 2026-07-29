@@ -83,7 +83,11 @@ interface Announcement {
 }
 interface NewsItem {
   id: string; title: string; excerpt: string | null;
-  date: string | null; tag: string | null; tag_color: string | null; image: string | null;
+  date: string | null; tag: string | null; tag_color: string | null; image_url: string | null;
+}
+interface Cartoon {
+  id: string; title: string; image_url: string | null; caption: string | null;
+  artist_name: string | null; publish_date: string; is_contest: boolean; winner_name: string | null;
 }
 interface BusinessEvent {
   id: string; name: string; event_type: string;
@@ -109,6 +113,7 @@ export default function HomeScreen() {
   const [deals, setDeals]                 = useState<Deal[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [news, setNews]                   = useState<NewsItem[]>([]);
+  const [cartoon, setCartoon]             = useState<Cartoon | null>(null);
   const [events, setEvents]               = useState<BusinessEvent[]>([]);
   const [loading, setLoading]             = useState(true);
   const [refreshing, setRefreshing]       = useState(false);
@@ -126,21 +131,24 @@ export default function HomeScreen() {
 
   const loadData = useCallback(async () => {
     const today = new Date().toISOString().split("T")[0];
-    const [dealsRes, buzzRes, newsRes, eventsRes] = await Promise.allSettled([
+    const [dealsRes, buzzRes, newsRes, eventsRes, cartoonsRes] = await Promise.allSettled([
       fetch(`${API}/api/deals`).then(r => r.json()),
       fetch(`${API}/api/announcements`).then(r => r.json()),
-      fetch(`${API}/api/news?limit=5`).then(r => r.json()),
+      fetch(`${API}/api/articles?status=published`).then(r => r.json()),
       fetch(`${API}/api/events/upcoming?limit=5&from=${today}`).then(r => r.json()),
+      fetch(`${API}/api/cartoons`).then(r => r.json()),
     ]);
-    const dealsData  = dealsRes.status  === "fulfilled" ? dealsRes.value  : [];
-    const buzzData   = buzzRes.status   === "fulfilled" ? buzzRes.value   : [];
-    const newsData   = newsRes.status   === "fulfilled" ? newsRes.value   : [];
-    const eventsData = eventsRes.status === "fulfilled" ? eventsRes.value : [];
+    const dealsData    = dealsRes.status    === "fulfilled" ? dealsRes.value    : [];
+    const buzzData     = buzzRes.status     === "fulfilled" ? buzzRes.value     : [];
+    const newsData     = newsRes.status     === "fulfilled" ? newsRes.value     : [];
+    const eventsData   = eventsRes.status   === "fulfilled" ? eventsRes.value   : [];
+    const cartoonsData = cartoonsRes.status === "fulfilled" ? cartoonsRes.value : {};
     setDeals(Array.isArray(dealsData) ? dealsData.slice(0, 2) : []);
     setAnnouncements(Array.isArray(buzzData) ? buzzData.slice(0, 2) : []);
     const articles = Array.isArray(newsData) ? newsData : (newsData?.articles ?? []);
-    setNews(articles.slice(0, 2));
+    setNews(articles.slice(0, 6));
     setEvents(Array.isArray(eventsData) ? eventsData.slice(0, 5) : []);
+    if (cartoonsData?.latest) setCartoon(cartoonsData.latest);
     setLoading(false);
     setRefreshing(false);
   }, []);
@@ -267,7 +275,17 @@ export default function HomeScreen() {
             <SectionHeader title="📰 News" />
             {news.length === 0 ? (
               <EmptyRow text="No news articles yet" />
-            ) : news.map(n => <NewsCard key={n.id} item={n} />)}
+            ) : news.map(n => (
+              <NewsCard key={n.id} item={n} onPress={() => router.push(`/news/${n.id}`)} />
+            ))}
+
+            {/* ── Today's Cartoon ──────────────────────────────────────── */}
+            {cartoon && (
+              <>
+                <SectionHeader title="✏️ Today's Cartoon" />
+                <CartoonCard cartoon={cartoon} onPress={() => router.push(`/cartoon/${cartoon.id}`)} />
+              </>
+            )}
           </>
         )}
         <View style={{ height: 32 }} />
@@ -509,10 +527,10 @@ function AnnouncementCard({ item }: { item: Announcement }) {
   );
 }
 
-function NewsCard({ item }: { item: NewsItem }) {
+function NewsCard({ item, onPress }: { item: NewsItem; onPress: () => void }) {
   return (
-    <TouchableOpacity style={s.card} activeOpacity={0.8}>
-      {item.image && <Image source={{ uri: item.image }} style={s.cardImg} resizeMode="cover" />}
+    <TouchableOpacity style={s.card} activeOpacity={0.8} onPress={onPress}>
+      {item.image_url && <Image source={{ uri: item.image_url }} style={s.cardImg} resizeMode="cover" />}
       <View style={s.cardBody}>
         <View style={s.cardTopRow}>
           {item.tag && (
@@ -520,10 +538,30 @@ function NewsCard({ item }: { item: NewsItem }) {
               <Text style={s.badgeText}>{item.tag}</Text>
             </View>
           )}
-          {item.date && <Text style={s.cardMeta}>{new Date(item.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</Text>}
+          {item.date && <Text style={s.cardMeta}>{item.date}</Text>}
         </View>
         <Text style={s.cardTitle} numberOfLines={2}>{item.title}</Text>
         {item.excerpt ? <Text style={s.cardSub} numberOfLines={2}>{item.excerpt}</Text> : null}
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+function CartoonCard({ cartoon, onPress }: { cartoon: Cartoon; onPress: () => void }) {
+  const openContest = cartoon.is_contest && !cartoon.winner_name;
+  return (
+    <TouchableOpacity style={s.card} activeOpacity={0.8} onPress={onPress}>
+      {cartoon.image_url && <Image source={{ uri: cartoon.image_url }} style={s.cartoonImg} resizeMode="cover" />}
+      <View style={s.cardBody}>
+        <Text style={s.cardTitle} numberOfLines={2}>{cartoon.title}</Text>
+        {cartoon.caption ? (
+          <Text style={s.cardSub} numberOfLines={2}>"{cartoon.caption}"</Text>
+        ) : openContest ? (
+          <Text style={[s.cardSub, { color: "#b45309" }]}>🏆 Caption contest open — win 25 points</Text>
+        ) : null}
+        {cartoon.artist_name && (
+          <Text style={[s.cardMeta, { marginTop: 8 }]}>✏️ {cartoon.artist_name}</Text>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -599,6 +637,7 @@ const s = StyleSheet.create({
     shadowOpacity: 0.07, shadowRadius: 6, elevation: 3,
   },
   cardImg:    { width: "100%", height: 160 },
+  cartoonImg: { width: "100%", height: 220 },
   cardBody:   { padding: 12 },
   cardTopRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 7 },
   badge:      { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
