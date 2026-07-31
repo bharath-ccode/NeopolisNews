@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -42,6 +42,12 @@ export default function RegisterPage() {
 
   const [step, setStep] = useState<Step>("type");
   const [userType, setUserType] = useState<UserType>("individual");
+
+  // Pre-select account type from ?type=business / ?type=individual links
+  useEffect(() => {
+    const type = new URLSearchParams(window.location.search).get("type");
+    if (type === "business" || type === "individual") setUserType(type);
+  }, []);
 
   // Shared
   const [name, setName] = useState("");

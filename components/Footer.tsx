@@ -23,6 +23,7 @@ const FOOTER_LINKS = {
   Platform: [
     { label: "Local News", href: "/news" },
     { label: "Services", href: "/services" },
+    { label: "For Businesses", href: "/for-businesses" },
     { label: "Advertise", href: "/advertise" },
     { label: "Partner With Us", href: "/advertise#partners" },
   ],

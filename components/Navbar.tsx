@@ -183,8 +183,8 @@ export default function Navbar() {
       <div className="bg-brand-950 text-brand-200 text-xs py-1.5 px-4 text-center hidden md:block">
         Neopolis — 100-acre mixed-use urban district &nbsp;·&nbsp; Live updates
         every week &nbsp;·&nbsp;
-        <Link href="/advertise" className="underline hover:text-white">
-          List your property or business →
+        <Link href="/for-businesses" className="underline hover:text-white">
+          Own a business here? List it free →
         </Link>
       </div>
 
