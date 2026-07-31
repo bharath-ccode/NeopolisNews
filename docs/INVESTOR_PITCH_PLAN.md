@@ -1,0 +1,152 @@
+# NeopolisNews — 15-Day Investor Pitch Runway (Aug 1 → Aug 17)
+
+Working document for the Aug 17 investor pitch. Two tracks run in parallel:
+**Track A** — get the website/data ready. **Track B** — sharpen the story (the 5 streams).
+
+Grounded in what exists today: 6 live modules (Real Estate, Rentals, Directory,
+News, Services, Advertise), lead forms on every page, auth + dashboards for
+individuals and businesses, 12,000+ registered users, daily news + cartoons
+driving engagement.
+
+---
+
+## Track A — Website & Data (15 days)
+
+### Days 1–5 (Aug 1–5): Data depth — answer what users are already asking for
+
+1. **Project data.** Users want more project data. Deepen the 3 featured
+   projects into full project pages: monthly construction-progress photos,
+   price history table, floor-plan gallery, delivery-timeline tracker. Add
+   every named project in the district, even "Coming Soon" ones — coverage
+   completeness is the moat claim.
+2. **Health & Medical category in the Directory.** Today the directory has
+   Mall, Food, Entertainment, Fitness, Beauty, Cafes — no health category.
+   Add **Health & Medical** (clinics, pharmacies, diagnostics, dental,
+   physio, pediatrics) with a "Book Appointment" lead CTA. Set a hard
+   target: **20+ health listings live before Aug 17** (see onboarding sprint
+   below).
+3. **Protect the engagement engine.** Daily news + cartoons is the proven
+   habit loop — do not let pitch prep break the streak. Pre-write 5 days of
+   buffer content now.
+
+### Days 6–10 (Aug 6–11): Conversion features — turn browsing into transactions
+
+4. **Movie tickets, phased.** Don't build a booking engine in 15 days:
+   - **v1 (ship by Aug 11):** Showtimes page for PVR Neopolis + a "Book
+     Tickets" button. Even if the button deep-links out or captures a lead,
+     **track every click** — that click-through data *is* the demand proof
+     investors want, and it's your negotiating card with PVR/BookMyShow for
+     the real integration later.
+   - **v2 (post-pitch):** white-label ticketing partnership. In the pitch,
+     show v1 live + v2 on the roadmap slide with the intent numbers.
+5. **Self-serve business onboarding.** Polish the register → business
+   dashboard flow into a "Claim your listing in 5 minutes" funnel. This is
+   the thing you demo live to investors.
+6. **Instrument everything.** Page views, lead-form submissions by purpose
+   (the LeadForm component already tags `purpose`), ticket-intent clicks,
+   news/cartoon dwell time. Fourteen days of clean analytics is a small but
+   honest traction chart.
+
+### Days 11–15 (Aug 12–16): Investor readiness
+
+7. **Metrics dashboard** (one screen): registered users, DAU/WAU, listings
+   by category, leads generated this month, ticket-intent clicks, news
+   streak. Use it live in the pitch.
+8. **Feature freeze Aug 14.** Bug fixes and content only after that. Record
+   a backup demo video in case of live-demo failure.
+9. **Aug 15–16:** dry runs of the pitch with the demo, tighten to time.
+
+### Parallel field sprint (Days 1–10): Health business onboarding
+- List every health business in/around the district (~walk the district +
+  Google Maps sweep). Door-to-door with a tablet: free listing created on
+  the spot in 5 minutes, photo taken, offer captured.
+- Incentive: **first 25 health businesses get 6 months of premium free.**
+- Target: 20+ live, 3 with a real offer/appointment CTA for the demo.
+
+---
+
+## Track B — The 5 Streams (messaging framework)
+
+Each stream is written for both audiences: the **resident/user** and the
+**business**. Use these verbatim on the website, in the deck, and in the
+onboarding script.
+
+### Stream 1 — What you'll see as a result of onboarding
+
+**User:** "One account for your entire district. Track your tower's
+construction progress with photo updates, get price alerts, see today's
+showtimes and this week's offers from every store in the mall, book a
+doctor's appointment nearby, and start every morning with local news and
+the daily cartoon."
+
+**Business:** "A verified listing page with your hours, photos, offers and
+events — visible to 12,000+ registered residents and workers within walking
+distance of your door. A monthly report of exactly how many people viewed
+you, called you, and asked for directions."
+
+### Stream 2 — How our solution helps
+
+**User:** "Today you need six apps for one neighbourhood — a property
+portal, a broker, Google Maps, BookMyShow, a newspaper, and a WhatsApp
+group. We replace all six for the 100 acres you actually live in.
+Everything is verified, current, and walking-distance relevant."
+
+**Business:** "Every rupee you spend elsewhere reaches people who will
+never visit your store. Every impression on NeopolisNews is a person who
+lives or works within 15 minutes of you. We sell footfall, not
+impressions."
+
+### Stream 3 — There is no risk in trying
+
+**User:** Free forever for residents. Browse without an account. No payment
+details ever asked. Unsubscribe from anything in one tap.
+
+**Business:** The basic listing is free, forever. Premium comes with a
+30-day free trial, monthly billing, cancel anytime — no annual lock-in to
+start. Your Google and Justdial presence stays untouched; we add a channel,
+we don't replace one. If the monthly report shows no leads, you've lost
+nothing.
+
+### Stream 4 — Why we score over the competition
+
+| Competitor | Their game | Our edge |
+|---|---|---|
+| 99acres / MagicBricks / NoBroker | Whole-city breadth | Tower-by-tower depth: live construction %, verified inventory, price history for *this* district only |
+| Justdial / Google Maps | Stale, unverified, city-wide | Curated, verified, district-only; live offers and events, not five-year-old phone numbers |
+| BookMyShow | Tickets only | Tickets next to dinner reservations, mall offers, and parking — plan the whole evening in one place |
+| City newspapers / WhatsApp groups | Noise, no accountability | Daily edited local news + cartoons people actually open, with an archive |
+
+**The one-line moat:** we are the only platform that holds the *complete
+graph* of one micro-city — developers, retailers, residents, and service
+vendors reinforcing each other. Horizontal players can't match the depth;
+another local player can't match the head start (daily content habit +
+12,000 users + listings base).
+
+### Stream 5 — Call to action (how we get them to onboard)
+
+**User CTA:** "Claim your resident account." Founding-resident perks for
+registering before the mall opening: ₹99-Tuesday movie alerts, priority
+booking, offer notifications. Distribution: QR-code standees in lobbies and
+the mall, WhatsApp broadcast of the daily cartoon (the cartoon is the
+shareable hook — put the QR on it), every news article ends with the
+register CTA.
+
+**Business CTA:** "Claim your free listing in 5 minutes." First 25 health
+businesses get 6 months premium free. Door-to-door tablet onboarding — the
+business owner watches their page go live before you leave the shop. The
+monthly leads report is the retention hook: it arrives on the 1st and does
+the renewal conversation for you.
+
+**On-site mechanics:** sticky "Claim your listing" button on every
+directory page; every lead form followed up by phone within 24 hours.
+
+---
+
+## Pitch-day proof points (targets to hit by Aug 17)
+
+- 20+ health & medical listings live, 3 with bookable offers
+- Movie showtimes page live with N ticket-intent clicks (real number)
+- Unbroken daily news + cartoon streak through pitch day
+- 14 days of analytics: DAU/WAU, leads by category, top content
+- One live demo path: resident view → project tracker → directory →
+  book-tickets click → business claims a listing → dashboard shows the lead
