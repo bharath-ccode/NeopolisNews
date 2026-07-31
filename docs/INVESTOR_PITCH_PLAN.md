@@ -19,29 +19,31 @@ driving engagement.
    price history table, floor-plan gallery, delivery-timeline tracker. Add
    every named project in the district, even "Coming Soon" ones — coverage
    completeness is the moat claim.
-2. **Health & Medical category in the Directory.** Today the directory has
-   Mall, Food, Entertainment, Fitness, Beauty, Cafes — no health category.
-   Add **Health & Medical** (clinics, pharmacies, diagnostics, dental,
-   physio, pediatrics) with a "Book Appointment" lead CTA. Set a hard
-   target: **20+ health listings live before Aug 17** (see onboarding sprint
-   below).
+2. **Fill the Health & Medical section with real businesses.** The site
+   already has a full Health section (hospitals, clinics, diagnostics,
+   pharmacies, wellness) — the gap is inventory, not features. Set a hard
+   target: **20+ real health listings live before Aug 17** (see onboarding
+   sprint below), each with hours, photos, and a bookable CTA.
 3. **Protect the engagement engine.** Daily news + cartoons is the proven
    habit loop — do not let pitch prep break the streak. Pre-write 5 days of
    buffer content now.
 
 ### Days 6–10 (Aug 6–11): Conversion features — turn browsing into transactions
 
-4. **Movie tickets, phased.** Don't build a booking engine in 15 days:
-   - **v1 (ship by Aug 11):** Showtimes page for PVR Neopolis + a "Book
-     Tickets" button. Even if the button deep-links out or captures a lead,
-     **track every click** — that click-through data *is* the demand proof
-     investors want, and it's your negotiating card with PVR/BookMyShow for
-     the real integration later.
-   - **v2 (post-pitch):** white-label ticketing partnership. In the pitch,
-     show v1 live + v2 on the roadmap slide with the intent numbers.
-5. **Self-serve business onboarding.** Polish the register → business
-   dashboard flow into a "Claim your listing in 5 minutes" funnel. This is
-   the thing you demo live to investors.
+4. **Movie tickets, phased.** The cinemas page already deep-links to
+   BookMyShow per cinema and date — v1 is shipped. Next steps:
+   - **v1.5 (ship by Aug 11):** instrument the "book tickets" clicks. That
+     click-through data *is* the demand proof investors want, and it's your
+     negotiating card with PVR/BookMyShow for a revenue-share or white-label
+     integration later.
+   - **v2 (post-pitch):** native/white-label ticketing partnership. In the
+     pitch, show the live flow + v2 on the roadmap slide with the intent
+     numbers.
+5. **Self-serve business onboarding.** The /register-business flow and
+   My Business console (offers, events, bookings, reviews, enquiries)
+   already exist. Polish the funnel — /for-businesses pitch page →
+   /register-business → first offer posted — and track drop-off at each
+   step. This is the thing you demo live to investors.
 6. **Instrument everything.** Page views, lead-form submissions by purpose
    (the LeadForm component already tags `purpose`), ticket-intent clicks,
    news/cartoon dwell time. Fourteen days of clean analytics is a small but

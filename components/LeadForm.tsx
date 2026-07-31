@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Send, CheckCircle } from "lucide-react";
+import { Send, CheckCircle, Loader2 } from "lucide-react";
 
 interface LeadFormProps {
   title?: string;
@@ -17,6 +17,8 @@ export default function LeadForm({
   dark = false,
 }: LeadFormProps) {
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -24,10 +26,27 @@ export default function LeadForm({
     message: "",
   });
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // In production: POST to /api/leads
-    setSubmitted(true);
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, purpose }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error ?? "Something went wrong. Please try again.");
+        return;
+      }
+      setSubmitted(true);
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   const inputClass = dark
@@ -95,9 +114,12 @@ export default function LeadForm({
           value={form.message}
           onChange={(e) => setForm({ ...form, message: e.target.value })}
         />
-        <button type="submit" className="btn-primary w-full justify-center">
-          <Send className="w-4 h-4" />
-          Send Enquiry
+        {error && (
+          <p className="text-red-500 text-xs text-center">{error}</p>
+        )}
+        <button type="submit" disabled={loading} className="btn-primary w-full justify-center disabled:opacity-60">
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          {loading ? "Sending…" : "Send Enquiry"}
         </button>
         <p className={`text-xs text-center ${dark ? "text-brand-400" : "text-gray-400"}`}>
           By submitting, you agree to our privacy policy. No spam, ever.
