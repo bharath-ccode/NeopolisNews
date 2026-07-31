@@ -309,8 +309,8 @@ export default function RentalsPage() {
         </div>
       </SectionWrapper>
 
-      {/* ── Broker Plans ── */}
-      <section className="bg-gray-50" id="broker-plans">
+      {/* Broker Plans — hidden until pricing is finalised */}
+      {false && <section className="bg-gray-50" id="broker-plans">
         <SectionWrapper>
           <div className="text-center mb-10">
             <h2 className="section-heading">Broker & Owner Plans</h2>
@@ -359,7 +359,7 @@ export default function RentalsPage() {
             ))}
           </div>
         </SectionWrapper>
-      </section>
+      </section>}
 
       {/* ── Lead Form ── */}
       <SectionWrapper>

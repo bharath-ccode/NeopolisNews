@@ -26,7 +26,7 @@ export const metadata = {
     "Reach 12,000+ residents and workers of the Neopolis district. Free verified listing, offers and events, monthly lead reports. Claim your listing in 5 minutes.",
 };
 
-const SIGNUP_HREF = "/auth/register?type=business";
+const SIGNUP_HREF = "/register-business";
 
 // ─── Stream 1: What you get from day one ────────────────────────────────────
 
@@ -52,8 +52,8 @@ const ONBOARDING_BENEFITS = [
   {
     icon: CalendarDays,
     color: "bg-green-50 text-green-600",
-    title: "A business dashboard",
-    desc: "Manage your listing, respond to enquiries, post classifieds, and track performance from one place.",
+    title: "Your own business console",
+    desc: "Manage your listing, offers, events, bookings, reviews, and enquiries — all from the My Business dashboard.",
   },
 ];
 
@@ -295,16 +295,15 @@ export default function ForBusinessesPage() {
               </div>
               <div>
                 <h2 className="text-xl font-bold mb-1">
-                  Clinics, pharmacies & diagnostics — launch offer
+                  Clinics, pharmacies & diagnostics — growth offer
                 </h2>
                 <p className="text-green-100 text-sm max-w-lg">
-                  We&apos;re launching the Health &amp; Medical category. The
-                  first 25 health businesses get{" "}
+                  We&apos;re expanding the Health &amp; Medical directory. The
+                  next 25 health businesses to join get{" "}
                   <span className="font-bold text-white">
                     6 months of premium free
                   </span>
-                  , including the &quot;Book Appointment&quot; button on your
-                  listing.
+                  , including bookings through your listing.
                 </p>
               </div>
             </div>

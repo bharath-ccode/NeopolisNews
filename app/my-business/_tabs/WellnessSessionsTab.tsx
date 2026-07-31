@@ -1,0 +1,510 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Video, Plus, Trash2, Loader2, Zap, Square, ExternalLink, Users, ClipboardCheck } from "lucide-react";
+import { detectProvider } from "@/lib/videoProviders";
+
+interface WellnessSession {
+  id: string;
+  trainer_name: string;
+  session_type: string;
+  language: string;
+  description: string | null;
+  price_inr: number;
+  max_seats: number;
+  seats_taken: number;
+  meeting_link: string | null;
+  platform: string;
+  platform_label: string;
+  delivery_mode: "online" | "on_location";
+  session_time: string | null;
+  address: string | null;
+  start_date: string;
+  end_date: string;
+  status: "draft" | "live" | "ended" | "cancelled";
+}
+
+const INPUT = "w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 text-gray-800";
+const LABEL = "block text-xs font-semibold text-gray-500 mb-1.5";
+
+const SESSION_TYPES = [
+  "Yoga", "Pilates", "Meditation", "Breathwork & Pranayama",
+  "CrossFit", "Functional Training", "Zumba & Dance", "Martial Arts",
+  "Stretching & Flexibility", "Cycling", "Sound Healing", "General Fitness",
+];
+const LANGUAGES = ["English", "Hindi", "Telugu", "Tamil", "Kannada", "Malayalam"];
+
+interface Enrollee {
+  user_id: string;
+  user_email: string | null;
+  attended: boolean;
+}
+
+const STATUS_STYLE: Record<string, string> = {
+  draft:     "bg-gray-100 text-gray-600",
+  live:      "bg-green-100 text-green-700",
+  ended:     "bg-amber-100 text-amber-700",
+  cancelled: "bg-red-100 text-red-600",
+};
+
+function today() { return new Date().toISOString().slice(0, 10); }
+function minEnd(from: string) {
+  const d = new Date(from);
+  d.setDate(d.getDate() + 7);
+  return d.toISOString().slice(0, 10);
+}
+function maxEnd(from: string) {
+  const d = new Date(from);
+  d.setDate(d.getDate() + 90);
+  return d.toISOString().slice(0, 10);
+}
+
+export default function WellnessSessionsTab({ businessId, token }: { businessId: string; token: string }) {
+  const [sessions, setSessions] = useState<WellnessSession[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Attendance marking
+  const [attendanceFor, setAttendanceFor] = useState<string | null>(null);
+  const [enrollees, setEnrollees] = useState<Enrollee[]>([]);
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [savingAttendance, setSavingAttendance] = useState(false);
+  const [attendanceMsg, setAttendanceMsg] = useState("");
+
+  async function openAttendance(sessionId: string) {
+    setAttendanceFor(sessionId);
+    setEnrollees([]);
+    setAttendanceMsg("");
+    const res = await fetch(
+      `/api/my-business/wellness-sessions/attendance?businessId=${businessId}&sessionId=${sessionId}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    ).catch(() => null);
+    if (res?.ok) {
+      const data: Enrollee[] = await res.json();
+      setEnrollees(data);
+      setChecked(new Set(data.filter((e) => e.attended).map((e) => e.user_id)));
+    }
+  }
+
+  async function saveAttendance(sessionId: string) {
+    setSavingAttendance(true);
+    setAttendanceMsg("");
+    const res = await fetch("/api/my-business/wellness-sessions/attendance", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ businessId, sessionId, attendee_user_ids: Array.from(checked) }),
+    }).catch(() => null);
+    if (res?.ok) {
+      const data = await res.json();
+      setAttendanceMsg(`Saved — ${data.attended} attendee${data.attended === 1 ? "" : "s"} earned ${data.points_each} points each.`);
+    } else {
+      const j = res ? await res.json().catch(() => ({})) : {};
+      setAttendanceMsg((j as { error?: string }).error ?? "Failed to save attendance.");
+    }
+    setSavingAttendance(false);
+  }
+  const [actionId, setActionId] = useState<string | null>(null);
+
+  const [trainerName, setTrainerName] = useState("");
+  const [sessionType, setSessionType] = useState(SESSION_TYPES[0]);
+  const [language, setLanguage] = useState("English");
+  const [description, setDescription] = useState("");
+  const [priceInr, setPriceInr] = useState("");
+  const [maxSeats, setMaxSeats] = useState("20");
+  const [deliveryMode, setDeliveryMode] = useState<"online" | "on_location">("online");
+  const [sessionTime, setSessionTime] = useState("");
+  const [address, setAddress] = useState("");
+  const [meetingLink, setMeetingLink] = useState("");
+  const [startDate, setStartDate] = useState(today());
+  const [endDate, setEndDate] = useState(minEnd(today()));
+
+  const providerInfo = deliveryMode === "online" && meetingLink.trim() ? detectProvider(meetingLink.trim()) : null;
+
+  useEffect(() => {
+    fetch(`/api/my-business/wellness-sessions?businessId=${businessId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((data) => { setSessions(Array.isArray(data) ? data : []); setLoading(false); });
+  }, [businessId, token]);
+
+  function resetForm() {
+    setTrainerName(""); setSessionType(SESSION_TYPES[0]); setLanguage("English");
+    setDescription(""); setPriceInr(""); setMaxSeats("20");
+    setDeliveryMode("online"); setSessionTime(""); setAddress("");
+    setMeetingLink(""); setStartDate(today()); setEndDate(minEnd(today()));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!trainerName || !priceInr || !startDate || !endDate) return;
+    setSaving(true);
+    const res = await fetch("/api/my-business/wellness-sessions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        businessId, trainer_name: trainerName, session_type: sessionType,
+        language, description: description || null,
+        price_inr: parseInt(priceInr), max_seats: parseInt(maxSeats),
+        delivery_mode: deliveryMode,
+        session_time: sessionTime || null,
+        address: deliveryMode === "on_location" ? address.trim() || null : null,
+        meeting_link: deliveryMode === "online" ? meetingLink.trim() || null : null,
+        start_date: startDate, end_date: endDate,
+      }),
+    });
+    if (res.ok) {
+      const s = await res.json();
+      setSessions((prev) => [s, ...prev]);
+      resetForm();
+      setShowForm(false);
+    }
+    setSaving(false);
+  }
+
+  async function setStatus(id: string, status: string) {
+    setActionId(id);
+    const res = await fetch(`/api/my-business/wellness-sessions/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ businessId, status }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setSessions((prev) => prev.map((s) => (s.id === id ? updated : s)));
+    }
+    setActionId(null);
+  }
+
+  async function handleDelete(id: string) {
+    setActionId(id);
+    await fetch(`/api/my-business/wellness-sessions/${id}?businessId=${businessId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setSessions((prev) => prev.filter((s) => s.id !== id));
+    setActionId(null);
+  }
+
+  if (loading) return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-brand-500" /></div>;
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-bold text-gray-900">Live Sessions</h3>
+          <p className="text-xs text-gray-400 mt-0.5">{sessions.length} session{sessions.length !== 1 ? "s" : ""} created</p>
+        </div>
+        <button onClick={() => setShowForm(!showForm)} className="btn-primary text-sm py-2">
+          <Plus className="w-4 h-4" /> New Session
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="card p-5">
+          <h4 className="font-semibold text-gray-900 text-sm mb-4">Create Session</h4>
+          <form onSubmit={handleSubmit} className="space-y-4">
+
+            {/* Delivery mode toggle */}
+            <div>
+              <label className={LABEL}>Delivery Mode *</label>
+              <div className="grid grid-cols-2 gap-2">
+                {(["online", "on_location"] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => {
+                    setDeliveryMode(m);
+                    const cap = m === "on_location" ? 10 : 25;
+                    setMaxSeats((prev) => String(Math.min(Number(prev), cap)));
+                  }}
+                    className={`py-2.5 rounded-lg border text-sm font-semibold transition-colors ${
+                      deliveryMode === m
+                        ? "bg-brand-600 text-white border-brand-600"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-brand-300"
+                    }`}
+                  >
+                    {m === "online" ? "🎥 Online (Zoom / Meet)" : "🏢 In-Studio / Gym"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className={LABEL}>Trainer Name *</label>
+                <input className={INPUT} value={trainerName} onChange={(e) => setTrainerName(e.target.value)} placeholder="Priya Sharma" required />
+              </div>
+              <div>
+                <label className={LABEL}>Session Type *</label>
+                <select className={INPUT} value={sessionType} onChange={(e) => setSessionType(e.target.value)}>
+                  {SESSION_TYPES.map((t) => <option key={t}>{t}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className={LABEL}>Language</label>
+                <select className={INPUT} value={language} onChange={(e) => setLanguage(e.target.value)}>
+                  {LANGUAGES.map((l) => <option key={l}>{l}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={LABEL}>Price (₹ / month) *</label>
+                <input type="number" min="0" className={INPUT} value={priceInr} onChange={(e) => setPriceInr(e.target.value)} placeholder="2500" required />
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className={LABEL}>Max Slots <span className="font-normal text-gray-400">(limit: {deliveryMode === "on_location" ? 10 : 25})</span></label>
+                <input
+                  type="number" min="1"
+                  max={deliveryMode === "on_location" ? 10 : 25}
+                  className={INPUT}
+                  value={maxSeats}
+                  onChange={(e) => {
+                    const cap = deliveryMode === "on_location" ? 10 : 25;
+                    setMaxSeats(String(Math.min(Number(e.target.value), cap)));
+                  }}
+                />
+              </div>
+              <div>
+                <label className={LABEL}>Daily Session Time</label>
+                <input type="time" className={INPUT} value={sessionTime} onChange={(e) => setSessionTime(e.target.value)} />
+                <p className="text-xs text-gray-400 mt-1">When the class runs each day</p>
+              </div>
+            </div>
+
+            {deliveryMode === "online" ? (
+              <div>
+                <label className={LABEL}>Zoom / Meet Link</label>
+                <input
+                  type="url"
+                  className={INPUT}
+                  value={meetingLink}
+                  onChange={(e) => setMeetingLink(e.target.value)}
+                  placeholder="https://zoom.us/j/… or meet.google.com/…"
+                />
+                {providerInfo && (
+                  <div className={`mt-2 inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full border ${providerInfo.color}`}>
+                    <Video className="w-3.5 h-3.5" />
+                    {providerInfo.label} · {providerInfo.note}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div>
+                <label className={LABEL}>Studio / Gym Address</label>
+                <input
+                  className={INPUT}
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Floor 2, Neopolis Fitness Hub, Kokapet"
+                />
+                <p className="text-xs text-gray-400 mt-1">Shown to members on the app so they can find the venue</p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={LABEL}>Start Date *</label>
+                <input
+                  type="date"
+                  className={INPUT}
+                  value={startDate}
+                  min={today()}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    setEndDate(minEnd(e.target.value));
+                  }}
+                  required
+                />
+              </div>
+              <div>
+                <label className={LABEL}>End Date * <span className="font-normal text-gray-400">(7–90 days)</span></label>
+                <input
+                  type="date"
+                  className={INPUT}
+                  value={endDate}
+                  min={minEnd(startDate)}
+                  max={maxEnd(startDate)}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className={LABEL}>Description</label>
+              <textarea className={INPUT + " resize-none"} rows={3} value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="What will participants learn or experience in this session?" maxLength={400} />
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <button type="button" onClick={() => { resetForm(); setShowForm(false); }} className="btn-secondary text-sm flex-1">Cancel</button>
+              <button type="submit" disabled={saving} className="btn-primary text-sm flex-1">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Save as Draft"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {sessions.length === 0 && !showForm ? (
+        <div className="card p-10 text-center border-dashed">
+          <Video className="w-8 h-8 text-gray-200 mx-auto mb-2" />
+          <p className="text-sm text-gray-500">No sessions yet. Create your first live session and go live to start enrolling residents.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {sessions.map((s) => (
+            <div key={s.id} className="card p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${STATUS_STYLE[s.status]}`}>
+                      {s.status.charAt(0).toUpperCase() + s.status.slice(1)}
+                    </span>
+                    <span className="text-xs font-semibold text-brand-600 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-full">{s.session_type}</span>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
+                      s.delivery_mode === "on_location"
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+                        : "bg-gray-50 text-gray-600 border-gray-200"
+                    }`}>
+                      {s.delivery_mode === "on_location" ? "🏢 In-Studio" : `🎥 ${s.platform_label}`}
+                    </span>
+                  </div>
+                  <p className="font-bold text-sm text-gray-900">{s.trainer_name}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {new Date(s.start_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} –{" "}
+                    {new Date(s.end_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    {s.session_time && ` · ${s.session_time.slice(0, 5)}`}
+                    {" · "}{s.language}
+                  </p>
+                  {s.delivery_mode === "on_location" && s.address && (
+                    <p className="text-xs text-gray-400 mt-0.5">📍 {s.address}</p>
+                  )}
+                  <div className="flex items-center gap-4 mt-1.5">
+                    <span className="text-sm font-bold text-gray-900">₹{s.price_inr.toLocaleString("en-IN")}<span className="text-xs font-normal text-gray-400">/mo</span></span>
+                    <span className="flex items-center gap-1 text-xs text-gray-500">
+                      <Users className="w-3.5 h-3.5" /> {s.seats_taken}/{s.max_seats} enrolled
+                    </span>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex flex-col gap-1.5 shrink-0">
+                  {s.status === "draft" && (
+                    <button
+                      onClick={() => setStatus(s.id, "live")}
+                      disabled={actionId === s.id}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      {actionId === s.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
+                      Go Live
+                    </button>
+                  )}
+                  {s.status === "live" && (
+                    <>
+                      {s.meeting_link && (
+                        <a href={s.meeting_link} target="_blank" rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white px-3 py-1.5 rounded-lg transition-colors">
+                          <ExternalLink className="w-3 h-3" /> Open Link
+                        </a>
+                      )}
+                      <button
+                        onClick={() => setStatus(s.id, "ended")}
+                        disabled={actionId === s.id}
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        {actionId === s.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Square className="w-3 h-3" />}
+                        End
+                      </button>
+                    </>
+                  )}
+                  {(s.status === "draft" || s.status === "ended") && (
+                    <button
+                      onClick={() => handleDelete(s.id)}
+                      disabled={actionId === s.id}
+                      className="p-1.5 rounded-lg text-gray-300 hover:bg-red-50 hover:text-red-500 transition-colors self-end"
+                    >
+                      {actionId === s.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Attendance → points (only paid enrollees are listed) */}
+              {s.seats_taken > 0 && s.status !== "cancelled" && (
+                <div className="mt-3 pt-3 border-t border-gray-50">
+                  {attendanceFor !== s.id ? (
+                    <button
+                      onClick={() => openAttendance(s.id)}
+                      className="flex items-center gap-1.5 text-xs font-bold text-brand-600 hover:text-brand-800"
+                    >
+                      <ClipboardCheck className="w-3.5 h-3.5" /> Mark attendance &amp; award points
+                    </button>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-xs font-bold text-gray-600">
+                        Tick who attended — each earns 20 Neopolis Points:
+                      </p>
+                      {enrollees.length === 0 ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-gray-300" />
+                      ) : (
+                        <div className="grid sm:grid-cols-2 gap-1.5">
+                          {enrollees.map((e) => (
+                            <label
+                              key={e.user_id}
+                              className="flex items-center gap-2 text-xs text-gray-700 bg-gray-50 rounded-lg px-3 py-2 cursor-pointer hover:bg-gray-100"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked.has(e.user_id)}
+                                onChange={(ev) => {
+                                  setChecked((prev) => {
+                                    const next = new Set(prev);
+                                    if (ev.target.checked) next.add(e.user_id); else next.delete(e.user_id);
+                                    return next;
+                                  });
+                                }}
+                                className="accent-brand-600"
+                              />
+                              <span className="truncate">{e.user_email ?? "Enrolled member"}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                      {attendanceMsg && (
+                        <p className="text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2">{attendanceMsg}</p>
+                      )}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => saveAttendance(s.id)}
+                          disabled={savingAttendance || enrollees.length === 0}
+                          className="btn-primary text-xs py-2 disabled:opacity-60"
+                        >
+                          {savingAttendance ? "Saving…" : `Save & Award (${checked.size})`}
+                        </button>
+                        <button
+                          onClick={() => setAttendanceFor(null)}
+                          className="text-xs font-semibold text-gray-500 px-3"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
