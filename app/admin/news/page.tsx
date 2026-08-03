@@ -30,6 +30,7 @@ const CATEGORIES: { value: "" | ArticleCategory; label: string }[] = [
   { value: "infrastructure", label: "Infrastructure" },
   { value: "community",      label: "Community"      },
   { value: "editorial",      label: "Editorial"      },
+  { value: "digest",         label: "Daily Digest"   },
 ];
 
 const STATUS_FILTERS = [

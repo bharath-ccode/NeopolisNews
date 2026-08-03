@@ -16,7 +16,7 @@ export function extractYouTubeId(url: string): string | null {
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type ArticleCategory = "construction" | "launches" | "infrastructure" | "community" | "editorial";
+export type ArticleCategory = "construction" | "launches" | "infrastructure" | "community" | "editorial" | "digest";
 export type ArticleStatus = "draft" | "published";
 export type TagColor = "tag-orange" | "tag-green" | "tag-blue" | "tag-purple" | "tag-slate";
 
@@ -39,6 +39,7 @@ export interface Article {
   source?: string | null;
   projectId?: string | null;
   builderId?: string | null;
+  digestLevel?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -52,6 +53,9 @@ export const CATEGORY_META: Record<
   infrastructure: { label: "Infrastructure", tag: "Infrastructure",tagColor: "tag-blue"   },
   community:      { label: "Community",      tag: "Community",     tagColor: "tag-purple" },
   editorial:      { label: "Editorial",      tag: "Editorial",     tagColor: "tag-slate"  },
+  // Daily AI digests — identity lives in digest_level (international/national/
+  // state/city); the article keeps its level tag (World/India/Telangana/Hyderabad).
+  digest:         { label: "Daily Digest",   tag: "Daily Digest",  tagColor: "tag-blue"   },
 };
 
 // ─── Row mapper: Supabase snake_case → Article camelCase ─────────────────────
@@ -77,6 +81,7 @@ export function toArticle(row: any): Article {
     source:    row.source ?? null,
     projectId: row.project_id ?? null,
     builderId: row.builder_id ?? null,
+    digestLevel: row.digest_level ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
