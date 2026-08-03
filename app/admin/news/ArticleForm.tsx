@@ -30,13 +30,22 @@ interface Props {
   article?: Article;
 }
 
+// Manually-authored topics only. "editorial" (Editor's Desk) and "digest"
+// (daily AI digests) are generated categories — locked in the form, never
+// assignable to a manual article.
 const CATEGORIES: ArticleCategory[] = [
   "construction",
   "launches",
   "infrastructure",
   "community",
-  "editorial",
 ];
+
+const DIGEST_LEVEL_LABELS: Record<string, string> = {
+  international: "International",
+  national:      "National",
+  state:         "State (Telangana)",
+  city:          "Hyderabad",
+};
 
 function formatDisplayDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-IN", {
@@ -106,7 +115,7 @@ export default function ArticleForm({ article }: Props) {
       const res = await fetch("/api/admin/articles/generate-card", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: title.trim(), tag: CATEGORY_META[category].tag }),
+        body: JSON.stringify({ title: title.trim(), tag: displayTag }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Card generation failed");
@@ -142,6 +151,12 @@ export default function ArticleForm({ article }: Props) {
 
   const meta = CATEGORY_META[category];
   const isEditorial = category === "editorial";
+  const isDigest = category === "digest";
+  // Generated articles keep the identity the pipeline gave them: digests keep
+  // their level tag (World/India/Telangana/Hyderabad), editorials stay editorial.
+  const isGenerated = isDigest || isEditorial;
+  const displayTag = isDigest ? article?.tag ?? meta.tag : meta.tag;
+  const displayTagColor = isDigest ? article?.tagColor ?? meta.tagColor : meta.tagColor;
 
   async function handleSubmit(e: FormEvent, submitStatus: ArticleStatus) {
     e.preventDefault();
@@ -158,8 +173,8 @@ export default function ArticleForm({ article }: Props) {
         excerpt:  excerpt.trim(),
         content:  content.trim(),
         category,
-        tag:      meta.tag,
-        tagColor: meta.tagColor,
+        tag:      displayTag,
+        tagColor: displayTagColor,
         author:   author.trim(),
         source:   source.trim() || null,
         readTime: readTime.trim(),
@@ -294,20 +309,36 @@ export default function ArticleForm({ article }: Props) {
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Category <span className="text-red-500">*</span>
                 </label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value as ArticleCategory)}
-                  className={inputCls}
-                >
-                  {CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
-                      {CATEGORY_META[c].label}
-                    </option>
-                  ))}
-                </select>
+                {isGenerated ? (
+                  <>
+                    <div className={`${inputCls} bg-gray-50 text-gray-500 cursor-not-allowed select-none`}>
+                      {isDigest
+                        ? `Daily Digest — ${
+                            DIGEST_LEVEL_LABELS[article?.digestLevel ?? ""] ?? displayTag
+                          }`
+                        : "Editorial (Editor's Desk)"}
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-1.5">
+                      Set by the AI news pipeline — generated articles can&apos;t be
+                      re-filed under a local topic.
+                    </p>
+                  </>
+                ) : (
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value as ArticleCategory)}
+                    className={inputCls}
+                  >
+                    {CATEGORIES.map((c) => (
+                      <option key={c} value={c}>
+                        {CATEGORY_META[c].label}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <div className="mt-2">
-                  <span className={`badge text-xs ${meta.tagColor}`}>
-                    {meta.tag}
+                  <span className={`badge text-xs ${displayTagColor}`}>
+                    {displayTag}
                   </span>
                 </div>
               </div>
