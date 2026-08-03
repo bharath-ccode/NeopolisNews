@@ -263,7 +263,14 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
       router.refresh();
     } catch (err) {
       console.error(err);
-      setError("Failed to save project. Please try again.");
+      // Supabase/PostgREST errors carry the exact rejection reason — show it.
+      const e = err as { message?: string; details?: string; hint?: string; code?: string };
+      const detail = [e.message, e.details, e.hint].filter(Boolean).join(" — ");
+      setError(
+        detail
+          ? `Save failed${e.code ? ` (${e.code})` : ""}: ${detail}`
+          : "Failed to save project. Please try again."
+      );
     } finally {
       setSaving(false);
     }
