@@ -1,8 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { ALL_AMENITIES } from "@/lib/amenitiesData";
+import { createAdminClient } from "@/lib/supabase/server";
 
 export const maxDuration = 60;
+
+const BUCKET = "builder-assets";
+// Claude's URL document source caps PDFs at 32MB.
+const MAX_PDF_BYTES = 32 * 1024 * 1024;
+
+// Mirror an externally-hosted brochure into our storage so the project's
+// brochure link doesn't rot when the external site moves or removes it.
+// Returns the public storage URL, or null if the PDF couldn't be fetched
+// (caller falls back to extracting straight from the external URL).
+async function persistExternalPdf(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, { redirect: "follow" });
+    if (!res.ok) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length === 0 || buf.length > MAX_PDF_BYTES) return null;
+    if (buf.subarray(0, 5).toString("latin1") !== "%PDF-") return null;
+
+    const sb = createAdminClient();
+    const path = `brochures/temp/${Date.now()}-${Math.random().toString(36).slice(2)}.pdf`;
+    const { error } = await sb.storage.from(BUCKET).upload(path, buf, {
+      contentType: "application/pdf",
+      upsert: true,
+    });
+    if (error) return null;
+    return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+  } catch {
+    return null;
+  }
+}
 
 const EXTRACTION_PROMPT = `
 You are extracting structured data from a real estate project brochure PDF.
@@ -73,6 +103,25 @@ export async function POST(req: NextRequest) {
 
   if (!pdfUrl) return NextResponse.json({ error: "No PDF URL provided." }, { status: 400 });
 
+  let parsed: URL;
+  try {
+    parsed = new URL(pdfUrl);
+  } catch {
+    return NextResponse.json({ error: "Invalid URL." }, { status: 400 });
+  }
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    return NextResponse.json({ error: "Only http(s) URLs are supported." }, { status: 400 });
+  }
+
+  // Browser uploads already live in our storage; anything else is an external
+  // brochure link — mirror it into storage and extract from our copy.
+  const isOwnStorage = pdfUrl.includes(".supabase.co/");
+  let brochureUrl = pdfUrl;
+  if (!isOwnStorage) {
+    const persisted = await persistExternalPdf(pdfUrl);
+    if (persisted) brochureUrl = persisted;
+  }
+
   const client = new Anthropic({ apiKey });
 
   let rawText = "";
@@ -86,7 +135,7 @@ export async function POST(req: NextRequest) {
           content: [
             {
               type: "document",
-              source: { type: "url", url: pdfUrl },
+              source: { type: "url", url: brochureUrl },
             },
             { type: "text", text: EXTRACTION_PROMPT },
           ],
@@ -100,7 +149,10 @@ export async function POST(req: NextRequest) {
       .join("");
   } catch (err) {
     console.error("Claude API error:", err);
-    return NextResponse.json({ error: "AI extraction failed. Check your ANTHROPIC_API_KEY." }, { status: 502 });
+    const hint = isOwnStorage
+      ? "AI extraction failed. Check your ANTHROPIC_API_KEY."
+      : "AI extraction failed. Make sure the URL is a publicly accessible PDF.";
+    return NextResponse.json({ error: hint }, { status: 502 });
   }
 
   // Strip markdown code fences if Claude added them
@@ -121,5 +173,6 @@ export async function POST(req: NextRequest) {
     data.amenities = [];
   }
 
-  return NextResponse.json(data);
+  // brochureUrl = where the PDF actually lives now (our storage when possible)
+  return NextResponse.json({ ...data, brochureUrl });
 }
