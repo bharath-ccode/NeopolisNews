@@ -355,8 +355,7 @@ export default function Navbar() {
       {/* Top bar */}
       <div className="bg-brand-950 text-brand-200 text-xs py-1.5 px-4 flex items-center justify-between gap-4">
         <span className="hidden md:block text-center flex-1">
-          Neopolis — 100-acre mixed-use urban district &nbsp;·&nbsp; Live updates
-          every week &nbsp;·&nbsp;
+          Live updates every day &nbsp;·&nbsp;
           <Link href="/for-businesses" className="underline hover:text-white">
             Own a business here? List it free →
           </Link>
