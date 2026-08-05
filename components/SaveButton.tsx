@@ -45,7 +45,7 @@ export default function SaveButton({
     e.preventDefault();
     e.stopPropagation();
     if (!user) {
-      window.location.href = `/auth/login?next=${encodeURIComponent(window.location.pathname)}`;
+      window.location.href = `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`;
       return;
     }
     if (busy) return;

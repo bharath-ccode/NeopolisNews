@@ -15,6 +15,7 @@ import SiteVisitForm from "./SiteVisitForm";
 import ProjectSubscribeBox from "./ProjectSubscribeBox";
 import LifecycleTimeline from "./LifecycleTimeline";
 import MasterPlanModal from "./MasterPlanModal";
+import BrochureDownload from "./BrochureDownload";
 import WhatsAppShare from "@/components/WhatsAppShare";
 import SaveButton from "@/components/SaveButton";
 
@@ -469,24 +470,7 @@ export default async function ProjectDetailPage({
               <MasterPlanModal url={project.projectPlanUrl} />
             )}
             {project.brochureUrl && (
-              <a
-                href={project.brochureUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                download
-                className="card p-5 flex items-center gap-4 hover:border-brand-300 hover:shadow-md transition-all group w-full text-left"
-              >
-                <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center shrink-0">
-                  <Download className="w-6 h-6 text-green-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-gray-900 group-hover:text-brand-700 transition-colors">
-                    Download Brochure
-                  </p>
-                  <p className="text-xs text-gray-400 mt-0.5">PDF · Click to download</p>
-                </div>
-                <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-brand-600 transition-colors shrink-0" />
-              </a>
+              <BrochureDownload url={project.brochureUrl} />
             )}
           </div>
         </SectionWrapper>
