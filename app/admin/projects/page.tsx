@@ -12,7 +12,35 @@ import {
   XCircle,
   HardHat,
 } from "lucide-react";
-import { getProjects, deleteProject, type Project } from "@/lib/projectsStore";
+import {
+  getProjects,
+  deleteProject,
+  LIFECYCLE_STAGES,
+  type Project,
+  type ProjectTier,
+  type LifecycleStatus,
+} from "@/lib/projectsStore";
+
+const TIER_META: Record<ProjectTier, { label: string; cls: string }> = {
+  affordable:  { label: "Affordable",  cls: "tag-green"  },
+  premium:     { label: "Premium",     cls: "tag-blue"   },
+  luxury:      { label: "Luxury",      cls: "tag-purple" },
+  uber_luxury: { label: "Uber Luxury", cls: "tag-purple" },
+};
+
+const LIFECYCLE_CLS: Record<LifecycleStatus, string> = {
+  pre_launch:         "tag-blue",
+  rera_registered:    "tag-blue",
+  under_construction: "tag-orange",
+  structure_complete: "tag-orange",
+  finishing:          "tag-orange",
+  oc_received:        "tag-green",
+  ready_to_move:      "tag-green",
+};
+
+const LIFECYCLE_LABELS: Record<LifecycleStatus, string> = Object.fromEntries(
+  LIFECYCLE_STAGES.map((s) => [s.id, s.label])
+) as Record<LifecycleStatus, string>;
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -87,6 +115,12 @@ export default function ProjectsPage() {
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">
                   Builder
                 </th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Tier
+                </th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Stage
+                </th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">
                   Land (acres)
                 </th>
@@ -126,6 +160,24 @@ export default function ProjectsPage() {
                       <HardHat className="w-3.5 h-3.5 text-gray-300 shrink-0" />
                       {p.builderName ?? <span className="text-gray-300 italic">None</span>}
                     </div>
+                  </td>
+                  <td className="px-5 py-4">
+                    {p.tier ? (
+                      <span className={`badge text-xs ${TIER_META[p.tier].cls}`}>
+                        {TIER_META[p.tier].label}
+                      </span>
+                    ) : (
+                      <span className="text-gray-300">—</span>
+                    )}
+                  </td>
+                  <td className="px-5 py-4">
+                    {p.lifecycleStatus ? (
+                      <span className={`badge text-xs ${LIFECYCLE_CLS[p.lifecycleStatus]}`}>
+                        {LIFECYCLE_LABELS[p.lifecycleStatus]}
+                      </span>
+                    ) : (
+                      <span className="text-gray-300">—</span>
+                    )}
                   </td>
                   <td className="px-5 py-4 text-gray-500 hidden lg:table-cell">
                     {p.totalLandAreaAcres ?? "—"}
