@@ -27,7 +27,7 @@ export const fetchCache = "force-no-store";
 // ─── Static data ────────────────────────────────────────────────────────────
 
 const STATS = [
-  { label: "Acres of Development", value: "100+", icon: MapPin },
+  { label: "Areas Covered & Growing", value: "5+", icon: MapPin },
   { label: "Residential Units", value: "4,200+", icon: Home },
   { label: "Retail Sq Ft", value: "8 Lakh", icon: ShoppingBag },
   { label: "Registered Users", value: "12,000+", icon: Users },
@@ -201,8 +201,8 @@ export default async function HomePage() {
               </h1>
               <p className="text-lg text-brand-200 mb-8 leading-relaxed max-w-xl">
                 Real estate intelligence, rentals, retail discovery, local news,
-                and resident services — all for one 100-acre urban district.
-                The only platform you need.
+                and resident services — for Kokapet, Narsingi and the growing
+                neighbourhoods of West Hyderabad. The only platform you need.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link href="/real-estate" className="btn-primary">

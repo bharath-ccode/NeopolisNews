@@ -61,7 +61,7 @@ const ONBOARDING_BENEFITS = [
 
 const AUDIENCE_STATS = [
   { value: "12,000+", label: "Registered users", icon: Users },
-  { value: "100 acres", label: "One walkable district", icon: MapPin },
+  { value: "5+", label: "Neighbourhoods covered", icon: MapPin },
   { value: "4,200+", label: "Homes at your doorstep", icon: Store },
   { value: "Daily", label: "News & cartoons habit", icon: Zap },
 ];
