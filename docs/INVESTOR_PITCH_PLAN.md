@@ -90,7 +90,7 @@ you, called you, and asked for directions."
 
 **User:** "Today you need six apps for one neighbourhood — a property
 portal, a broker, Google Maps, BookMyShow, a newspaper, and a WhatsApp
-group. We replace all six for the 100 acres you actually live in.
+group. We replace all six for the neighbourhoods you actually live in.
 Everything is verified, current, and walking-distance relevant."
 
 **Business:** "Every rupee you spend elsewhere reaches people who will
