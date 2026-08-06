@@ -5,14 +5,15 @@ import {
   TrendingUp,
   BarChart3,
   CheckCircle,
-  Star,
   Users,
   ShoppingBag,
   Zap,
+  MapPin,
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import LeadForm from "@/components/LeadForm";
 import { createAdminClient } from "@/lib/supabase/server";
+import { LOCALITIES, type Locality, type ProjectTier, type LifecycleStatus } from "@/lib/projectsStore";
 import ProjectFiltersGrid, { type ProjectListItem } from "./ProjectFiltersGrid";
 
 export const dynamic = "force-dynamic";
@@ -39,55 +40,66 @@ async function getProjects(): Promise<ProjectListItem[]> {
   }));
 }
 
-// ─── Price trend data (admin-curated in price_trends; static fallback) ───────
+// ─── Price matrix: Locality × Tier × Construction Stage (admin-curated) ──────
 
-const FALLBACK_TRENDS = [
-  { quarter: "Q1 2024", residential: 7200, office: 82, retail: 110 },
-  { quarter: "Q2 2024", residential: 7600, office: 85, retail: 118 },
-  { quarter: "Q3 2024", residential: 7900, office: 88, retail: 122 },
-  { quarter: "Q4 2024", residential: 8300, office: 92, retail: 130 },
-  { quarter: "Q1 2025", residential: 8800, office: 95, retail: 138 },
-  { quarter: "Q2 2025", residential: 9200, office: 98, retail: 145 },
-  { quarter: "Q3 2025", residential: 9700, office: 102, retail: 150 },
-  { quarter: "Q4 2025", residential: 10400, office: 108, retail: 160 },
-];
-
-async function getPriceTrends() {
-  const sb = createAdminClient();
-  const { data } = await sb
-    .from("price_trends")
-    .select("period, period_date, segment, price")
-    .order("period_date", { ascending: true });
-
-  if (!data?.length) return FALLBACK_TRENDS;
-
-  // Pivot rows (period x segment) into the shape the section renders
-  const byPeriod = new Map<string, { quarter: string; residential: number; office: number; retail: number }>();
-  for (const row of data) {
-    const entry = byPeriod.get(row.period) ?? { quarter: row.period, residential: 0, office: 0, retail: 0 };
-    if (row.segment === "residential") entry.residential = Number(row.price);
-    if (row.segment === "office")      entry.office      = Number(row.price);
-    if (row.segment === "retail")      entry.retail      = Number(row.price);
-    byPeriod.set(row.period, entry);
-  }
-  return Array.from(byPeriod.values()).filter((e) => e.residential > 0);
+interface PriceCombo {
+  tier: ProjectTier;
+  lifecycle_status: LifecycleStatus;
+  price: number;
+}
+interface LocalityPrices {
+  locality: Locality;
+  rows: PriceCombo[];
 }
 
-function pctChange(first: number, last: number) {
-  if (!first) return null;
-  return Math.round(((last - first) / first) * 100);
+const TIER_LABELS: Record<ProjectTier, string> = {
+  affordable:  "Affordable",
+  premium:     "Premium",
+  luxury:      "Luxury",
+  uber_luxury: "Uber Luxury",
+};
+
+const STAGE_LABELS: Record<LifecycleStatus, string> = {
+  pre_launch:         "Pre-Launch",
+  rera_registered:    "RERA Registered",
+  under_construction: "Under Construction",
+  structure_complete: "Structure Complete",
+  finishing:          "Finishing",
+  oc_received:        "OC Received",
+  ready_to_move:      "Ready to Move",
+};
+
+async function getPriceMatrix(): Promise<LocalityPrices[]> {
+  const sb = createAdminClient();
+  const { data } = await sb
+    .from("locality_price_trends")
+    .select("locality, tier, lifecycle_status, price")
+    .order("tier")
+    .order("lifecycle_status");
+
+  const byLocality = new Map<Locality, PriceCombo[]>();
+  for (const row of data ?? []) {
+    const list = byLocality.get(row.locality as Locality) ?? [];
+    list.push({
+      tier: row.tier as ProjectTier,
+      lifecycle_status: row.lifecycle_status as LifecycleStatus,
+      price: Number(row.price),
+    });
+    byLocality.set(row.locality as Locality, list);
+  }
+  return LOCALITIES
+    .filter((l) => byLocality.has(l))
+    .map((l) => ({ locality: l, rows: byLocality.get(l)! }));
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function RealEstatePage() {
-  const [projects, PRICE_TRENDS] = await Promise.all([getProjects(), getPriceTrends()]);
-  const maxPrice = Math.max(...PRICE_TRENDS.map((d) => d.residential));
-  const first = PRICE_TRENDS[0];
-  const last  = PRICE_TRENDS[PRICE_TRENDS.length - 1];
-  const resChange    = pctChange(first.residential, last.residential);
-  const officeChange = pctChange(first.office, last.office);
-  const retailChange = pctChange(first.retail, last.retail);
+  const [projects, priceMatrix] = await Promise.all([getProjects(), getPriceMatrix()]);
+  const allPrices = priceMatrix.flatMap((l) => l.rows.map((r) => r.price));
+  const combosTracked = allPrices.length;
+  const priceMin = combosTracked ? Math.min(...allPrices) : null;
+  const priceMax = combosTracked ? Math.max(...allPrices) : null;
 
   return (
     <>
@@ -165,77 +177,79 @@ export default async function RealEstatePage() {
           <div className="mb-8">
             <h2 className="section-heading">Price Trends</h2>
             <p className="text-gray-500 text-sm mt-1">
-              Residential sq ft rates, office &amp; retail lease rates — quarterly data
+              ₹ per sq ft by locality, tier and construction stage — the three things that decide price
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-5 mb-8">
-            <div className="card p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <TrendingUp className="w-5 h-5 text-green-500" />
-                <h3 className="font-bold text-gray-900">Residential</h3>
+          {combosTracked > 0 && (
+            <div className="grid sm:grid-cols-3 gap-5 mb-8">
+              <div className="card p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <MapPin className="w-5 h-5 text-brand-500" />
+                  <h3 className="font-bold text-gray-900">Localities Tracked</h3>
+                </div>
+                <p className="text-3xl font-extrabold text-gray-900">{priceMatrix.length}</p>
+                <p className="text-xs text-gray-500 mt-0.5">of {LOCALITIES.length} covered</p>
               </div>
-              <p className="text-3xl font-extrabold text-gray-900">
-                ₹{last.residential.toLocaleString()}
-              </p>
-              <p className="text-xs text-gray-500 mt-0.5">per sq ft ({last.quarter})</p>
-              {resChange !== null && (
-                <p className={`text-xs font-semibold mt-2 ${resChange >= 0 ? "text-green-600" : "text-red-500"}`}>
-                  {resChange >= 0 ? "+" : ""}{resChange}% since {first.quarter}
-                </p>
-              )}
-            </div>
-            <div className="card p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <BarChart3 className="w-5 h-5 text-blue-500" />
-                <h3 className="font-bold text-gray-900">Grade A Office</h3>
+              <div className="card p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <BarChart3 className="w-5 h-5 text-blue-500" />
+                  <h3 className="font-bold text-gray-900">Combinations Priced</h3>
+                </div>
+                <p className="text-3xl font-extrabold text-gray-900">{combosTracked}</p>
+                <p className="text-xs text-gray-500 mt-0.5">tier × stage price points</p>
               </div>
-              <p className="text-3xl font-extrabold text-gray-900">
-                ₹{last.office}
-              </p>
-              <p className="text-xs text-gray-500 mt-0.5">per sq ft / month ({last.quarter})</p>
-              {officeChange !== null && (
-                <p className={`text-xs font-semibold mt-2 ${officeChange >= 0 ? "text-green-600" : "text-red-500"}`}>
-                  {officeChange >= 0 ? "+" : ""}{officeChange}% since {first.quarter}
+              <div className="card p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <TrendingUp className="w-5 h-5 text-green-500" />
+                  <h3 className="font-bold text-gray-900">Price Range</h3>
+                </div>
+                <p className="text-3xl font-extrabold text-gray-900">
+                  ₹{priceMin!.toLocaleString("en-IN")}–{priceMax!.toLocaleString("en-IN")}
                 </p>
-              )}
-            </div>
-            <div className="card p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <Star className="w-5 h-5 text-purple-500" />
-                <h3 className="font-bold text-gray-900">Retail</h3>
+                <p className="text-xs text-gray-500 mt-0.5">per sq ft, across all localities</p>
               </div>
-              <p className="text-3xl font-extrabold text-gray-900">
-                ₹{last.retail}
-              </p>
-              <p className="text-xs text-gray-500 mt-0.5">per sq ft / month ({last.quarter})</p>
-              {retailChange !== null && (
-                <p className={`text-xs font-semibold mt-2 ${retailChange >= 0 ? "text-green-600" : "text-red-500"}`}>
-                  {retailChange >= 0 ? "+" : ""}{retailChange}% since {first.quarter}
-                </p>
-              )}
             </div>
-          </div>
+          )}
 
-          {/* Bar chart */}
-          <div className="card p-5">
-            <h3 className="font-bold text-gray-900 mb-4 text-sm">
-              Residential Rate (₹/sq ft) — Quarterly
-            </h3>
-            <div className="flex items-end gap-2 h-28">
-              {PRICE_TRENDS.map((d) => (
-                <div key={d.quarter} className="flex-1 flex flex-col items-center gap-1">
-                  <div
-                    className="w-full bg-brand-500 rounded-t"
-                    style={{ height: `${(d.residential / maxPrice) * 100}px` }}
-                  />
-                  <span className="text-xs text-gray-400 rotate-45 origin-left translate-x-2 hidden sm:block">
-                    {d.quarter.replace(" 20", " '")}
-                  </span>
+          {priceMatrix.length === 0 ? (
+            <div className="card p-10 text-center text-gray-400 text-sm">
+              Price data coming soon for the Neopolis district.
+            </div>
+          ) : (
+            <div className="space-y-5">
+              {priceMatrix.map(({ locality, rows }) => (
+                <div key={locality} className="card overflow-hidden">
+                  <div className="flex items-center gap-2 px-4 py-3 bg-white border-b border-gray-100">
+                    <MapPin className="w-4 h-4 text-brand-500" />
+                    <h3 className="font-bold text-gray-900 text-sm">{locality}</h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-left text-xs text-gray-400 border-b border-gray-100">
+                          <th className="px-4 py-2.5 font-semibold">Tier</th>
+                          <th className="px-4 py-2.5 font-semibold">Construction Stage</th>
+                          <th className="px-4 py-2.5 font-semibold text-right">Price / sq ft</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rows.map((r) => (
+                          <tr key={`${r.tier}-${r.lifecycle_status}`} className="border-b border-gray-50 last:border-0">
+                            <td className="px-4 py-2.5 text-gray-700 whitespace-nowrap">{TIER_LABELS[r.tier]}</td>
+                            <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">{STAGE_LABELS[r.lifecycle_status]}</td>
+                            <td className="px-4 py-2.5 text-right font-semibold text-gray-900 whitespace-nowrap">
+                              ₹{r.price.toLocaleString("en-IN")}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               ))}
             </div>
-          </div>
+          )}
         </SectionWrapper>
       </section>
 
