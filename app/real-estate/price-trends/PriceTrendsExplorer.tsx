@@ -35,16 +35,17 @@ const STAGE_LABELS: Record<LifecycleStatus, string> = {
 };
 
 // Ordinal ramp, light -> dark = earliest -> most-complete stage (same
-// direction as cheap -> expensive), validated for CVD separation and
-// surface contrast in both the categorical and ordinal senses.
+// direction as cheap -> expensive). Vivid azure, validated for lightness
+// monotonicity, CVD separation, and surface contrast (light-end 2.24:1 vs
+// white — clears the ordinal floor).
 const STAGE_COLOR: Record<LifecycleStatus, string> = {
-  pre_launch:         "#9FB2CE",
-  rera_registered:    "#9FB2CE",
-  under_construction: "#8299C4",
-  structure_complete: "#6B84B9",
-  finishing:          "#5670AC",
-  oc_received:        "#43599A",
-  ready_to_move:      "#334686",
+  pre_launch:         "#5CB3ED",
+  rera_registered:    "#5CB3ED",
+  under_construction: "#3B9AE3",
+  structure_complete: "#2481D4",
+  finishing:          "#1868B8",
+  oc_received:        "#124F94",
+  ready_to_move:      "#0B3A72",
 };
 
 function fmtMonth(month: string): string {
@@ -114,13 +115,20 @@ function StageTrendChart({ stages }: { stages: StageSeriesData[] }) {
         onMouseMove={handleMove}
         onMouseLeave={() => setHoverIdx(null)}
       >
+        <defs>
+          <linearGradient id="plotWash" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#EAF3FD" />
+            <stop offset="100%" stopColor="#F8FBFF" />
+          </linearGradient>
+        </defs>
+        <rect x={padL} y={padT} width={plotW} height={plotH} fill="url(#plotWash)" rx={6} />
         {Array.from({ length: gridSteps + 1 }).map((_, g) => {
           const v = minP + (g / gridSteps) * (maxP - minP);
           const yy = y(v);
           return (
             <g key={g}>
-              <line x1={padL} x2={W - padR} y1={yy} y2={yy} stroke="#EEF1F4" strokeWidth={1} />
-              <text x={padL - 8} y={yy + 4} textAnchor="end" fontSize={10} fill="#8991A0" fontFamily="ui-monospace, monospace">
+              <line x1={padL} x2={W - padR} y1={yy} y2={yy} stroke="#CBDCF2" strokeWidth={1} />
+              <text x={padL - 8} y={yy + 4} textAnchor="end" fontSize={10} fill="#6B84A3" fontFamily="ui-monospace, monospace">
                 ₹{Math.round(v).toLocaleString("en-IN")}
               </text>
             </g>
@@ -128,7 +136,7 @@ function StageTrendChart({ stages }: { stages: StageSeriesData[] }) {
         })}
         {months.map((m, i) =>
           i % Math.ceil(months.length / 8) === 0 || i === months.length - 1 ? (
-            <text key={m} x={x(i)} y={H - 8} textAnchor="middle" fontSize={10} fill="#8991A0" fontFamily="ui-monospace, monospace">
+            <text key={m} x={x(i)} y={H - 8} textAnchor="middle" fontSize={10} fill="#6B84A3" fontFamily="ui-monospace, monospace">
               {fmtMonthShort(m)}
             </text>
           ) : null
@@ -147,7 +155,7 @@ function StageTrendChart({ stages }: { stages: StageSeriesData[] }) {
         })}
 
         {hoverIdx !== null && (
-          <line x1={x(hoverIdx)} x2={x(hoverIdx)} y1={padT} y2={padT + plotH} stroke="#8991A0" strokeWidth={1} strokeDasharray="2 3" />
+          <line x1={x(hoverIdx)} x2={x(hoverIdx)} y1={padT} y2={padT + plotH} stroke="#5670AC" strokeWidth={1} strokeDasharray="2 3" />
         )}
         {hoverIdx !== null &&
           chartable.map((s) => {
@@ -245,7 +253,7 @@ export default function PriceTrendsExplorer({
               onClick={() => setTier(t.tier)}
               className={`flex-1 whitespace-nowrap px-4 py-2 rounded-md text-sm font-semibold transition-colors ${
                 activeTier?.tier === t.tier
-                  ? "bg-white text-brand-700 shadow-sm"
+                  ? "bg-blue-600 text-white shadow-sm"
                   : "text-gray-500 hover:text-gray-700"
               }`}
             >
