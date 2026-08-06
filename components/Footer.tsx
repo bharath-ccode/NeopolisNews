@@ -6,7 +6,7 @@ import FooterSubscribe from "./FooterSubscribe";
 const FOOTER_LINKS = {
   "Real Estate": [
     { label: "Project Pages",         href: "/real-estate#projects" },
-    { label: "Price Trends",          href: "/real-estate#prices" },
+    { label: "Price Trends",          href: "/real-estate/price-trends" },
     { label: "Construction Updates",  href: "/real-estate#construction" },
     { label: "Floor Plans",           href: "/real-estate#floorplans" },
   ],

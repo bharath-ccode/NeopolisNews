@@ -198,7 +198,7 @@ export default function AdminPriceTrendsPage() {
           <TrendingUp className="w-4 h-4 text-brand-500" /> Price Trends
         </h2>
         <p className="text-xs text-gray-400 mt-0.5">
-          ₹/sq ft by Locality × Tier × Construction Stage — shown on /real-estate#prices.
+          ₹/sq ft by Locality × Tier × Construction Stage — shown on /real-estate/price-trends.
           Each save records a snapshot for the month, so price history builds up over time.
         </p>
       </div>
