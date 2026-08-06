@@ -23,8 +23,9 @@ export async function GET(req: NextRequest) {
 
   const projectIds    = (saved ?? []).filter((s) => s.item_type === "project").map((s) => s.item_id);
   const classifiedIds = (saved ?? []).filter((s) => s.item_type === "classified").map((s) => s.item_id);
+  const businessIds   = (saved ?? []).filter((s) => s.item_type === "business").map((s) => s.item_id);
 
-  const [projectsRes, classifiedsRes] = await Promise.all([
+  const [projectsRes, classifiedsRes, businessesRes] = await Promise.all([
     projectIds.length
       ? admin
           .from("projects")
@@ -37,16 +38,25 @@ export async function GET(req: NextRequest) {
           .select("id, project_name, standalone_description, property_type, listing_type, bedrooms, price, photos, status")
           .in("id", classifiedIds)
       : Promise.resolve({ data: [] as Record<string, unknown>[] }),
+    businessIds.length
+      ? admin
+          .from("businesses")
+          .select("id, name, industry, types, address, logo, contact_phone")
+          .in("id", businessIds)
+      : Promise.resolve({ data: [] as Record<string, unknown>[] }),
   ]);
 
   const projects    = new Map((projectsRes.data ?? []).map((p) => [String(p.id), p]));
   const classifieds = new Map((classifiedsRes.data ?? []).map((c) => [String(c.id), c]));
+  const businesses  = new Map((businessesRes.data ?? []).map((b) => [String(b.id), b]));
 
   const items = (saved ?? []).map((s) => ({
     ...s,
     detail:
       s.item_type === "project"
         ? projects.get(s.item_id) ?? null
+        : s.item_type === "business"
+        ? businesses.get(s.item_id) ?? null
         : classifieds.get(s.item_id) ?? null,
   }));
 
@@ -65,8 +75,8 @@ export async function POST(req: NextRequest) {
   const { item_type, item_id } =
     body as { item_type?: string; item_id?: string };
 
-  if (item_type !== "project" && item_type !== "classified")
-    return NextResponse.json({ error: "item_type must be 'project' or 'classified'" }, { status: 400 });
+  if (item_type !== "project" && item_type !== "classified" && item_type !== "business")
+    return NextResponse.json({ error: "item_type must be 'project', 'classified' or 'business'" }, { status: 400 });
   if (!item_id) return NextResponse.json({ error: "item_id required" }, { status: 400 });
 
   const admin = createAdminClient();

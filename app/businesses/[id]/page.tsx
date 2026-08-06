@@ -28,6 +28,7 @@ import ContactButton from "./ContactButton";
 import ReviewSection from "./ReviewSection";
 import BookAppointment from "./BookAppointment";
 import BusinessCarousels from "./BusinessCarousels";
+import SaveButton from "@/components/SaveButton";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -298,10 +299,13 @@ export default async function BusinessProfilePage({
                 )}
               </div>
 
-              {/* Name */}
-              <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-3">
-                {b.name}
-              </h1>
+              {/* Name + favourite */}
+              <div className="flex flex-wrap items-center gap-3 mb-3 justify-center md:justify-start">
+                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
+                  {b.name}
+                </h1>
+                <SaveButton itemType="business" itemId={b.id} variant="dark" />
+              </div>
 
               {/* Inline category breadcrumb */}
               {(b.industry || b.types.length > 0 || b.subtypes.length > 0) && (

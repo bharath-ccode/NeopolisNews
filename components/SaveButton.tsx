@@ -13,11 +13,14 @@ export default function SaveButton({
   itemType,
   itemId,
   size = "md",
+  variant = "light",
   className = "",
 }: {
-  itemType: "project" | "classified";
+  itemType: "project" | "classified" | "business";
   itemId: string;
   size?: "sm" | "md";
+  /** "dark" renders the unsaved state legibly on dark/colored backgrounds */
+  variant?: "light" | "dark";
   className?: string;
 }) {
   const { user } = useAuth();
@@ -70,11 +73,13 @@ export default function SaveButton({
   return (
     <button
       onClick={toggle}
-      title={saved ? "Remove from saved" : "Save property"}
-      aria-label={saved ? "Remove from saved" : "Save property"}
+      title={saved ? "Remove from saved" : "Save"}
+      aria-label={saved ? "Remove from saved" : "Save"}
       className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition-colors ${
         saved
           ? "bg-red-50 border-red-200 text-red-600"
+          : variant === "dark"
+          ? "border-white/50 text-white hover:border-red-300 hover:text-red-300"
           : "border-gray-300 text-gray-500 hover:border-red-300 hover:text-red-500"
       } ${className}`}
     >
