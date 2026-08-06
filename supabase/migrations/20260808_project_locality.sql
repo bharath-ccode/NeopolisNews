@@ -10,6 +10,6 @@ alter table public.projects
 alter table public.projects
   add constraint projects_locality_check
   check (locality is null or locality in (
-    'Neopolis', 'Kokapet', 'Gandipet', 'Rajendranagar', 'Nanakramguda',
-    'Nallagandla', 'Tellapur', 'Puppalaguda', 'Narsingi', 'Gachbowli'
+    'Neopolis', 'Kokapet', 'Gandipet', 'Financial District', 'Rajendranagar', 'Nanakramguda',
+    'Nallagandla', 'Tellapur', 'Puppalaguda', 'Narsingi', 'Gachibowli'
   ));
