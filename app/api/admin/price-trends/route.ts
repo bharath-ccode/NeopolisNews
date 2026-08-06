@@ -46,8 +46,10 @@ export async function POST(req: NextRequest) {
   if (!STAGES.includes(lifecycle_status))
     return NextResponse.json({ error: `lifecycle_status must be one of: ${STAGES.join(", ")}` }, { status: 400 });
   const value = Number(price);
-  if (!value || value <= 0)
-    return NextResponse.json({ error: "price must be a positive number" }, { status: 400 });
+  // Floor applies to every locality/tier/stage/month — a standing rule, not
+  // a per-seed adjustment.
+  if (!value || value < 6000)
+    return NextResponse.json({ error: "price must be at least ₹6,000/sq ft" }, { status: 400 });
 
   const admin = createAdminClient();
   const { data, error } = await admin
