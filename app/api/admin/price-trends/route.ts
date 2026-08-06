@@ -52,12 +52,26 @@ export async function POST(req: NextRequest) {
   if (!STAGES.includes(lifecycle_status))
     return NextResponse.json({ error: `lifecycle_status must be one of: ${STAGES.join(", ")}` }, { status: 400 });
   const value = Number(price);
-  // Floor applies to every locality/tier/stage/month — a standing rule, not
-  // a per-seed adjustment.
-  if (!value || value < 6000)
-    return NextResponse.json({ error: "price must be at least ₹6,000/sq ft" }, { status: 400 });
+  if (!value || value <= 0)
+    return NextResponse.json({ error: "price must be a positive number" }, { status: 400 });
 
   const admin = createAdminClient();
+
+  // Floor is per-locality and admin-configurable (/admin/price-trends) — not
+  // a hardcoded number. This check gives a friendly error; the database
+  // trigger (20260815) backstops it regardless of entry point.
+  const { data: floorRow } = await admin
+    .from("locality_price_floors")
+    .select("floor_price")
+    .eq("locality", locality)
+    .maybeSingle();
+  const floor = floorRow?.floor_price ?? 6000;
+  if (value < floor)
+    return NextResponse.json(
+      { error: `price must be at least ₹${Number(floor).toLocaleString("en-IN")}/sq ft for ${locality}` },
+      { status: 400 }
+    );
+
   const { data, error } = await admin
     .from("locality_price_trends")
     .upsert(

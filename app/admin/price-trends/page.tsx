@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { TrendingUp, Loader2, Plus, Trash2, MapPin } from "lucide-react";
+import { TrendingUp, Loader2, Plus, Trash2, MapPin, ShieldCheck, Pencil, Check } from "lucide-react";
 import {
   LOCALITIES, LIFECYCLE_STAGES,
   type Locality, type ProjectTier, type LifecycleStatus,
@@ -15,6 +15,13 @@ interface TrendRow {
   price: number;
   period_month: string;
 }
+
+interface FloorRow {
+  locality: Locality;
+  floor_price: number;
+}
+
+const DEFAULT_FLOOR = 6000;
 
 function monthYear(dateStr: string): string {
   return new Date(dateStr + "T00:00:00").toLocaleDateString("en-IN", { month: "short", year: "numeric" });
@@ -74,7 +81,14 @@ export default function AdminPriceTrendsPage() {
   const [stage, setStage]       = useState<LifecycleStatus>(PRICEABLE_STAGES[0].id);
   const [price, setPrice]       = useState("");
 
+  const [floors, setFloors]         = useState<Map<Locality, number>>(new Map());
+  const [floorsLoading, setFloorsLoading] = useState(true);
+  const [editingFloor, setEditingFloor]   = useState<Locality | null>(null);
+  const [floorDraft, setFloorDraft]       = useState("");
+  const [floorSaving, setFloorSaving]     = useState(false);
+
   const availableTiers = tiersFor(locality);
+  const floorForSelected = floors.get(locality) ?? DEFAULT_FLOOR;
 
   function changeLocality(l: Locality) {
     setLocality(l);
@@ -92,7 +106,40 @@ export default function AdminPriceTrendsPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  const loadFloors = useCallback(async () => {
+    setFloorsLoading(true);
+    const res = await fetch("/api/admin/price-floors").catch(() => null);
+    if (res?.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setFloors(new Map((data as FloorRow[]).map((f) => [f.locality, Number(f.floor_price)])));
+      }
+    }
+    setFloorsLoading(false);
+  }, []);
+
+  useEffect(() => { load(); loadFloors(); }, [load, loadFloors]);
+
+  function startEditFloor(l: Locality) {
+    setEditingFloor(l);
+    setFloorDraft(String(floors.get(l) ?? DEFAULT_FLOOR));
+  }
+
+  async function saveFloor(l: Locality) {
+    const value = Number(floorDraft);
+    if (!value || value <= 0) return;
+    setFloorSaving(true);
+    const res = await fetch("/api/admin/price-floors", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ locality: l, floor_price: value }),
+    }).catch(() => null);
+    if (res?.ok) {
+      setFloors((prev) => new Map(prev).set(l, value));
+      setEditingFloor(null);
+    }
+    setFloorSaving(false);
+  }
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
@@ -156,6 +203,63 @@ export default function AdminPriceTrendsPage() {
         </p>
       </div>
 
+      {/* Floor prices by locality */}
+      <div className="card p-5">
+        <div className="flex items-center gap-2 mb-1">
+          <ShieldCheck className="w-4 h-4 text-brand-500" />
+          <h3 className="font-bold text-gray-900 text-sm">Floor Prices by Locality</h3>
+        </div>
+        <p className="text-xs text-gray-400 mb-4">
+          No price may be saved below its locality&apos;s floor — enforced here and in the database.
+          Raising a floor only affects prices entered afterward.
+        </p>
+        {floorsLoading ? (
+          <div className="flex justify-center py-6">
+            <Loader2 className="w-5 h-5 animate-spin text-gray-300" />
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {LOCALITIES.map((l) => {
+              const isEditing = editingFloor === l;
+              return (
+                <div key={l} className="flex items-center justify-between gap-2 border border-gray-100 rounded-lg px-3 py-2">
+                  <span className="text-sm text-gray-700 flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-gray-300 shrink-0" /> {l}
+                  </span>
+                  {isEditing ? (
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number" min={1} step="any" autoFocus
+                        value={floorDraft}
+                        onChange={(e) => setFloorDraft(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") saveFloor(l); }}
+                        className="w-24 border border-gray-200 rounded-lg px-2 py-1 text-sm text-right focus:outline-none focus:ring-2 focus:ring-brand-400"
+                      />
+                      <button
+                        onClick={() => saveFloor(l)}
+                        disabled={floorSaving}
+                        className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
+                        title="Save"
+                      >
+                        {floorSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => startEditFloor(l)}
+                      className="flex items-center gap-1.5 text-sm font-semibold text-gray-800 hover:text-brand-600 transition-colors"
+                    >
+                      ₹{(floors.get(l) ?? DEFAULT_FLOOR).toLocaleString("en-IN")}
+                      <Pencil className="w-3 h-3 text-gray-300" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {/* Add / update form */}
       <form onSubmit={add} className="card p-5 space-y-3">
         <p className="text-xs font-semibold text-brand-600">
@@ -181,9 +285,11 @@ export default function AdminPriceTrendsPage() {
           </select>
         </div>
         <div>
-          <label className="block text-[11px] font-semibold text-gray-500 mb-1">Price (₹/sq ft, min 6,000)</label>
-          <input type="number" min={6000} step="any" value={price} onChange={(e) => setPrice(e.target.value)}
-            placeholder="9800" className={INPUT} />
+          <label className="block text-[11px] font-semibold text-gray-500 mb-1">
+            Price (₹/sq ft, min {floorForSelected.toLocaleString("en-IN")})
+          </label>
+          <input type="number" min={floorForSelected} step="any" value={price} onChange={(e) => setPrice(e.target.value)}
+            placeholder={String(floorForSelected + 3000)} className={INPUT} />
         </div>
         <button type="submit" disabled={saving}
           className="flex items-center justify-center gap-1.5 btn-primary text-sm py-2 disabled:opacity-60">
