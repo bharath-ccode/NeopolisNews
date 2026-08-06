@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import LeadForm from "@/components/LeadForm";
+import SaveButton from "@/components/SaveButton";
 import { getSubtypes } from "@/lib/businessDirectory";
 import { createClient } from "@/lib/supabase/client";
 
@@ -118,6 +119,7 @@ function BusinessCard({ biz, typeId }: { biz: Business; typeId: HealthType }) {
               24 / 7
             </span>
           )}
+          <SaveButton itemType="business" itemId={biz.id} size="sm" />
         </div>
       </div>
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { MapPin, ExternalLink, Film, Ticket } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
+import SaveButton from "@/components/SaveButton";
 
 interface Cinema {
   id: string;
@@ -132,7 +133,7 @@ export default function CinemasPage() {
                         <div className="w-10 h-10 rounded-xl bg-gray-900 flex items-center justify-center shrink-0">
                           <Film className="w-5 h-5 text-white" />
                         </div>
-                        <div>
+                        <div className="flex-1">
                           <h3 className="font-bold text-gray-900 text-sm leading-snug">{cinema.name}</h3>
                           {cinema.address && (
                             <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
@@ -140,6 +141,7 @@ export default function CinemasPage() {
                             </p>
                           )}
                         </div>
+                        <SaveButton itemType="business" itemId={cinema.id} size="sm" className="shrink-0" />
                       </div>
 
                       {cinema.subtypes.length > 0 && (

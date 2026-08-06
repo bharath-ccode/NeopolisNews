@@ -16,7 +16,7 @@ export default function SaveButton({
   variant = "light",
   className = "",
 }: {
-  itemType: "project" | "classified" | "business";
+  itemType: "project" | "classified" | "business" | "builder" | "event" | "deal";
   itemId: string;
   size?: "sm" | "md";
   /** "dark" renders the unsaved state legibly on dark/colored backgrounds */
