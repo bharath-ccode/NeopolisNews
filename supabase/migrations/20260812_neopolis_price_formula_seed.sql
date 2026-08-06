@@ -8,21 +8,21 @@
 -- Affordable/Neopolis rows are removed below. (Affordable may still be
 -- valid for other localities; this exclusion is Neopolis-specific.)
 --
--- Formula, all integer arithmetic, floored at 6000 (standing rule --
--- see 20260814_price_floor_rule.sql -- applies to every locality/tier/
--- stage/month, not just this seed):
+-- Formula, all integer arithmetic, floored at Neopolis's current floor
+-- from locality_price_floors (admin-configurable at /admin/price-trends --
+-- see 20260815_locality_price_floors.sql):
 --   price = greatest(
 --     14600
 --       - 1000 * tier_step        (0=Uber Luxury,1=Luxury,2=Premium)
 --       - 1000 * stage_step       (0=Ready to Move ... 5=RERA Registered, earliest stage)
 --       -  200 * months_before_aug_2026,
---     6000
+--     <Neopolis's floor_price>
 --   )
 --
 -- Seeds Aug 2024 - Jul 2026 inclusive (24 months) x 3 tiers x 6 priceable
 -- stages = 432 rows. SYNTHETIC placeholder data for the pitch demo, not
 -- real market history -- replace with real figures when available.
--- Run in the Supabase SQL editor (after 20260814_price_floor_rule.sql).
+-- Run in the Supabase SQL editor (after 20260815_locality_price_floors.sql).
 -- If you already ran an earlier version of this script, just re-run this
 -- one -- the upsert overwrites the same rows, and the delete below clears
 -- any Affordable rows that earlier version inserted.
@@ -61,7 +61,7 @@ select
            (date_part('year', '2026-08-01'::date) - date_part('year', m.period_month)) * 12
            + (date_part('month', '2026-08-01'::date) - date_part('month', m.period_month))
          ),
-    6000
+    coalesce((select floor_price from public.locality_price_floors where locality = 'Neopolis'), 6000)
   ),
   m.period_month
 from tiers t cross join stages s cross join months m
