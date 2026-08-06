@@ -12,8 +12,8 @@ import { getBuilders, type Builder } from "@/lib/buildersStore";
 import { AMENITY_CATEGORIES } from "@/lib/amenitiesData";
 import {
   createProject, updateProject,
-  type Project, type ProjectInput, type ProjectType, type ProjectTier, type LifecycleStatus,
-  LIFECYCLE_STAGES,
+  type Project, type ProjectInput, type ProjectType, type ProjectTier, type LifecycleStatus, type Locality,
+  LIFECYCLE_STAGES, LOCALITIES,
   type UnitFacing, type UnitPlan, type ContactPhone, type Tower, type TowerFloorPlan,
 } from "@/lib/projectsStore";
 
@@ -69,6 +69,7 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
   const [brochureUrl, setBrochureUrl]       = useState(initialData?.brochureUrl ?? "");
   const [projectType, setProjectType]   = useState<ProjectType | "">(initialData?.projectType ?? "");
   const [tier, setTier]                 = useState<ProjectTier | "">(initialData?.tier ?? "");
+  const [locality, setLocality]         = useState<Locality | "">(initialData?.locality ?? "");
   const [lifecycleStatus, setLifecycleStatus] = useState<LifecycleStatus | "">(initialData?.lifecycleStatus ?? "");
   const [expectedCompletionDate, setExpectedCompletionDate] = useState(initialData?.expectedCompletionDate ?? "");
   const [maxFloors, setMaxFloors]       = useState(initialData?.projectDetail?.maxFloors?.toString() ?? "");
@@ -227,6 +228,7 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
       brochureUrl:           brochureUrl || null,
       projectType:           projectType   || null,
       tier:                  tier          || null,
+      locality:              locality      || null,
       lifecycleStatus:         lifecycleStatus || null,
       expectedCompletionDate:  expectedCompletionDate || null,
       priceRangeMin:           priceRangeMin ? parseFloat(priceRangeMin) : null,
@@ -379,6 +381,16 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
               </select>
             </div>
           )}
+
+          <div>
+            <label className="label">Locality</label>
+            <select className="input" value={locality} onChange={e => setLocality(e.target.value as Locality | "")}>
+              <option value="">— Select locality —</option>
+              {LOCALITIES.map(l => (
+                <option key={l} value={l}>{l}</option>
+              ))}
+            </select>
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>

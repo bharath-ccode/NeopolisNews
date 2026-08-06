@@ -30,7 +30,7 @@ async function getProjects(): Promise<ProjectListItem[]> {
   const sb = createAdminClient();
   const { data } = await sb
     .from("projects")
-    .select("id, project_name, total_land_area_acres, total_units, core_neopolis, project_logo_url, project_type, tier, lifecycle_status, price_range_min, price_range_max, builders(builder_name)")
+    .select("id, project_name, total_land_area_acres, total_units, core_neopolis, project_logo_url, project_type, tier, locality, lifecycle_status, price_range_min, price_range_max, builders(builder_name)")
     .order("project_name");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (data ?? []).map((p: any) => ({

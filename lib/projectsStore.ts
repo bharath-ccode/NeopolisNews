@@ -67,6 +67,11 @@ export interface ProjectDetail {
 
 export type ProjectType = "apartments" | "independent_homes" | "residential" | "mixed_use" | "commercial";
 export type ProjectTier = "affordable" | "premium" | "luxury" | "uber_luxury";
+export const LOCALITIES = [
+  "Neopolis", "Kokapet", "Gandipet", "Rajendranagar", "Nanakramguda",
+  "Nallagandla", "Tellapur", "Puppalaguda", "Narsingi", "Gachbowli",
+] as const;
+export type Locality = (typeof LOCALITIES)[number];
 export type LifecycleStatus =
   | "pre_launch"
   | "rera_registered"
@@ -101,6 +106,7 @@ export interface Project {
   brochureUrl: string | null;
   projectType: ProjectType | null;
   tier: ProjectTier | null;
+  locality: Locality | null;
   lifecycleStatus: LifecycleStatus | null;
   expectedCompletionDate: string | null;
   priceRangeMin: number | null;
@@ -126,6 +132,7 @@ export interface ProjectInput {
   brochureUrl: string | null;
   projectType: ProjectType | null;
   tier: ProjectTier | null;
+  locality: Locality | null;
   lifecycleStatus: LifecycleStatus | null;
   expectedCompletionDate: string | null;
   priceRangeMin: number | null;
@@ -227,6 +234,7 @@ export function toProject(row: any): Project {
     brochureUrl: row.brochure_url ?? null,
     projectType: row.project_type ?? null,
     tier: row.tier ?? null,
+    locality: row.locality ?? null,
     lifecycleStatus: row.lifecycle_status ?? null,
     expectedCompletionDate: row.expected_completion_date ?? null,
     priceRangeMin: row.price_range_min ?? null,
@@ -295,6 +303,7 @@ export async function createProject(input: ProjectInput): Promise<Project> {
       brochure_url:          input.brochureUrl,
       project_type:          input.projectType,
       tier:                  input.tier,
+      locality:              input.locality || null,
       lifecycle_status:           input.lifecycleStatus,
       expected_completion_date:   input.expectedCompletionDate || null,
       price_range_min:            input.priceRangeMin,
@@ -328,6 +337,7 @@ export async function updateProject(id: string, input: ProjectInput): Promise<Pr
       brochure_url:          input.brochureUrl,
       project_type:          input.projectType,
       tier:                  input.tier,
+      locality:              input.locality || null,
       lifecycle_status:           input.lifecycleStatus,
       expected_completion_date:   input.expectedCompletionDate || null,
       price_range_min:            input.priceRangeMin,

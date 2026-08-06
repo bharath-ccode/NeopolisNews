@@ -3,9 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Building2, ChevronRight, Tag, CheckCircle, X, GitCompare } from "lucide-react";
-import type { ProjectType, ProjectTier, LifecycleStatus } from "@/lib/projectsStore";
-import { LIFECYCLE_STAGES } from "@/lib/projectsStore";
+import { Building2, ChevronRight, Tag, CheckCircle, X, GitCompare, MapPin } from "lucide-react";
+import type { ProjectType, ProjectTier, LifecycleStatus, Locality } from "@/lib/projectsStore";
+import { LIFECYCLE_STAGES, LOCALITIES } from "@/lib/projectsStore";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -19,6 +19,7 @@ export interface ProjectListItem {
   project_logo_url: string | null;
   project_type: ProjectType | null;
   tier: ProjectTier | null;
+  locality: Locality | null;
   lifecycle_status: LifecycleStatus | null;
   price_range_min: number | null;
   price_range_max: number | null;
@@ -84,21 +85,25 @@ export default function ProjectFiltersGrid({ projects }: { projects: ProjectList
   const router = useRouter();
   const [typeFilter, setTypeFilter]     = useState<ProjectType | "all">("all");
   const [tierFilter, setTierFilter]     = useState<ProjectTier | "all">("all");
+  const [localityFilter, setLocalityFilter] = useState<Locality | "all">("all");
   const [statusFilter, setStatusFilter] = useState<LifecycleStatus | "all">("all");
   const [compareIds, setCompareIds]     = useState<string[]>([]);
 
   const filtered = projects.filter((p) => {
-    if (typeFilter   !== "all" && p.project_type     !== typeFilter)   return false;
-    if (tierFilter   !== "all" && p.tier             !== tierFilter)   return false;
-    if (statusFilter !== "all" && p.lifecycle_status !== statusFilter) return false;
+    if (typeFilter     !== "all" && p.project_type     !== typeFilter)     return false;
+    if (tierFilter     !== "all" && p.tier             !== tierFilter)     return false;
+    if (localityFilter !== "all" && p.locality         !== localityFilter) return false;
+    if (statusFilter   !== "all" && p.lifecycle_status !== statusFilter)   return false;
     return true;
   });
 
-  const hasActiveFilter = typeFilter !== "all" || tierFilter !== "all" || statusFilter !== "all";
+  const hasActiveFilter =
+    typeFilter !== "all" || tierFilter !== "all" || localityFilter !== "all" || statusFilter !== "all";
 
   function clearAll() {
     setTypeFilter("all");
     setTierFilter("all");
+    setLocalityFilter("all");
     setStatusFilter("all");
   }
 
@@ -124,6 +129,17 @@ export default function ProjectFiltersGrid({ projects }: { projects: ProjectList
     <>
       {/* ── Filter bar ── */}
       <div className="mb-6 space-y-3">
+        {/* Locality */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider w-14 shrink-0">Area</span>
+          <div className="flex gap-2 flex-wrap">
+            <FilterPill label="All" active={localityFilter === "all"} onClick={() => setLocalityFilter("all")} />
+            {LOCALITIES.map((l) => (
+              <FilterPill key={l} label={l} active={localityFilter === l} onClick={() => setLocalityFilter(l)} />
+            ))}
+          </div>
+        </div>
+
         {/* Project Type */}
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs font-bold text-gray-400 uppercase tracking-wider w-14 shrink-0">Type</span>
@@ -234,9 +250,16 @@ export default function ProjectFiltersGrid({ projects }: { projects: ProjectList
                         </span>
                       )}
                     </div>
-                    {p.builder_name && (
-                      <p className="text-xs text-gray-400">by {p.builder_name}</p>
-                    )}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {p.builder_name && (
+                        <p className="text-xs text-gray-400">by {p.builder_name}</p>
+                      )}
+                      {p.locality && (
+                        <span className="flex items-center gap-0.5 text-xs text-gray-400">
+                          <MapPin className="w-3 h-3" /> {p.locality}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-500 my-3">
