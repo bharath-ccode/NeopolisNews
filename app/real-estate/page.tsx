@@ -46,6 +46,7 @@ interface PriceCombo {
   tier: ProjectTier;
   lifecycle_status: LifecycleStatus;
   price: number;
+  periodMonth: string;
 }
 interface LocalityPrices {
   locality: Locality;
@@ -73,23 +74,39 @@ async function getPriceMatrix(): Promise<LocalityPrices[]> {
   const sb = createAdminClient();
   const { data } = await sb
     .from("locality_price_trends")
-    .select("locality, tier, lifecycle_status, price")
-    .order("tier")
-    .order("lifecycle_status");
+    .select("locality, tier, lifecycle_status, price, period_month")
+    .order("period_month");
 
-  const byLocality = new Map<Locality, PriceCombo[]>();
+  // Keep only each combination's latest month — older snapshots exist for
+  // history, but the price sheet shows the current price.
+  const latestByCombo = new Map<string, PriceCombo & { locality: Locality }>();
   for (const row of data ?? []) {
-    const list = byLocality.get(row.locality as Locality) ?? [];
-    list.push({
+    const key = `${row.locality}|${row.tier}|${row.lifecycle_status}`;
+    latestByCombo.set(key, {
+      locality: row.locality as Locality,
       tier: row.tier as ProjectTier,
       lifecycle_status: row.lifecycle_status as LifecycleStatus,
       price: Number(row.price),
+      periodMonth: row.period_month as string,
     });
-    byLocality.set(row.locality as Locality, list);
+  }
+
+  const byLocality = new Map<Locality, PriceCombo[]>();
+  for (const { locality, ...combo } of latestByCombo.values()) {
+    const list = byLocality.get(locality) ?? [];
+    list.push(combo);
+    byLocality.set(locality, list);
+  }
+  for (const list of byLocality.values()) {
+    list.sort((a, b) => a.tier.localeCompare(b.tier) || a.lifecycle_status.localeCompare(b.lifecycle_status));
   }
   return LOCALITIES
     .filter((l) => byLocality.has(l))
     .map((l) => ({ locality: l, rows: byLocality.get(l)! }));
+}
+
+function monthYear(dateStr: string): string {
+  return new Date(dateStr + "T00:00:00").toLocaleDateString("en-IN", { month: "short", year: "numeric" });
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -231,6 +248,7 @@ export default async function RealEstatePage() {
                           <th className="px-4 py-2.5 font-semibold">Tier</th>
                           <th className="px-4 py-2.5 font-semibold">Construction Stage</th>
                           <th className="px-4 py-2.5 font-semibold text-right">Price / sq ft</th>
+                          <th className="px-4 py-2.5 font-semibold text-right">As of</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -240,6 +258,9 @@ export default async function RealEstatePage() {
                             <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">{STAGE_LABELS[r.lifecycle_status]}</td>
                             <td className="px-4 py-2.5 text-right font-semibold text-gray-900 whitespace-nowrap">
                               ₹{r.price.toLocaleString("en-IN")}
+                            </td>
+                            <td className="px-4 py-2.5 text-right text-xs text-gray-400 whitespace-nowrap">
+                              {monthYear(r.periodMonth)}
                             </td>
                           </tr>
                         ))}

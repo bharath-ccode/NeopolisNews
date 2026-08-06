@@ -11,19 +11,30 @@ const STAGES = [
   "finishing", "oc_received", "ready_to_move",
 ] as const;
 
+/** Returns every monthly snapshot — callers derive "current" as the latest
+ *  period_month per (locality, tier, lifecycle_status) combination. */
 export async function GET() {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("locality_price_trends")
-    .select("id, locality, tier, lifecycle_status, price, updated_at")
+    .select("id, locality, tier, lifecycle_status, price, period_month, updated_at")
     .order("locality")
     .order("tier")
-    .order("lifecycle_status");
+    .order("lifecycle_status")
+    .order("period_month");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data ?? []);
 }
 
-/** POST { locality, tier, lifecycle_status, price } — upsert one combination. */
+function currentMonthStart(): string {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString().slice(0, 10);
+}
+
+/** POST { locality, tier, lifecycle_status, price } — records this calendar
+ *  month's snapshot for the combination. Saving again in the same month
+ *  overwrites that month (e.g. correcting a typo); a new month always adds
+ *  a new snapshot rather than replacing history. */
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const { locality, tier, lifecycle_status, price } = body ?? {};
@@ -42,8 +53,12 @@ export async function POST(req: NextRequest) {
   const { data, error } = await admin
     .from("locality_price_trends")
     .upsert(
-      { locality, tier, lifecycle_status, price: value, updated_at: new Date().toISOString() },
-      { onConflict: "locality,tier,lifecycle_status" }
+      {
+        locality, tier, lifecycle_status, price: value,
+        period_month: currentMonthStart(),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "locality,tier,lifecycle_status,period_month" }
     )
     .select("id")
     .single();

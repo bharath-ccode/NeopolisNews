@@ -13,6 +13,16 @@ interface TrendRow {
   tier: ProjectTier;
   lifecycle_status: LifecycleStatus;
   price: number;
+  period_month: string;
+}
+
+function monthYear(dateStr: string): string {
+  return new Date(dateStr + "T00:00:00").toLocaleDateString("en-IN", { month: "short", year: "numeric" });
+}
+
+function currentMonthStart(): string {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
 }
 
 const TIER_META: Record<ProjectTier, { label: string; cls: string }> = {
@@ -90,9 +100,21 @@ export default function AdminPriceTrendsPage() {
     await fetch(`/api/admin/price-trends?id=${id}`, { method: "DELETE" }).catch(() => null);
   }
 
+  // "Current" price per combination = its latest month. Older snapshots
+  // stay in `rows` for history; only the latest is shown here.
+  const latest = useMemo(() => {
+    const byCombo = new Map<string, TrendRow>();
+    for (const r of rows) {
+      const key = `${r.locality}|${r.tier}|${r.lifecycle_status}`;
+      const existing = byCombo.get(key);
+      if (!existing || r.period_month > existing.period_month) byCombo.set(key, r);
+    }
+    return Array.from(byCombo.values());
+  }, [rows]);
+
   const grouped = useMemo(() => {
     const byLocality = new Map<Locality, TrendRow[]>();
-    for (const r of rows) {
+    for (const r of latest) {
       const list = byLocality.get(r.locality) ?? [];
       list.push(r);
       byLocality.set(r.locality, list);
@@ -100,7 +122,9 @@ export default function AdminPriceTrendsPage() {
     return LOCALITIES
       .filter((l) => byLocality.has(l))
       .map((l) => ({ locality: l, rows: byLocality.get(l)! }));
-  }, [rows]);
+  }, [latest]);
+
+  const recordingMonth = monthYear(currentMonthStart());
 
   return (
     <div className="space-y-5">
@@ -110,12 +134,16 @@ export default function AdminPriceTrendsPage() {
         </h2>
         <p className="text-xs text-gray-400 mt-0.5">
           ₹/sq ft by Locality × Tier × Construction Stage — shown on /real-estate#prices.
-          Same combination overwrites.
+          Each save records a snapshot for the month, so price history builds up over time.
         </p>
       </div>
 
       {/* Add / update form */}
-      <form onSubmit={add} className="card p-5 grid sm:grid-cols-5 gap-3 items-end">
+      <form onSubmit={add} className="card p-5 space-y-3">
+        <p className="text-xs font-semibold text-brand-600">
+          Recording price for {recordingMonth}
+        </p>
+        <div className="grid sm:grid-cols-5 gap-3 items-end">
         <div>
           <label className="block text-[11px] font-semibold text-gray-500 mb-1">Locality</label>
           <select value={locality} onChange={(e) => setLocality(e.target.value as Locality)} className={INPUT}>
@@ -143,6 +171,7 @@ export default function AdminPriceTrendsPage() {
           className="flex items-center justify-center gap-1.5 btn-primary text-sm py-2 disabled:opacity-60">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} Save
         </button>
+        </div>
       </form>
 
       {error && (
@@ -176,6 +205,7 @@ export default function AdminPriceTrendsPage() {
                     <th className="px-4 py-2.5 font-semibold">Tier</th>
                     <th className="px-4 py-2.5 font-semibold">Construction Stage</th>
                     <th className="px-4 py-2.5 font-semibold text-right">Price</th>
+                    <th className="px-4 py-2.5 font-semibold text-right">As of</th>
                     <th className="px-4 py-2.5" />
                   </tr>
                 </thead>
@@ -194,6 +224,9 @@ export default function AdminPriceTrendsPage() {
                       </td>
                       <td className="px-4 py-2.5 text-right font-semibold text-gray-800">
                         ₹{Number(r.price).toLocaleString("en-IN")}
+                      </td>
+                      <td className="px-4 py-2.5 text-right text-xs text-gray-400 whitespace-nowrap">
+                        {monthYear(r.period_month)}
                       </td>
                       <td className="px-4 py-2.5 text-right">
                         <button onClick={() => remove(r.id)} className="text-gray-300 hover:text-red-500 transition-colors">
