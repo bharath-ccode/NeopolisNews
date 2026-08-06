@@ -81,7 +81,7 @@ const NAV_ITEMS = [
     icon: Building2,
     sub: [
       { label: "Project Pages",        href: "/real-estate#projects",              icon: Layers   },
-      { label: "Price Trends",         href: "/real-estate#prices",                icon: BarChart3 },
+      { label: "Price Trends",         href: "/real-estate/price-trends",          icon: BarChart3 },
       { label: "Construction Updates", href: "/real-estate/construction-updates",  icon: HardHat  },
       {
         label: "Resale & Rentals",
