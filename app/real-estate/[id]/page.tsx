@@ -284,7 +284,17 @@ export default async function ProjectDetailPage({
               <h1 className="text-2xl md:text-3xl font-extrabold mb-1">{project.projectName}</h1>
               {project.builderName && (
                 <p className="text-brand-300 text-sm flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5" /> By {project.builderName}
+                  <MapPin className="w-3.5 h-3.5" /> By{" "}
+                  {project.builderId ? (
+                    <Link
+                      href={`/builders/${project.builderId}`}
+                      className="underline decoration-brand-500 underline-offset-2 hover:text-white transition-colors"
+                    >
+                      {project.builderName}
+                    </Link>
+                  ) : (
+                    project.builderName
+                  )}
                 </p>
               )}
               {priceLabel && (
