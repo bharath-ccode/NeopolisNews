@@ -8,8 +8,6 @@ import {
   Trash2,
   Layers,
   Loader2,
-  CheckCircle2,
-  XCircle,
   HardHat,
   MapPin,
   Filter,
@@ -169,9 +167,6 @@ export default function ProjectsPage() {
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">
                   Units
                 </th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  Core
-                </th>
                 <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Actions
                 </th>
@@ -236,13 +231,6 @@ export default function ProjectsPage() {
                   </td>
                   <td className="px-5 py-4 text-gray-500 hidden lg:table-cell">
                     {p.totalUnits?.toLocaleString() ?? "—"}
-                  </td>
-                  <td className="px-5 py-4">
-                    {p.coreNeopolis ? (
-                      <CheckCircle2 className="w-4 h-4 text-green-500" />
-                    ) : (
-                      <XCircle className="w-4 h-4 text-gray-300" />
-                    )}
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex items-center justify-end gap-2">
