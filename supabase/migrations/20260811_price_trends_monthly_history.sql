@@ -32,18 +32,18 @@ create index if not exists locality_price_trends_period_idx
 -- then. August 2026 onward should be entered for real via /admin/price-trends.
 with anchors (locality, tier, lifecycle_status, july_price) as (
   values
-    ('Neopolis',            'premium', 'under_construction', 10800),
-    ('Neopolis',            'premium', 'ready_to_move',      11800),
-    ('Neopolis',            'luxury',  'under_construction', 13500),
-    ('Neopolis',            'luxury',  'ready_to_move',      14800),
-    ('Kokapet',              'premium', 'under_construction',  9800),
-    ('Kokapet',              'premium', 'ready_to_move',      10700),
-    ('Kokapet',              'luxury',  'under_construction', 12200),
-    ('Kokapet',              'luxury',  'ready_to_move',      13400),
-    ('Financial District',   'premium', 'under_construction', 11200),
-    ('Financial District',   'premium', 'ready_to_move',      12300),
-    ('Financial District',   'luxury',  'under_construction', 13900),
-    ('Financial District',   'luxury',  'ready_to_move',      15200)
+    ('Neopolis',            'premium', 'under_construction', 8200),
+    ('Neopolis',            'premium', 'ready_to_move',      10600),
+    ('Neopolis',            'luxury',  'under_construction', 10500),
+    ('Neopolis',            'luxury',  'ready_to_move',      12000),
+    ('Kokapet',              'premium', 'under_construction',  7800),
+    ('Kokapet',              'premium', 'ready_to_move',      9200),
+    ('Kokapet',              'luxury',  'under_construction', 8200),
+    ('Kokapet',              'luxury',  'ready_to_move',      9400),
+    ('Financial District',   'premium', 'under_construction', 9200),
+    ('Financial District',   'premium', 'ready_to_move',      10300),
+    ('Financial District',   'luxury',  'under_construction', 9900),
+    ('Financial District',   'luxury',  'ready_to_move',      11200)
 ),
 months as (
   select generate_series('2026-02-01'::date, '2026-07-01'::date, interval '1 month')::date as period_month
