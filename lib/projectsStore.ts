@@ -68,8 +68,8 @@ export interface ProjectDetail {
 export type ProjectType = "apartments" | "independent_homes" | "residential" | "mixed_use" | "commercial";
 export type ProjectTier = "affordable" | "premium" | "luxury" | "uber_luxury";
 export const LOCALITIES = [
-  "Neopolis", "Kokapet", "Gandipet", "Rajendranagar", "Nanakramguda",
-  "Nallagandla", "Tellapur", "Puppalaguda", "Narsingi", "Gachbowli",
+  "Neopolis", "Kokapet", "Gandipet", "Financial District", "Rajendranagar",
+  "Nanakramguda", "Nallagandla", "Tellapur", "Puppalaguda", "Narsingi", "Gachibowli",
 ] as const;
 export type Locality = (typeof LOCALITIES)[number];
 export type LifecycleStatus =
