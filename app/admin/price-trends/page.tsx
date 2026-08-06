@@ -34,6 +34,16 @@ const TIER_META: Record<ProjectTier, { label: string; cls: string }> = {
 
 const TIERS = Object.keys(TIER_META) as ProjectTier[];
 
+// Localities that don't offer every tier. Neopolis has no Affordable tier.
+const LOCALITY_EXCLUDED_TIERS: Partial<Record<Locality, ProjectTier[]>> = {
+  Neopolis: ["affordable"],
+};
+
+function tiersFor(locality: Locality): ProjectTier[] {
+  const excluded = LOCALITY_EXCLUDED_TIERS[locality] ?? [];
+  return TIERS.filter((t) => !excluded.includes(t));
+}
+
 // Pre-Launch excluded — quoting a price before RERA registration isn't legal.
 const PRICEABLE_STAGES = LIFECYCLE_STAGES.filter((s) => s.id !== "pre_launch");
 
@@ -63,6 +73,14 @@ export default function AdminPriceTrendsPage() {
   const [tier, setTier]         = useState<ProjectTier>("premium");
   const [stage, setStage]       = useState<LifecycleStatus>(PRICEABLE_STAGES[0].id);
   const [price, setPrice]       = useState("");
+
+  const availableTiers = tiersFor(locality);
+
+  function changeLocality(l: Locality) {
+    setLocality(l);
+    // Keep the tier selection valid if the new locality doesn't offer it.
+    if (!tiersFor(l).includes(tier)) setTier(tiersFor(l)[0]);
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -146,14 +164,14 @@ export default function AdminPriceTrendsPage() {
         <div className="grid sm:grid-cols-5 gap-3 items-end">
         <div>
           <label className="block text-[11px] font-semibold text-gray-500 mb-1">Locality</label>
-          <select value={locality} onChange={(e) => setLocality(e.target.value as Locality)} className={INPUT}>
+          <select value={locality} onChange={(e) => changeLocality(e.target.value as Locality)} className={INPUT}>
             {LOCALITIES.map((l) => <option key={l} value={l}>{l}</option>)}
           </select>
         </div>
         <div>
           <label className="block text-[11px] font-semibold text-gray-500 mb-1">Tier</label>
           <select value={tier} onChange={(e) => setTier(e.target.value as ProjectTier)} className={INPUT}>
-            {TIERS.map((t) => <option key={t} value={t}>{TIER_META[t].label}</option>)}
+            {availableTiers.map((t) => <option key={t} value={t}>{TIER_META[t].label}</option>)}
           </select>
         </div>
         <div>
