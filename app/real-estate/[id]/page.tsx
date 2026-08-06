@@ -275,9 +275,9 @@ export default async function ProjectDetailPage({
                 {project.projectType && (
                   <span className="text-xs text-brand-300">{TYPE_LABELS[project.projectType] ?? project.projectType}</span>
                 )}
-                {project.coreNeopolis && (
-                  <span className="flex items-center gap-1 text-xs text-green-400 font-medium">
-                    <CheckCircle className="w-3.5 h-3.5" /> Core Neopolis
+                {project.locality && (
+                  <span className="flex items-center gap-1 text-xs text-brand-300 font-medium">
+                    <MapPin className="w-3.5 h-3.5" /> {project.locality}
                   </span>
                 )}
               </div>

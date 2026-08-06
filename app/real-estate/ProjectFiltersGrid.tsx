@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Building2, ChevronRight, Tag, CheckCircle, X, GitCompare, MapPin } from "lucide-react";
+import { Building2, ChevronRight, Tag, X, GitCompare, MapPin } from "lucide-react";
 import type { ProjectType, ProjectTier, LifecycleStatus, Locality } from "@/lib/projectsStore";
 import { LIFECYCLE_STAGES, LOCALITIES } from "@/lib/projectsStore";
 
@@ -15,7 +15,6 @@ export interface ProjectListItem {
   builder_name: string | null;
   total_units: number | null;
   total_land_area_acres: number | null;
-  core_neopolis: boolean;
   project_logo_url: string | null;
   project_type: ProjectType | null;
   tier: ProjectTier | null;
@@ -213,8 +212,8 @@ export default function ProjectFiltersGrid({ projects }: { projects: ProjectList
               <div
                 key={p.id}
                 className={`card overflow-hidden transition-all ${
-                  p.core_neopolis ? "ring-2 ring-brand-500" : ""
-                } ${inCompare ? "ring-2 ring-indigo-500 shadow-lg" : ""}`}
+                  inCompare ? "ring-2 ring-indigo-500 shadow-lg" : ""
+                }`}
               >
                 {/* Image / logo area */}
                 <div className="h-36 bg-gradient-to-br from-brand-50 to-brand-100 flex items-center justify-center relative overflow-hidden">
@@ -227,11 +226,6 @@ export default function ProjectFiltersGrid({ projects }: { projects: ProjectList
                     />
                   ) : (
                     <Building2 className="w-12 h-12 text-brand-300" />
-                  )}
-                  {p.core_neopolis && (
-                    <span className="absolute top-2 left-2 flex items-center gap-1 text-xs font-semibold bg-brand-600 text-white px-2 py-0.5 rounded-full">
-                      <CheckCircle className="w-3 h-3" /> Core Neopolis
-                    </span>
                   )}
                   {status && (
                     <span className={`absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${STATUS_COLORS[status]}`}>
