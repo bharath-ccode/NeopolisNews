@@ -4,28 +4,37 @@
 -- figure to be entered live for August 2026 via /admin/price-trends, so
 -- it is NOT inserted by this script.
 --
+-- Neopolis has no Affordable tier -- excluded here, and any already-seeded
+-- Affordable/Neopolis rows are removed below. (Affordable may still be
+-- valid for other localities; this exclusion is Neopolis-specific.)
+--
 -- Formula, all integer arithmetic, floored at 6000 (standing rule --
 -- see 20260814_price_floor_rule.sql -- applies to every locality/tier/
 -- stage/month, not just this seed):
 --   price = greatest(
 --     14600
---       - 1000 * tier_step        (0=Uber Luxury,1=Luxury,2=Premium,3=Affordable)
+--       - 1000 * tier_step        (0=Uber Luxury,1=Luxury,2=Premium)
 --       - 1000 * stage_step       (0=Ready to Move ... 5=RERA Registered, earliest stage)
 --       -  200 * months_before_aug_2026,
 --     6000
 --   )
 --
--- Seeds Aug 2024 - Jul 2026 inclusive (24 months) x 4 tiers x 6 priceable
--- stages = 576 rows. SYNTHETIC placeholder data for the pitch demo, not
+-- Seeds Aug 2024 - Jul 2026 inclusive (24 months) x 3 tiers x 6 priceable
+-- stages = 432 rows. SYNTHETIC placeholder data for the pitch demo, not
 -- real market history -- replace with real figures when available.
 -- Run in the Supabase SQL editor (after 20260814_price_floor_rule.sql).
+-- If you already ran an earlier version of this script, just re-run this
+-- one -- the upsert overwrites the same rows, and the delete below clears
+-- any Affordable rows that earlier version inserted.
+
+delete from public.locality_price_trends
+where locality = 'Neopolis' and tier = 'affordable';
 
 with tiers (tier, tier_step) as (
   values
     ('uber_luxury', 0),
     ('luxury',      1),
-    ('premium',     2),
-    ('affordable',  3)
+    ('premium',     2)
 ),
 stages (lifecycle_status, stage_step) as (
   values

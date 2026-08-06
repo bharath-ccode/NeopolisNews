@@ -10,6 +10,10 @@ const STAGES = [
   "rera_registered", "under_construction", "structure_complete",
   "finishing", "oc_received", "ready_to_move",
 ] as const;
+// Localities that don't offer every tier. Neopolis has no Affordable tier.
+const LOCALITY_EXCLUDED_TIERS: Record<string, readonly string[]> = {
+  Neopolis: ["affordable"],
+};
 
 /** Returns every monthly snapshot — callers derive "current" as the latest
  *  period_month per (locality, tier, lifecycle_status) combination. */
@@ -43,6 +47,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `locality must be one of: ${LOCALITIES.join(", ")}` }, { status: 400 });
   if (!TIERS.includes(tier))
     return NextResponse.json({ error: `tier must be one of: ${TIERS.join(", ")}` }, { status: 400 });
+  if (LOCALITY_EXCLUDED_TIERS[locality]?.includes(tier))
+    return NextResponse.json({ error: `${locality} has no ${tier} tier` }, { status: 400 });
   if (!STAGES.includes(lifecycle_status))
     return NextResponse.json({ error: `lifecycle_status must be one of: ${STAGES.join(", ")}` }, { status: 400 });
   const value = Number(price);
