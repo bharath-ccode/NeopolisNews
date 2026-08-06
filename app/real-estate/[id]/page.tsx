@@ -41,10 +41,10 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 const TIER_COLORS: Record<string, string> = {
-  affordable:  "bg-blue-50 text-blue-700",
-  premium:     "bg-purple-50 text-purple-700",
-  luxury:      "bg-amber-50 text-amber-700",
-  uber_luxury: "bg-rose-50 text-rose-800",
+  affordable:  "bg-blue-600 text-white",
+  premium:     "bg-purple-600 text-white",
+  luxury:      "bg-amber-500 text-gray-900",
+  uber_luxury: "bg-rose-600 text-white",
 };
 
 const PROJECT_SELECT = `

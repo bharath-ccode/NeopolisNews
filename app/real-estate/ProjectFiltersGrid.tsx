@@ -42,20 +42,20 @@ const TIER_LABELS: Record<ProjectTier, string> = {
 };
 
 const TIER_COLORS: Record<ProjectTier, string> = {
-  affordable:  "bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full",
-  premium:     "bg-purple-100 text-purple-700 text-xs font-semibold px-2 py-0.5 rounded-full",
-  luxury:      "bg-amber-100 text-amber-800 text-xs font-semibold px-2 py-0.5 rounded-full",
-  uber_luxury: "bg-rose-100 text-rose-800 text-xs font-semibold px-2 py-0.5 rounded-full",
+  affordable:  "bg-blue-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full",
+  premium:     "bg-purple-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full",
+  luxury:      "bg-amber-500 text-gray-900 text-xs font-semibold px-2 py-0.5 rounded-full",
+  uber_luxury: "bg-rose-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full",
 };
 
 const STATUS_COLORS: Record<LifecycleStatus, string> = {
-  pre_launch:         "bg-gray-100 text-gray-600",
-  rera_registered:    "bg-sky-100 text-sky-700",
-  under_construction: "bg-orange-100 text-orange-700",
-  structure_complete: "bg-yellow-100 text-yellow-700",
-  finishing:          "bg-lime-100 text-lime-700",
-  oc_received:        "bg-teal-100 text-teal-700",
-  ready_to_move:      "bg-green-100 text-green-700",
+  pre_launch:         "bg-gray-500 text-white",
+  rera_registered:    "bg-sky-600 text-white",
+  under_construction: "bg-orange-500 text-white",
+  structure_complete: "bg-yellow-400 text-gray-900",
+  finishing:          "bg-lime-400 text-gray-900",
+  oc_received:        "bg-teal-500 text-white",
+  ready_to_move:      "bg-green-600 text-white",
 };
 
 // ─── Filter pill component ────────────────────────────────────────────────────
