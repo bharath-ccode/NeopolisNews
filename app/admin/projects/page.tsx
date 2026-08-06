@@ -11,14 +11,18 @@ import {
   CheckCircle2,
   XCircle,
   HardHat,
+  MapPin,
+  Filter,
 } from "lucide-react";
 import {
   getProjects,
   deleteProject,
   LIFECYCLE_STAGES,
+  LOCALITIES,
   type Project,
   type ProjectTier,
   type LifecycleStatus,
+  type Locality,
 } from "@/lib/projectsStore";
 
 const TIER_META: Record<ProjectTier, { label: string; cls: string }> = {
@@ -46,6 +50,7 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [localityFilter, setLocalityFilter] = useState<Locality | "">("");
 
   async function load() {
     setLoading(true);
@@ -79,6 +84,10 @@ export default function ProjectsPage() {
     );
   }
 
+  const filteredProjects = localityFilter
+    ? projects.filter((p) => p.locality === localityFilter)
+    : projects;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -86,23 +95,53 @@ export default function ProjectsPage() {
         <div>
           <h2 className="text-lg font-bold text-gray-900">Projects</h2>
           <p className="text-sm text-gray-400">
-            {projects.length} project{projects.length !== 1 ? "s" : ""}
+            {filteredProjects.length} of {projects.length} project{projects.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <Link href="/admin/projects/create" className="btn-primary text-sm py-2">
-          <PlusCircle className="w-3.5 h-3.5" />
-          Add Project
-        </Link>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            <select
+              value={localityFilter}
+              onChange={(e) => setLocalityFilter(e.target.value as Locality | "")}
+              className="pl-8 pr-8 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white appearance-none cursor-pointer"
+            >
+              <option value="">All Localities</option>
+              {LOCALITIES.map((l) => (
+                <option key={l} value={l}>{l}</option>
+              ))}
+            </select>
+          </div>
+          <Link href="/admin/projects/create" className="btn-primary text-sm py-2">
+            <PlusCircle className="w-3.5 h-3.5" />
+            Add Project
+          </Link>
+        </div>
       </div>
 
-      {projects.length === 0 ? (
+      {filteredProjects.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-2xl border border-gray-100">
           <Layers className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 font-medium">No projects yet</p>
-          <p className="text-sm text-gray-400 mt-1">Create your first project to get started.</p>
-          <Link href="/admin/projects/create" className="btn-primary text-sm py-2 mt-4 inline-flex">
-            <PlusCircle className="w-3.5 h-3.5" /> Add Project
-          </Link>
+          {projects.length === 0 ? (
+            <>
+              <p className="text-gray-500 font-medium">No projects yet</p>
+              <p className="text-sm text-gray-400 mt-1">Create your first project to get started.</p>
+              <Link href="/admin/projects/create" className="btn-primary text-sm py-2 mt-4 inline-flex">
+                <PlusCircle className="w-3.5 h-3.5" /> Add Project
+              </Link>
+            </>
+          ) : (
+            <>
+              <p className="text-gray-500 font-medium">No projects in {localityFilter}</p>
+              <button
+                type="button"
+                onClick={() => setLocalityFilter("")}
+                className="text-sm text-brand-600 hover:underline mt-2"
+              >
+                Clear filter
+              </button>
+            </>
+          )}
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -114,6 +153,9 @@ export default function ProjectsPage() {
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">
                   Builder
+                </th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">
+                  Locality
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Tier
@@ -136,7 +178,7 @@ export default function ProjectsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {projects.map((p) => (
+              {filteredProjects.map((p) => (
                 <tr key={p.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
@@ -160,6 +202,16 @@ export default function ProjectsPage() {
                       <HardHat className="w-3.5 h-3.5 text-gray-300 shrink-0" />
                       {p.builderName ?? <span className="text-gray-300 italic">None</span>}
                     </div>
+                  </td>
+                  <td className="px-5 py-4 text-gray-500 hidden md:table-cell">
+                    {p.locality ? (
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-gray-300 shrink-0" />
+                        {p.locality}
+                      </div>
+                    ) : (
+                      <span className="text-gray-300">—</span>
+                    )}
                   </td>
                   <td className="px-5 py-4">
                     {p.tier ? (
