@@ -163,8 +163,8 @@ export default function AdminPriceTrendsPage() {
           </select>
         </div>
         <div>
-          <label className="block text-[11px] font-semibold text-gray-500 mb-1">Price (₹/sq ft)</label>
-          <input type="number" min={1} step="any" value={price} onChange={(e) => setPrice(e.target.value)}
+          <label className="block text-[11px] font-semibold text-gray-500 mb-1">Price (₹/sq ft, min 6,000)</label>
+          <input type="number" min={6000} step="any" value={price} onChange={(e) => setPrice(e.target.value)}
             placeholder="9800" className={INPUT} />
         </div>
         <button type="submit" disabled={saving}
