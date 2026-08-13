@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { rejectCandidate } from "@/lib/healthDiscovery";
+import { rejectCandidate } from "@/lib/businessDiscovery";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const body = await req.json().catch(() => ({}));

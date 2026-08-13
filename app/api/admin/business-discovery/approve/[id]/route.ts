@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { promoteCandidateToBusiness } from "@/lib/healthDiscovery";
+import { promoteCandidateToBusiness } from "@/lib/businessDiscovery";
 
 /** POST { name?, phone?, email?, address?, website?, timings?, reviewedBy? }
  *  Any field omitted falls back to the discovered value (or the parsed
