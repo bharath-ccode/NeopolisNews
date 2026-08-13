@@ -168,18 +168,6 @@ export const TAXONOMY: Record<string, Record<string, string[]>> = {
       "Compounding Pharmacy",
       "Ayurvedic & Herbal",
     ],
-    "Saloon": [
-      "Hair Saloon",
-      "Nails Spa",
-      "Barber Shop",
-      "Bridal Studio",
-      "Unisex Saloon",
-      "Skin & Facial",
-      "Waxing & Threading",
-      "Tattoo Studio",
-      "Mehendi & Henna",
-      "Eyelash Extensions",
-    ],
     "Gym & Fitness": [
       "CrossFit",
       "Yoga",
@@ -302,6 +290,11 @@ export const TAXONOMY: Record<string, Record<string, string[]>> = {
   },
 
   "Services": {
+    "Beauty and Personal Care": [
+      "Hair Saloon",
+      "Nail Spa",
+      "Makeup Saloon",
+    ],
     "Moving": [
       "Movers & Packers",
       "Self Storage",
