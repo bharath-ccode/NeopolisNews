@@ -7,7 +7,7 @@ import {
   Trash2, PlusCircle,
 } from "lucide-react";
 import { useAdminAuth } from "@/context/AdminAuthContext";
-import { DISCOVERY_INDUSTRIES, DISCOVERY_LOCALITIES, subtypeKey } from "@/lib/businessDiscovery";
+import { ALL_INDUSTRIES, DISCOVERY_LOCALITIES, resolveIndustryConfig, subtypeKey } from "@/lib/businessDiscovery";
 import type { DiscoveryIndustryConfig } from "@/lib/businessDiscovery";
 
 interface Candidate {
@@ -236,27 +236,36 @@ function TypeSubtypePicker({
           {industryConfig.types.map((t) => {
             const typeKeys = t.subtypes.map((s) => subtypeKey(industryConfig.industry, t.type, s.subtype));
             const typeSelected = typeKeys.filter((k) => selectedKeys.has(k)).length;
+            const state = chipState(typeSelected, typeKeys.length);
             return (
-              <div key={t.type} className="flex flex-wrap items-center gap-1.5">
-                <Chip
-                  state={chipState(typeSelected, typeKeys.length)}
-                  label={t.type}
+              <div key={t.type} className="border border-gray-200 rounded-xl p-3.5 space-y-2.5">
+                <button
+                  type="button"
                   onClick={() => toggleKeys(typeKeys)}
-                  level="type"
-                />
-                {t.subtypes.map((s) => {
-                  const key = subtypeKey(industryConfig.industry, t.type, s.subtype);
-                  return (
-                    <Chip
-                      key={key}
-                      state={selectedKeys.has(key) ? "checked" : "unchecked"}
-                      label={s.subtype}
-                      onClick={() => toggleKeys([key])}
-                      title={`Google query term: "${s.queryTerm}"`}
-                      level="subtype"
-                    />
-                  );
-                })}
+                  className={`flex items-center gap-1.5 font-bold text-sm transition-colors ${
+                    state === "checked" ? "text-blue-700" : state === "partial" ? "text-blue-600" : "text-gray-900 hover:text-blue-700"
+                  }`}
+                >
+                  {state === "checked" && <Check className="w-4 h-4 shrink-0" />}
+                  {state === "partial" && <Minus className="w-4 h-4 shrink-0" />}
+                  {t.type}
+                  <span className="text-xs font-normal text-gray-400">({typeSelected}/{typeKeys.length})</span>
+                </button>
+                <div className="flex flex-wrap gap-1.5 pl-0.5">
+                  {t.subtypes.map((s) => {
+                    const key = subtypeKey(industryConfig.industry, t.type, s.subtype);
+                    return (
+                      <Chip
+                        key={key}
+                        state={selectedKeys.has(key) ? "checked" : "unchecked"}
+                        label={s.subtype}
+                        onClick={() => toggleKeys([key])}
+                        title={`Google query term: "${s.queryTerm}"`}
+                        level="subtype"
+                      />
+                    );
+                  })}
+                </div>
               </div>
             );
           })}
@@ -464,7 +473,7 @@ export default function BusinessDiscoveryPage() {
     setSelectedKeys(new Set());
   }
 
-  const industryConfig = DISCOVERY_INDUSTRIES.find((i) => i.industry === selectedIndustry) ?? null;
+  const industryConfig = selectedIndustry ? resolveIndustryConfig(selectedIndustry) : null;
 
   const canRun = selectedKeys.size > 0 && selectedLocality !== null;
 
@@ -584,12 +593,12 @@ export default function BusinessDiscoveryPage() {
       <div className="card p-4 space-y-2">
         <StepLabel n={1}>Choose an industry</StepLabel>
         <div className="flex flex-wrap gap-1.5">
-          {DISCOVERY_INDUSTRIES.map((ind) => (
+          {ALL_INDUSTRIES.map((ind) => (
             <Chip
-              key={ind.industry}
-              state={selectedIndustry === ind.industry ? "checked" : "unchecked"}
-              label={ind.industry}
-              onClick={() => pickIndustry(ind.industry)}
+              key={ind}
+              state={selectedIndustry === ind ? "checked" : "unchecked"}
+              label={ind}
+              onClick={() => pickIndustry(ind)}
               level="industry"
             />
           ))}
