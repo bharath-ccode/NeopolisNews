@@ -4,12 +4,19 @@ import type { DiscoveryIndustryConfig } from "./types";
 // subtypes worth Places-searching get a queryTerm here; the rest of that
 // taxonomy (e.g. "Old Age Care") isn't a good Places search target.
 //
-// Hospital, Ambulance Services, Saloon, Gym & Fitness, Old Age Care,
-// Rehabilitation, and Spa & Relaxation exist in the taxonomy but aren't
-// configured here yet — add a `type` block the same way if/when wanted.
+// Ambulance Services, Saloon, Gym & Fitness, Old Age Care, Rehabilitation,
+// and Spa & Relaxation exist in the taxonomy but aren't configured here
+// yet — add a `type` block the same way if/when wanted.
 export const HEALTH_DISCOVERY: DiscoveryIndustryConfig = {
   industry: "Health & Wellness",
   types: [
+    {
+      type: "Hospital",
+      subtypes: [
+        { subtype: "Multi-Speciality Hospital", queryTerm: "multi speciality hospital" },
+        { subtype: "Single Speciality Hospital", queryTerm: "speciality hospital" },
+      ],
+    },
     {
       // Every TAXONOMY["Health & Wellness"]["Clinics"] subtype — all of
       // them are legitimate, distinct Places search targets.
