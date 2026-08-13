@@ -1,11 +1,21 @@
--- Adds 6 more localities to the picklist: Velimala, Kollur, Janwada,
--- Khanapur, Vattinagulapally, Mokila. Widens the same CHECK constraint
--- in three places (projects, locality_price_trends, locality_price_floors)
--- and gives the new localities the default Rs 6000 price floor, same as
--- every existing locality. Keep this list in sync with
--- lib/projectsStore.ts's LOCALITIES constant. Run in the Supabase SQL editor.
+-- Corrects a misspelling: "Mokilla" -> "Mokila" (the correct spelling of
+-- the locality). 20260819_add_more_localities.sql has been edited in
+-- place to use the correct spelling, but if you already ran it with the
+-- old spelling before this fix landed, this migration cleans that up —
+-- it's also safe to run if you haven't run 20260819 yet (every step is a
+-- no-op in that case, and the corrected 20260819 will do the real work).
+-- Run in the Supabase SQL editor.
 
--- projects.locality — already an explicitly-named constraint.
+-- Fix any data already written with the old spelling.
+update public.projects                  set locality = 'Mokila' where locality = 'Mokilla';
+update public.locality_price_trends     set locality = 'Mokila' where locality = 'Mokilla';
+update public.locality_price_floors     set locality = 'Mokila' where locality = 'Mokilla';
+update public.business_discovery_candidates set locality = 'Mokila' where locality = 'Mokilla';
+
+-- Re-widen the three CHECK constraints with the corrected spelling, same
+-- dynamic-lookup approach as 20260819 (safe regardless of whether that
+-- migration — or an even older, narrower version of these constraints —
+-- is currently in place).
 alter table public.projects
   drop constraint if exists projects_locality_check;
 alter table public.projects
@@ -16,10 +26,6 @@ alter table public.projects
     'Velimala', 'Kollur', 'Janwada', 'Khanapur', 'Vattinagulapally', 'Mokila'
   ));
 
--- locality_price_trends.locality and locality_price_floors.locality were
--- declared as unnamed inline checks, so Postgres auto-named them — find
--- and drop by definition (matching on 'Neopolis', unique to the locality
--- list among each table's checks) instead of guessing the generated name.
 do $$
 declare
   con record;
@@ -59,9 +65,8 @@ alter table public.locality_price_floors
     'Velimala', 'Kollur', 'Janwada', 'Khanapur', 'Vattinagulapally', 'Mokila'
   ));
 
--- New localities inherit the same starting floor every existing locality
--- got — adjust per locality from /admin/price-trends afterward.
+-- Make sure the floor row exists under the correct spelling (covers both
+-- "never ran 20260819" and "ran it with the old spelling" cases).
 insert into public.locality_price_floors (locality, floor_price) values
-  ('Velimala', 6000), ('Kollur', 6000), ('Janwada', 6000),
-  ('Khanapur', 6000), ('Vattinagulapally', 6000), ('Mokila', 6000)
+  ('Mokila', 6000)
 on conflict (locality) do nothing;
