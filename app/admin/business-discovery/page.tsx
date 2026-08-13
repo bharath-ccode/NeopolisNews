@@ -4,9 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Search, Loader2, RefreshCw, CheckCircle, XCircle, Star, Globe, Phone,
   MapPin, AlertTriangle, ChevronDown, ChevronUp, ListTree, Check, Minus, CheckCheck,
+  Trash2, PlusCircle,
 } from "lucide-react";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import { DISCOVERY_INDUSTRIES, DISCOVERY_LOCALITIES, subtypeKey } from "@/lib/businessDiscovery";
+import type { DiscoveryIndustryConfig } from "@/lib/businessDiscovery";
 
 interface Candidate {
   id: string;
@@ -24,6 +26,19 @@ interface Candidate {
   rating_count: number | null;
   status: "pending" | "approved" | "rejected";
   change_summary: string | null;
+}
+
+interface PlaceResult {
+  placeId: string;
+  name: string;
+  address: string | null;
+  phone: string | null;
+  website: string | null;
+  hoursRaw: string[];
+  rating: number | null;
+  ratingCount: number | null;
+  lat: number | null;
+  lng: number | null;
 }
 
 type Tab = "pending" | "approved" | "rejected";
@@ -166,9 +181,12 @@ function chipState(selected: number, total: number): ChipState {
   return selected === total ? "checked" : "partial";
 }
 
+// ─── Step 2a: bulk search plan (industry/type/subtype x 1 locality) ───────────
+
 function SearchPlan({
-  selectedKeys, setSelectedKeys, selectedLocality, setSelectedLocality,
+  industryConfig, selectedKeys, setSelectedKeys, selectedLocality, setSelectedLocality,
 }: {
+  industryConfig: DiscoveryIndustryConfig;
   selectedKeys: Set<string>;
   setSelectedKeys: (updater: (prev: Set<string>) => Set<string>) => void;
   selectedLocality: string | null;
@@ -196,59 +214,42 @@ function SearchPlan({
       >
         <span className="flex items-center gap-2 text-sm font-semibold text-gray-700">
           <ListTree className="w-4 h-4 text-brand-500" />
-          Search plan — {selectedKeys.size} subtypes × {selectedLocality ? `"${selectedLocality}"` : "no locality"} ({totalSearches} searches selected)
+          Bulk search — {selectedKeys.size} subtypes × {selectedLocality ? `"${selectedLocality}"` : "no locality"} ({totalSearches} searches selected)
         </span>
         {open ? <ChevronUp className="w-4 h-4 text-gray-400 shrink-0" /> : <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />}
       </button>
 
       {open && (
-        <div className="px-4 pb-4 space-y-5 border-t border-gray-100 pt-4">
-          {DISCOVERY_INDUSTRIES.map((ind) => {
-            const industryKeys = ind.types.flatMap((t) => t.subtypes.map((s) => subtypeKey(ind.industry, t.type, s.subtype)));
-            const industrySelected = industryKeys.filter((k) => selectedKeys.has(k)).length;
+        <div className="px-4 pb-4 space-y-3 border-t border-gray-100 pt-4">
+          {industryConfig.types.map((t) => {
+            const typeKeys = t.subtypes.map((s) => subtypeKey(industryConfig.industry, t.type, s.subtype));
+            const typeSelected = typeKeys.filter((k) => selectedKeys.has(k)).length;
             return (
-              <div key={ind.industry} className="space-y-2">
+              <div key={t.type} className="flex flex-wrap items-center gap-1.5">
                 <Chip
-                  state={chipState(industrySelected, industryKeys.length)}
-                  label={ind.industry}
-                  onClick={() => toggleKeys(industryKeys)}
-                  title="Toggle every type & subtype in this industry"
-                  level="industry"
+                  state={chipState(typeSelected, typeKeys.length)}
+                  label={t.type}
+                  onClick={() => toggleKeys(typeKeys)}
+                  level="type"
                 />
-                <div className="pl-1 space-y-1.5">
-                  {ind.types.map((t) => {
-                    const typeKeys = t.subtypes.map((s) => subtypeKey(ind.industry, t.type, s.subtype));
-                    const typeSelected = typeKeys.filter((k) => selectedKeys.has(k)).length;
-                    return (
-                      <div key={t.type} className="flex flex-wrap items-center gap-1.5">
-                        <Chip
-                          state={chipState(typeSelected, typeKeys.length)}
-                          label={t.type}
-                          onClick={() => toggleKeys(typeKeys)}
-                          level="type"
-                        />
-                        {t.subtypes.map((s) => {
-                          const key = subtypeKey(ind.industry, t.type, s.subtype);
-                          return (
-                            <Chip
-                              key={key}
-                              state={selectedKeys.has(key) ? "checked" : "unchecked"}
-                              label={s.subtype}
-                              onClick={() => toggleKeys([key])}
-                              title={`Google query term: "${s.queryTerm}"`}
-                              level="subtype"
-                            />
-                          );
-                        })}
-                      </div>
-                    );
-                  })}
-                </div>
+                {t.subtypes.map((s) => {
+                  const key = subtypeKey(industryConfig.industry, t.type, s.subtype);
+                  return (
+                    <Chip
+                      key={key}
+                      state={selectedKeys.has(key) ? "checked" : "unchecked"}
+                      label={s.subtype}
+                      onClick={() => toggleKeys([key])}
+                      title={`Google query term: "${s.queryTerm}"`}
+                      level="subtype"
+                    />
+                  );
+                })}
               </div>
             );
           })}
 
-          <div className="space-y-2">
+          <div className="space-y-2 pt-2">
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-500">
                 <MapPin className="w-3.5 h-3.5" /> Locality — pick exactly one to run against (max 1 at a time)
@@ -280,10 +281,174 @@ function SearchPlan({
   );
 }
 
+// ─── Step 2b: search by name — look up one business, pick the right result ────
+
+function SearchByName({
+  industryConfig, adminEmail, onAdded,
+}: {
+  industryConfig: DiscoveryIndustryConfig;
+  adminEmail?: string;
+  onAdded: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [results, setResults] = useState<PlaceResult[]>([]);
+  const [searched, setSearched] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [classification, setClassification] = useState<Record<string, { type: string; subtype: string }>>({});
+  const [addingId, setAddingId] = useState<string | null>(null);
+  const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
+
+  async function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
+    if (!query.trim() || searching) return;
+    setSearching(true);
+    setError(null);
+    setResults([]);
+    setSearched(true);
+    const res = await fetch("/api/admin/business-discovery/search-by-name", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: query.trim() }),
+    }).catch(() => null);
+    if (res?.ok) {
+      setResults(await res.json());
+    } else {
+      const err = await res?.json().catch(() => null);
+      setError(err?.error ?? "Search failed — check server logs.");
+    }
+    setSearching(false);
+  }
+
+  async function handleAdd(place: PlaceResult) {
+    const cls = classification[place.placeId];
+    if (!cls?.type || !cls?.subtype) return;
+    setAddingId(place.placeId);
+    const res = await fetch("/api/admin/business-discovery/add", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        place, industry: industryConfig.industry, type: cls.type, subtype: cls.subtype, reviewedBy: adminEmail,
+      }),
+    }).catch(() => null);
+    if (res?.ok) {
+      setAddedIds((prev) => new Set(prev).add(place.placeId));
+      onAdded();
+    } else {
+      const err = await res?.json().catch(() => null);
+      alert(err?.error ?? "Failed to add. Please try again.");
+    }
+    setAddingId(null);
+  }
+
+  return (
+    <div className="card p-4 space-y-3">
+      <p className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+        <Search className="w-4 h-4 text-brand-500" /> Search by name — look up one business, add the correct match
+      </p>
+      <form onSubmit={handleSearch} className="flex gap-2">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={`Business name in ${industryConfig.industry}…`}
+          className={INPUT}
+        />
+        <button
+          type="submit"
+          disabled={searching || !query.trim()}
+          className="flex items-center gap-1.5 btn-primary text-sm py-2 px-4 shrink-0 disabled:opacity-60"
+        >
+          {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+          Search
+        </button>
+      </form>
+
+      {error && (
+        <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
+      )}
+
+      {searched && !searching && !error && results.length === 0 && (
+        <p className="text-sm text-gray-400">No results from Google Places for that name.</p>
+      )}
+
+      {results.length > 0 && (
+        <div className="space-y-2">
+          {results.map((p) => {
+            const cls = classification[p.placeId];
+            const typeOptions = industryConfig.types;
+            const subtypeOptions = typeOptions.find((t) => t.type === cls?.type)?.subtypes ?? [];
+            const added = addedIds.has(p.placeId);
+            return (
+              <div key={p.placeId} className="border border-gray-200 rounded-xl p-3 space-y-2">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm text-gray-900 truncate">{p.name}</p>
+                    {p.address && <p className="text-xs text-gray-500 truncate">{p.address}</p>}
+                    <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-gray-400">
+                      {p.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {p.phone}</span>}
+                      {p.rating !== null && (
+                        <span className="flex items-center gap-1">
+                          <Star className="w-3 h-3 text-amber-400 fill-amber-400" /> {p.rating} ({p.ratingCount ?? 0})
+                        </span>
+                      )}
+                      {p.website && (
+                        <a href={p.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-brand-600 hover:underline">
+                          <Globe className="w-3 h-3" /> Website
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {added ? (
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-green-700">
+                    <CheckCircle className="w-3.5 h-3.5" /> Added — live and searchable now
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <select
+                      value={cls?.type ?? ""}
+                      onChange={(e) => setClassification((prev) => ({ ...prev, [p.placeId]: { type: e.target.value, subtype: "" } }))}
+                      className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-400"
+                    >
+                      <option value="">Type…</option>
+                      {typeOptions.map((t) => <option key={t.type} value={t.type}>{t.type}</option>)}
+                    </select>
+                    <select
+                      value={cls?.subtype ?? ""}
+                      disabled={!cls?.type}
+                      onChange={(e) => setClassification((prev) => ({ ...prev, [p.placeId]: { type: prev[p.placeId]?.type ?? "", subtype: e.target.value } }))}
+                      className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-400 disabled:opacity-50"
+                    >
+                      <option value="">Subtype…</option>
+                      {subtypeOptions.map((s) => <option key={s.subtype} value={s.subtype}>{s.subtype}</option>)}
+                    </select>
+                    <button
+                      onClick={() => handleAdd(p)}
+                      disabled={!cls?.type || !cls?.subtype || addingId === p.placeId}
+                      className="flex items-center gap-1.5 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      {addingId === p.placeId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PlusCircle className="w-3.5 h-3.5" />}
+                      Add
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          <p className="text-xs text-gray-400">
+            Only the result you add is kept — the rest are just search results, nothing else is saved.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function BusinessDiscoveryPage() {
   const { admin } = useAdminAuth();
   const [tab, setTab] = useState<Tab>("pending");
-  const [industry, setIndustry] = useState<string>("all");
+  const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
@@ -293,11 +458,12 @@ export default function BusinessDiscoveryPage() {
   const [selectedLocality, setSelectedLocality] = useState<string | null>(null);
   const [bulkApproving, setBulkApproving] = useState(false);
   const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
+  const [clearing, setClearing] = useState(false);
 
-  const load = useCallback(async (t: Tab, ind: string) => {
+  const load = useCallback(async (t: Tab, ind: string | null) => {
     setLoading(true);
     const qs = new URLSearchParams({ status: t });
-    if (ind !== "all") qs.set("industry", ind);
+    if (ind) qs.set("industry", ind);
     const res = await fetch(`/api/admin/business-discovery/list?${qs.toString()}`).catch(() => null);
     if (res?.ok) {
       const data = await res.json();
@@ -306,7 +472,14 @@ export default function BusinessDiscoveryPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(tab, industry); }, [tab, industry, load]);
+  useEffect(() => { load(tab, selectedIndustry); }, [tab, selectedIndustry, load]);
+
+  function pickIndustry(ind: string) {
+    setSelectedIndustry((prev) => (prev === ind ? null : ind));
+    setSelectedKeys(new Set());
+  }
+
+  const industryConfig = DISCOVERY_INDUSTRIES.find((i) => i.industry === selectedIndustry) ?? null;
 
   const canRun = selectedKeys.size > 0 && selectedLocality !== null;
 
@@ -325,7 +498,7 @@ export default function BusinessDiscoveryPage() {
     if (res?.ok) {
       const json = await res.json();
       setRunResult(`${json.newCandidates} new · ${json.changedCandidates} changed · ${json.queried} searches run`);
-      load(tab, industry);
+      load(tab, selectedIndustry);
     } else {
       const err = await res?.json().catch(() => null);
       setRunResult(err?.error ?? "Run failed — check server logs.");
@@ -388,6 +561,19 @@ export default function BusinessDiscoveryPage() {
     setBusyId(null);
   }
 
+  async function clearAllResults() {
+    if (!confirm("Clear ALL discovery results — pending, approved, and rejected? This only empties the review queue; businesses already added are not affected. This can't be undone.")) return;
+    setClearing(true);
+    const res = await fetch("/api/admin/business-discovery/clear", { method: "DELETE" }).catch(() => null);
+    if (res?.ok) {
+      setCandidates([]);
+      setRunResult("Cleared all discovery results.");
+    } else {
+      alert("Failed to clear. Please try again.");
+    }
+    setClearing(false);
+  }
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -399,28 +585,62 @@ export default function BusinessDiscoveryPage() {
             Google Places search by industry, type &amp; locality, staged here for review before publishing.
           </p>
         </div>
-        <div className="flex flex-col items-end gap-1">
-          <button
-            onClick={runDiscovery}
-            disabled={running || !canRun}
-            title={canRun ? undefined : "Select at least one type/subtype and exactly one locality below to enable this"}
-            className="flex items-center gap-1.5 btn-primary text-sm py-2 disabled:opacity-60"
-          >
-            {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-            Run Discovery Now
-          </button>
-          {!canRun && (
-            <span className="text-xs text-gray-400">Pick subtypes &amp; one locality below first</span>
-          )}
+        <button
+          onClick={clearAllResults}
+          disabled={clearing}
+          className="flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-red-600 px-3.5 py-2 rounded-lg border border-gray-200 hover:border-red-200 transition-colors disabled:opacity-60"
+        >
+          {clearing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+          Clear All Results
+        </button>
+      </div>
+
+      {/* Step 1 — industry */}
+      <div className="card p-4 space-y-2">
+        <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Step 1 — Choose an industry</p>
+        <div className="flex flex-wrap gap-1.5">
+          {DISCOVERY_INDUSTRIES.map((ind) => (
+            <Chip
+              key={ind.industry}
+              state={selectedIndustry === ind.industry ? "checked" : "unchecked"}
+              label={ind.industry}
+              onClick={() => pickIndustry(ind.industry)}
+              level="industry"
+            />
+          ))}
         </div>
       </div>
 
-      <SearchPlan
-        selectedKeys={selectedKeys}
-        setSelectedKeys={setSelectedKeys}
-        selectedLocality={selectedLocality}
-        setSelectedLocality={setSelectedLocality}
-      />
+      {industryConfig && (
+        <>
+          <SearchByName
+            industryConfig={industryConfig}
+            adminEmail={admin?.email}
+            onAdded={() => load(tab, selectedIndustry)}
+          />
+
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Or run a bulk search</p>
+            <button
+              onClick={runDiscovery}
+              disabled={running || !canRun}
+              title={canRun ? undefined : "Select at least one type/subtype and exactly one locality below to enable this"}
+              className="flex items-center gap-1.5 btn-primary text-sm py-2 disabled:opacity-60"
+            >
+              {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+              Run Discovery Now
+            </button>
+          </div>
+
+          <SearchPlan
+            industryConfig={industryConfig}
+            selectedKeys={selectedKeys}
+            setSelectedKeys={setSelectedKeys}
+            selectedLocality={selectedLocality}
+            setSelectedLocality={setSelectedLocality}
+          />
+        </>
+      )}
 
       {runResult && (
         <p className="text-sm text-brand-700 bg-brand-50 border border-brand-100 rounded-xl px-4 py-2.5">
@@ -443,30 +663,18 @@ export default function BusinessDiscoveryPage() {
           ))}
         </div>
 
-        <div className="flex items-center gap-2">
-          {tab === "pending" && candidates.length > 0 && (
-            <button
-              onClick={approveAll}
-              disabled={bulkApproving}
-              className="flex items-center gap-1.5 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 px-3.5 py-2 rounded-lg transition-colors disabled:opacity-60"
-            >
-              {bulkApproving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCheck className="w-4 h-4" />}
-              {bulkApproving && bulkProgress
-                ? `Approving ${bulkProgress.done}/${bulkProgress.total}…`
-                : `Approve All (${candidates.length})`}
-            </button>
-          )}
-          <select
-            value={industry}
-            onChange={(e) => setIndustry(e.target.value)}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-400"
+        {tab === "pending" && candidates.length > 0 && (
+          <button
+            onClick={approveAll}
+            disabled={bulkApproving}
+            className="flex items-center gap-1.5 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 px-3.5 py-2 rounded-lg transition-colors disabled:opacity-60"
           >
-            <option value="all">All industries</option>
-            {DISCOVERY_INDUSTRIES.map((ind) => (
-              <option key={ind.industry} value={ind.industry}>{ind.industry}</option>
-            ))}
-          </select>
-        </div>
+            {bulkApproving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCheck className="w-4 h-4" />}
+            {bulkApproving && bulkProgress
+              ? `Approving ${bulkProgress.done}/${bulkProgress.total}…`
+              : `Approve All (${candidates.length})`}
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -476,7 +684,7 @@ export default function BusinessDiscoveryPage() {
       ) : candidates.length === 0 ? (
         <div className="card p-10 text-center text-gray-400 text-sm">
           {tab === "pending"
-            ? "Nothing to review. Run discovery to search for new listings."
+            ? "Nothing to review. Search above to find new listings."
             : `No ${tab} candidates yet.`}
         </div>
       ) : (
