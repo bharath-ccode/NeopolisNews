@@ -181,19 +181,31 @@ function chipState(selected: number, total: number): ChipState {
   return selected === total ? "checked" : "partial";
 }
 
-// ─── Step 2a: bulk search plan (industry/type/subtype x 1 locality) ───────────
+// ─── Step labels ────────────────────────────────────────────────────────────
 
-function SearchPlan({
-  industryConfig, selectedKeys, setSelectedKeys, selectedLocality, setSelectedLocality,
+function StepLabel({ n, children }: { n: number; children: React.ReactNode }) {
+  return (
+    <p className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wide">
+      <span className="w-5 h-5 rounded-full bg-brand-600 text-white flex items-center justify-center text-[11px] font-extrabold shrink-0">
+        {n}
+      </span>
+      {children}
+    </p>
+  );
+}
+
+// ─── Step 3a: bulk search — select type & subtype ──────────────────────────────
+
+function TypeSubtypePicker({
+  industryConfig, selectedKeys, setSelectedKeys, selectedLocality,
 }: {
   industryConfig: DiscoveryIndustryConfig;
   selectedKeys: Set<string>;
   setSelectedKeys: (updater: (prev: Set<string>) => Set<string>) => void;
-  selectedLocality: string | null;
-  setSelectedLocality: (locality: string | null) => void;
+  selectedLocality: string;
 }) {
   const [open, setOpen] = useState(true);
-  const totalSearches = selectedKeys.size * (selectedLocality ? 1 : 0);
+  const totalSearches = selectedKeys.size;
 
   function toggleKeys(keys: string[]) {
     setSelectedKeys((prev) => {
@@ -214,7 +226,7 @@ function SearchPlan({
       >
         <span className="flex items-center gap-2 text-sm font-semibold text-gray-700">
           <ListTree className="w-4 h-4 text-brand-500" />
-          Bulk search — {selectedKeys.size} subtypes × {selectedLocality ? `"${selectedLocality}"` : "no locality"} ({totalSearches} searches selected)
+          Bulk search — {selectedKeys.size} subtypes selected in &quot;{selectedLocality}&quot; ({totalSearches} searches)
         </span>
         {open ? <ChevronUp className="w-4 h-4 text-gray-400 shrink-0" /> : <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />}
       </button>
@@ -248,40 +260,13 @@ function SearchPlan({
               </div>
             );
           })}
-
-          <div className="space-y-2 pt-2">
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-500">
-                <MapPin className="w-3.5 h-3.5" /> Locality — pick exactly one to run against (max 1 at a time)
-              </span>
-              {selectedLocality && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedLocality(null)}
-                  className="text-xs font-semibold text-brand-600 hover:underline"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {DISCOVERY_LOCALITIES.map((loc) => (
-                <Chip
-                  key={loc}
-                  state={selectedLocality === loc ? "checked" : "unchecked"}
-                  label={loc}
-                  onClick={() => setSelectedLocality(selectedLocality === loc ? null : loc)}
-                />
-              ))}
-            </div>
-          </div>
         </div>
       )}
     </div>
   );
 }
 
-// ─── Step 2b: search by name — look up one business, pick the right result ────
+// ─── Step 3b: search by name — look up one business, pick the right result ────
 
 function SearchByName({
   industryConfig, adminEmail, onAdded,
@@ -597,7 +582,7 @@ export default function BusinessDiscoveryPage() {
 
       {/* Step 1 — industry */}
       <div className="card p-4 space-y-2">
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Step 1 — Choose an industry</p>
+        <StepLabel n={1}>Choose an industry</StepLabel>
         <div className="flex flex-wrap gap-1.5">
           {DISCOVERY_INDUSTRIES.map((ind) => (
             <Chip
@@ -611,20 +596,56 @@ export default function BusinessDiscoveryPage() {
         </div>
       </div>
 
+      {/* Step 2 — locality */}
       {industryConfig && (
+        <div className="card p-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <StepLabel n={2}>Choose a locality</StepLabel>
+            {selectedLocality && (
+              <button
+                type="button"
+                onClick={() => setSelectedLocality(null)}
+                className="text-xs font-semibold text-brand-600 hover:underline"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {DISCOVERY_LOCALITIES.map((loc) => (
+              <Chip
+                key={loc}
+                state={selectedLocality === loc ? "checked" : "unchecked"}
+                label={loc}
+                onClick={() => setSelectedLocality(selectedLocality === loc ? null : loc)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Step 3 — search */}
+      {industryConfig && selectedLocality && (
         <>
+          <StepLabel n={3}>Search by name, or select type &amp; subtype for a bulk search</StepLabel>
+
           <SearchByName
             industryConfig={industryConfig}
             adminEmail={admin?.email}
             onAdded={() => load(tab, selectedIndustry)}
           />
 
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Or run a bulk search</p>
+          <div className="flex items-center gap-3">
+            <div className="flex-1 border-t border-gray-200" />
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">or</span>
+            <div className="flex-1 border-t border-gray-200" />
+          </div>
+
+          <div className="flex items-center justify-end">
             <button
               onClick={runDiscovery}
               disabled={running || !canRun}
-              title={canRun ? undefined : "Select at least one type/subtype and exactly one locality below to enable this"}
+              title={canRun ? undefined : "Select at least one type/subtype above to enable this"}
               className="flex items-center gap-1.5 btn-primary text-sm py-2 disabled:opacity-60"
             >
               {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
@@ -632,12 +653,11 @@ export default function BusinessDiscoveryPage() {
             </button>
           </div>
 
-          <SearchPlan
+          <TypeSubtypePicker
             industryConfig={industryConfig}
             selectedKeys={selectedKeys}
             setSelectedKeys={setSelectedKeys}
             selectedLocality={selectedLocality}
-            setSelectedLocality={setSelectedLocality}
           />
         </>
       )}
