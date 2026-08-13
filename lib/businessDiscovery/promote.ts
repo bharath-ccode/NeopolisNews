@@ -18,7 +18,10 @@ export interface PromoteOverrides {
 /** Approve a candidate: creates (or updates, if this is a re-surfaced
  *  already-live business) the businesses row — filed under whichever
  *  industry/type/subtype the candidate was discovered under — and marks
- *  the candidate approved + linked. */
+ *  the candidate approved + linked. Lands as status "active" (not the
+ *  "invited"/claim-pending status Path A/B onboarding uses) so it's
+ *  publicly searchable immediately; nobody owns it yet, so the business
+ *  profile shows a "Claim this business" prompt until an owner does. */
 export async function promoteCandidateToBusiness(
   candidateId: string,
   overrides: PromoteOverrides,
@@ -54,7 +57,7 @@ export async function promoteCandidateToBusiness(
       types: [candidate.business_type],
       subtypes: [candidate.subtype],
       address,
-      status: "invited",
+      status: "active",
       verified: false,
       contact_phone: phone,
       email,

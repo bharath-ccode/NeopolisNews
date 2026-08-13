@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Search, Loader2, RefreshCw, CheckCircle, XCircle, Star, Globe, Phone,
-  MapPin, AlertTriangle, Clock, ChevronDown, ChevronUp, ListTree, Check, Minus,
+  MapPin, AlertTriangle, ChevronDown, ChevronUp, ListTree, Check, Minus, CheckCheck,
 } from "lucide-react";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import { DISCOVERY_INDUSTRIES, DISCOVERY_LOCALITIES, subtypeKey } from "@/lib/businessDiscovery";
@@ -20,7 +20,6 @@ interface Candidate {
   phone: string | null;
   website: string | null;
   email: string | null;
-  hours_raw: string[];
   rating: number | null;
   rating_count: number | null;
   status: "pending" | "approved" | "rejected";
@@ -100,17 +99,6 @@ function CandidateCard({
           <input className={INPUT} value={address} onChange={(e) => setAddress(e.target.value)} />
         </div>
       </div>
-
-      {c.hours_raw.length > 0 && (
-        <div>
-          <p className="text-[11px] font-semibold text-gray-500 mb-1 flex items-center gap-1">
-            <Clock className="w-3 h-3" /> Hours from Google — checked automatically, verify before approving
-          </p>
-          <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-500">
-            {c.hours_raw.map((h) => <span key={h}>{h}</span>)}
-          </div>
-        </div>
-      )}
 
       {c.phone && (
         <a href={`tel:${c.phone}`} className="flex items-center gap-1 text-xs text-gray-400">
@@ -288,6 +276,8 @@ export default function BusinessDiscoveryPage() {
   const [runResult, setRunResult] = useState<string | null>(null);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [selectedLocality, setSelectedLocality] = useState<string | null>(null);
+  const [bulkApproving, setBulkApproving] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
 
   const load = useCallback(async (t: Tab, ind: string) => {
     setLoading(true);
@@ -328,15 +318,48 @@ export default function BusinessDiscoveryPage() {
     setRunning(false);
   }
 
-  async function approve(id: string, fields: Record<string, string>) {
-    setBusyId(id);
+  async function approveOne(id: string, fields: Record<string, string>): Promise<boolean> {
     const res = await fetch(`/api/admin/business-discovery/approve/${id}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...fields, reviewedBy: admin?.email }),
     }).catch(() => null);
-    if (res?.ok) setCandidates((prev) => prev.filter((c) => c.id !== id));
+    if (res?.ok) {
+      setCandidates((prev) => prev.filter((c) => c.id !== id));
+      return true;
+    }
+    return false;
+  }
+
+  async function approve(id: string, fields: Record<string, string>) {
+    setBusyId(id);
+    await approveOne(id, fields);
     setBusyId(null);
+  }
+
+  async function approveAll() {
+    const pending = candidates.filter((c) => c.status === "pending");
+    if (pending.length === 0) return;
+    setBulkApproving(true);
+    setBulkProgress({ done: 0, total: pending.length });
+    let failed = 0;
+    for (let i = 0; i < pending.length; i++) {
+      const ok = await approveOne(pending[i].id, {
+        name: pending[i].name,
+        phone: pending[i].phone ?? "",
+        email: pending[i].email ?? "",
+        address: pending[i].address ?? "",
+      });
+      if (!ok) failed++;
+      setBulkProgress({ done: i + 1, total: pending.length });
+    }
+    setRunResult(
+      failed > 0
+        ? `Approved ${pending.length - failed} of ${pending.length} — ${failed} failed, still pending.`
+        : `Approved all ${pending.length} pending listings — live and searchable now.`
+    );
+    setBulkApproving(false);
+    setBulkProgress(null);
   }
 
   async function reject(id: string) {
@@ -405,16 +428,30 @@ export default function BusinessDiscoveryPage() {
           ))}
         </div>
 
-        <select
-          value={industry}
-          onChange={(e) => setIndustry(e.target.value)}
-          className="border border-gray-200 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-400"
-        >
-          <option value="all">All industries</option>
-          {DISCOVERY_INDUSTRIES.map((ind) => (
-            <option key={ind.industry} value={ind.industry}>{ind.industry}</option>
-          ))}
-        </select>
+        <div className="flex items-center gap-2">
+          {tab === "pending" && candidates.length > 0 && (
+            <button
+              onClick={approveAll}
+              disabled={bulkApproving}
+              className="flex items-center gap-1.5 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 px-3.5 py-2 rounded-lg transition-colors disabled:opacity-60"
+            >
+              {bulkApproving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCheck className="w-4 h-4" />}
+              {bulkApproving && bulkProgress
+                ? `Approving ${bulkProgress.done}/${bulkProgress.total}…`
+                : `Approve All (${candidates.length})`}
+            </button>
+          )}
+          <select
+            value={industry}
+            onChange={(e) => setIndustry(e.target.value)}
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-400"
+          >
+            <option value="all">All industries</option>
+            {DISCOVERY_INDUSTRIES.map((ind) => (
+              <option key={ind.industry} value={ind.industry}>{ind.industry}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {loading ? (
@@ -433,7 +470,7 @@ export default function BusinessDiscoveryPage() {
             <CandidateCard
               key={c.id}
               c={c}
-              busy={busyId === c.id}
+              busy={busyId === c.id || bulkApproving}
               onApprove={approve}
               onReject={reject}
             />
