@@ -1,16 +1,20 @@
--- Health business discovery pipeline: a monthly job searches Google Places
--- for clinics/pharmacies/etc. by locality + specialty, stages results here
--- for admin review, and re-surfaces a candidate if a already-approved
--- listing's phone/hours/address changes on a later run. Nothing here is
--- public — only touched via /api/admin/health-discovery/* using the
--- service-role client.
+-- Business discovery pipeline (industry-agnostic): a monthly job searches
+-- Google Places by locality + industry/type/subtype, stages results here
+-- for admin review, and re-surfaces a candidate if an already-approved
+-- listing's phone/hours/address changes on a later run. Health & Wellness
+-- is the first industry configured (lib/businessDiscovery/health.ts);
+-- more industries (Food & Beverages, Education, ...) plug into the same
+-- table/pipeline/review screen via their own config file — see
+-- lib/businessDiscovery/index.ts. Nothing here is public — only touched
+-- via /api/admin/business-discovery/* using the service-role client.
 -- Run in the Supabase SQL editor.
 
-create table if not exists public.health_business_candidates (
+create table if not exists public.business_discovery_candidates (
   id                 uuid        primary key default gen_random_uuid(),
   place_id           text        not null unique,       -- Google Places place ID; the dedupe key
   name               text        not null,
-  business_type      text        not null,               -- lib/businessDirectory.ts "Health & Wellness" type, e.g. 'Clinics'
+  industry            text        not null,               -- lib/businessDirectory.ts TAXONOMY key, e.g. 'Health & Wellness'
+  business_type      text        not null,               -- type within that industry, e.g. 'Clinics'
   subtype            text        not null,               -- subtype within that type, e.g. 'Dermatology & Cosmetology'
   locality            text        not null,
   search_query        text        not null,               -- exact query sent to Places, for audit/debug
@@ -34,10 +38,11 @@ create table if not exists public.health_business_candidates (
   check (status in ('pending', 'approved', 'rejected'))
 );
 
-create index if not exists health_candidates_status_idx  on public.health_business_candidates (status);
-create index if not exists health_candidates_locality_idx on public.health_business_candidates (locality);
+create index if not exists discovery_candidates_status_idx    on public.business_discovery_candidates (status);
+create index if not exists discovery_candidates_industry_idx  on public.business_discovery_candidates (industry);
+create index if not exists discovery_candidates_locality_idx  on public.business_discovery_candidates (locality);
 
-alter table public.health_business_candidates enable row level security;
+alter table public.business_discovery_candidates enable row level security;
 -- No public policy -- admin-only, accessed exclusively via the service-role client.
 
 -- Businesses gained an email column; discovered candidates can carry one

@@ -24,7 +24,7 @@ SUPABASE_SERVICE_ROLE_KEY=...     # bypasses RLS — server/API routes only
 RESEND_API_KEY=...                # email delivery (Resend)
 GOOGLE_TRANSLATE_API_KEY=...      # Cloud Translation API v2 — Telugu article translations
 GOOGLE_AI_API_KEY=...             # Gemini API key (Imagen) — AI editorial illustrations; needs billing
-GOOGLE_PLACES_API_KEY=...         # Places API (New) — monthly health business discovery; needs billing
+GOOGLE_PLACES_API_KEY=...         # Places API (New) — monthly business discovery pipeline; needs billing
 OTP_SECRET=...                    # HMAC secret for signing business OTP cookies
 
 # Recommended
@@ -155,6 +155,7 @@ _All DB-backed features require their `supabase/migrations/*.sql` to have been r
 - **Rate-limiting** on public POST endpoints
 - **SEO** — brand-entity + Organization/NewsArticle/Event JSON-LD, dynamic sitemap, robots, per-page metadata
 - **Ads** (`/api/ads`) and payments records (Razorpay fields; `/admin/payments`)
+- **Business discovery pipeline** (`/admin/business-discovery`) — monthly Google Places search staged for admin review; industry-first config (`lib/businessDiscovery/`, mirrors `TAXONOMY`'s Industry → Type → Subtype shape) with one config file per industry (currently Health & Wellness) sharing a single `business_discovery_candidates` table, run function, and review screen; re-surfaces a candidate on later runs if an already-approved listing's phone/hours/address changed; ⚠️ requires `supabase/migrations/20260818_business_discovery.sql` to be run
 
 ### AI & external services
 | Service | Used for | Env var |
@@ -162,7 +163,7 @@ _All DB-backed features require their `supabase/migrations/*.sql` to have been r
 | Anthropic (Claude `claude-sonnet-4-6`) | AI digests, Editor's Desk, brochure import | `ANTHROPIC_API_KEY` |
 | Google Cloud Translation v2 | Telugu article translation | `GOOGLE_TRANSLATE_API_KEY` |
 | Google Imagen (Gemini API) | AI editorial illustrations | `GOOGLE_AI_API_KEY` |
-| Google Places API (New) | Monthly health business discovery (`/admin/health-discovery`) | `GOOGLE_PLACES_API_KEY` |
+| Google Places API (New) | Monthly business discovery pipeline (`/admin/business-discovery`) | `GOOGLE_PLACES_API_KEY` |
 | Open-Meteo + WAQI | Weather + AQI widget | none (WAQI uses a demo token) |
 
 All AI usage is **single-call completions** — no agentic loops, tool use, or Managed Agents.

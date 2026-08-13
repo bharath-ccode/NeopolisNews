@@ -6,11 +6,13 @@ import {
   MapPin, AlertTriangle, Clock,
 } from "lucide-react";
 import { useAdminAuth } from "@/context/AdminAuthContext";
+import { DISCOVERY_INDUSTRIES } from "@/lib/businessDiscovery";
 
 interface Candidate {
   id: string;
   place_id: string;
   name: string;
+  industry: string;
   business_type: string;
   subtype: string;
   locality: string;
@@ -53,6 +55,7 @@ function CandidateCard({
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
+            <span className="badge text-xs tag-green">{c.industry}</span>
             <span className="badge text-xs tag-blue">{c.business_type}</span>
             <span className="badge text-xs tag-purple">{c.subtype}</span>
             <span className="flex items-center gap-1 text-xs text-gray-400">
@@ -90,7 +93,7 @@ function CandidateCard({
             Email <span className="text-gray-300 font-normal">(not on Google — fill in manually)</span>
           </label>
           <input className={INPUT} value={email} onChange={(e) => setEmail(e.target.value)}
-            placeholder="clinic@example.com" />
+            placeholder="business@example.com" />
         </div>
         <div>
           <label className="block text-[11px] font-semibold text-gray-500 mb-1">Address</label>
@@ -137,18 +140,21 @@ function CandidateCard({
   );
 }
 
-export default function HealthDiscoveryPage() {
+export default function BusinessDiscoveryPage() {
   const { admin } = useAdminAuth();
   const [tab, setTab] = useState<Tab>("pending");
+  const [industry, setIndustry] = useState<string>("all");
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [runResult, setRunResult] = useState<string | null>(null);
 
-  const load = useCallback(async (t: Tab) => {
+  const load = useCallback(async (t: Tab, ind: string) => {
     setLoading(true);
-    const res = await fetch(`/api/admin/health-discovery/list?status=${t}`).catch(() => null);
+    const qs = new URLSearchParams({ status: t });
+    if (ind !== "all") qs.set("industry", ind);
+    const res = await fetch(`/api/admin/business-discovery/list?${qs.toString()}`).catch(() => null);
     if (res?.ok) {
       const data = await res.json();
       if (Array.isArray(data)) setCandidates(data);
@@ -156,16 +162,16 @@ export default function HealthDiscoveryPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(tab); }, [tab, load]);
+  useEffect(() => { load(tab, industry); }, [tab, industry, load]);
 
   async function runDiscovery() {
     setRunning(true);
     setRunResult(null);
-    const res = await fetch("/api/admin/health-discovery/run", { method: "POST" }).catch(() => null);
+    const res = await fetch("/api/admin/business-discovery/run", { method: "POST" }).catch(() => null);
     if (res?.ok) {
       const json = await res.json();
       setRunResult(`${json.newCandidates} new · ${json.changedCandidates} changed · ${json.queried} searches run`);
-      load(tab);
+      load(tab, industry);
     } else {
       setRunResult("Run failed — check server logs.");
     }
@@ -174,7 +180,7 @@ export default function HealthDiscoveryPage() {
 
   async function approve(id: string, fields: Record<string, string>) {
     setBusyId(id);
-    const res = await fetch(`/api/admin/health-discovery/approve/${id}`, {
+    const res = await fetch(`/api/admin/business-discovery/approve/${id}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...fields, reviewedBy: admin?.email }),
@@ -185,7 +191,7 @@ export default function HealthDiscoveryPage() {
 
   async function reject(id: string) {
     setBusyId(id);
-    const res = await fetch(`/api/admin/health-discovery/reject/${id}`, {
+    const res = await fetch(`/api/admin/business-discovery/reject/${id}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ reviewedBy: admin?.email }),
@@ -199,10 +205,10 @@ export default function HealthDiscoveryPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-            <Search className="w-4.5 h-4.5 text-brand-500" /> Health Business Discovery
+            <Search className="w-4.5 h-4.5 text-brand-500" /> Business Discovery
           </h2>
           <p className="text-sm text-gray-400 mt-0.5">
-            Google Places search by locality &amp; specialty, staged here for review before publishing.
+            Google Places search by industry, type &amp; locality, staged here for review before publishing.
           </p>
         </div>
         <button
@@ -221,18 +227,31 @@ export default function HealthDiscoveryPage() {
         </p>
       )}
 
-      <div className="flex bg-gray-100 rounded-lg p-0.5 gap-0.5 w-fit">
-        {(["pending", "approved", "rejected"] as Tab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 rounded-md text-sm font-semibold capitalize transition-colors ${
-              tab === t ? "bg-white text-brand-700 shadow-sm" : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            {t}
-          </button>
-        ))}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex bg-gray-100 rounded-lg p-0.5 gap-0.5 w-fit">
+          {(["pending", "approved", "rejected"] as Tab[]).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`px-4 py-2 rounded-md text-sm font-semibold capitalize transition-colors ${
+                tab === t ? "bg-white text-brand-700 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+
+        <select
+          value={industry}
+          onChange={(e) => setIndustry(e.target.value)}
+          className="border border-gray-200 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-400"
+        >
+          <option value="all">All industries</option>
+          {DISCOVERY_INDUSTRIES.map((ind) => (
+            <option key={ind.industry} value={ind.industry}>{ind.industry}</option>
+          ))}
+        </select>
       </div>
 
       {loading ? (
