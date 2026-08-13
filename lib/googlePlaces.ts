@@ -48,14 +48,34 @@ interface PlacesApiResponse {
   }[];
 }
 
+export interface SearchPlacesOptions {
+  maxResults?: number;
+  /** Biases (does not hard-restrict) results toward a circle — Places New
+   *  has no strict polygon/neighbourhood filter, so this narrows ranking
+   *  toward the right area without risking false negatives from an
+   *  imprecise center/radius. Pair with an address-text check on the
+   *  results for an actual guarantee. */
+  locationBias?: { lat: number; lng: number; radiusMeters: number };
+}
+
 /** Text-search Places (New), capped at `maxResults` (default 10 — Places
  *  New allows up to 20 per request via pageSize). */
 export async function searchPlaces(
   textQuery: string,
-  maxResults = 10
+  options: SearchPlacesOptions = {}
 ): Promise<PlaceResult[]> {
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
   if (!apiKey) throw new Error("GOOGLE_PLACES_API_KEY is not set");
+
+  const body: Record<string, unknown> = { textQuery, pageSize: options.maxResults ?? 10 };
+  if (options.locationBias) {
+    body.locationBias = {
+      circle: {
+        center: { latitude: options.locationBias.lat, longitude: options.locationBias.lng },
+        radius: options.locationBias.radiusMeters,
+      },
+    };
+  }
 
   const res = await fetch(ENDPOINT, {
     method: "POST",
@@ -64,7 +84,7 @@ export async function searchPlaces(
       "X-Goog-Api-Key": apiKey,
       "X-Goog-FieldMask": PLACE_FIELD_MASK,
     },
-    body: JSON.stringify({ textQuery, pageSize: maxResults }),
+    body: JSON.stringify(body),
     cache: "no-store",
   });
 

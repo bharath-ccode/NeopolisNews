@@ -1,7 +1,9 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { searchPlaces, type PlaceResult } from "@/lib/googlePlaces";
 import { DEFAULT_TIMINGS, type DayTiming } from "@/lib/businessStore";
+import type { Locality } from "@/lib/projectsStore";
 import { buildQuery, flattenDiscoveryTargets } from "./config";
+import { LOCALITY_GEO } from "./localityGeo";
 import type { DiscoverySelection } from "./types";
 
 // ─── Hours parsing ────────────────────────────────────────────────────────────
@@ -104,11 +106,21 @@ export async function runBusinessDiscovery(selection?: DiscoverySelection): Prom
 
     let places: PlaceResult[];
     try {
-      places = await searchPlaces(query);
+      const geo = LOCALITY_GEO[target.locality as Locality];
+      places = await searchPlaces(query, {
+        locationBias: geo ? { lat: geo.lat, lng: geo.lng, radiusMeters: geo.radiusMeters } : undefined,
+      });
     } catch (err) {
       summary.errors.push(`${query}: ${err instanceof Error ? err.message : String(err)}`);
       continue;
     }
+
+    // Text search is fuzzy and happily returns a nearby-but-different
+    // neighbourhood (e.g. Manikonda for a Kokapet query) — locationBias
+    // above only re-ranks, it doesn't exclude. This is the actual
+    // guarantee: keep only results Google itself addressed to the
+    // locality being searched.
+    places = places.filter((p) => p.address?.toLowerCase().includes(target.locality.toLowerCase()));
 
     for (const place of places) {
       const { data: existing } = await sb
