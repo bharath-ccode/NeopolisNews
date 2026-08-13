@@ -4,6 +4,6 @@
 // (search, dedupe, change detection, review, promotion) is shared.
 
 export * from "./types";
-export { DISCOVERY_INDUSTRIES, DISCOVERY_LOCALITIES, buildQuery, flattenDiscoveryTargets } from "./config";
+export { DISCOVERY_INDUSTRIES, DISCOVERY_LOCALITIES, buildQuery, subtypeKey, flattenDiscoveryTargets } from "./config";
 export { runBusinessDiscovery, parseGoogleHours, type DiscoveryRunSummary } from "./run";
 export { promoteCandidateToBusiness, rejectCandidate, type PromoteOverrides } from "./promote";

@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Search, Loader2, RefreshCw, CheckCircle, XCircle, Star, Globe, Phone,
-  MapPin, AlertTriangle, Clock, ChevronDown, ChevronUp, ListTree,
+  MapPin, AlertTriangle, Clock, ChevronDown, ChevronUp, ListTree, Check, Minus,
 } from "lucide-react";
 import { useAdminAuth } from "@/context/AdminAuthContext";
-import { DISCOVERY_INDUSTRIES, DISCOVERY_LOCALITIES, flattenDiscoveryTargets } from "@/lib/businessDiscovery";
+import { DISCOVERY_INDUSTRIES, DISCOVERY_LOCALITIES, subtypeKey } from "@/lib/businessDiscovery";
 
 interface Candidate {
   id: string;
@@ -140,13 +140,61 @@ function CandidateCard({
   );
 }
 
-function SearchPlan() {
-  const [open, setOpen] = useState(false);
-  const totalSearches = flattenDiscoveryTargets().length;
-  const totalSubtypes = DISCOVERY_INDUSTRIES.reduce(
-    (n, ind) => n + ind.types.reduce((m, t) => m + t.subtypes.length, 0),
-    0
+type ChipState = "checked" | "partial" | "unchecked";
+
+function Chip({ state, label, onClick, title }: { state: ChipState; label: string; onClick: () => void; title?: string }) {
+  const styles =
+    state === "checked" ? "bg-brand-600 border-brand-600 text-white"
+    : state === "partial" ? "bg-brand-50 border-brand-300 text-brand-700"
+    : "bg-white border-gray-200 text-gray-500 hover:border-gray-300";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors ${styles}`}
+    >
+      {state === "checked" && <Check className="w-3 h-3" />}
+      {state === "partial" && <Minus className="w-3 h-3" />}
+      {label}
+    </button>
   );
+}
+
+function chipState(selected: number, total: number): ChipState {
+  if (selected === 0) return "unchecked";
+  return selected === total ? "checked" : "partial";
+}
+
+function SearchPlan({
+  selectedKeys, setSelectedKeys, selectedLocalities, setSelectedLocalities,
+}: {
+  selectedKeys: Set<string>;
+  setSelectedKeys: (updater: (prev: Set<string>) => Set<string>) => void;
+  selectedLocalities: Set<string>;
+  setSelectedLocalities: (updater: (prev: Set<string>) => Set<string>) => void;
+}) {
+  const [open, setOpen] = useState(true);
+  const totalSearches = selectedKeys.size * selectedLocalities.size;
+
+  function toggleKeys(keys: string[]) {
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      const allSelected = keys.every((k) => next.has(k));
+      for (const k of keys) {
+        if (allSelected) next.delete(k); else next.add(k);
+      }
+      return next;
+    });
+  }
+
+  function toggleLocality(locality: string) {
+    setSelectedLocalities((prev) => {
+      const next = new Set(prev);
+      if (next.has(locality)) next.delete(locality); else next.add(locality);
+      return next;
+    });
+  }
 
   return (
     <div className="card p-0 overflow-hidden">
@@ -156,37 +204,79 @@ function SearchPlan() {
       >
         <span className="flex items-center gap-2 text-sm font-semibold text-gray-700">
           <ListTree className="w-4 h-4 text-brand-500" />
-          Search plan — {DISCOVERY_INDUSTRIES.length} {DISCOVERY_INDUSTRIES.length === 1 ? "industry" : "industries"}, {totalSubtypes} subtypes, {DISCOVERY_LOCALITIES.length} localities ({totalSearches} searches)
+          Search plan — {selectedKeys.size} subtypes × {selectedLocalities.size} localities ({totalSearches} searches selected)
         </span>
         {open ? <ChevronUp className="w-4 h-4 text-gray-400 shrink-0" /> : <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />}
       </button>
 
       {open && (
-        <div className="px-4 pb-4 space-y-4 border-t border-gray-100 pt-4">
+        <div className="px-4 pb-4 space-y-5 border-t border-gray-100 pt-4">
           {DISCOVERY_INDUSTRIES.map((ind) => {
-            const localities = ind.localities ?? DISCOVERY_LOCALITIES;
+            const industryKeys = ind.types.flatMap((t) => t.subtypes.map((s) => subtypeKey(ind.industry, t.type, s.subtype)));
+            const industrySelected = industryKeys.filter((k) => selectedKeys.has(k)).length;
             return (
               <div key={ind.industry} className="space-y-2">
-                <span className="badge text-xs tag-green">{ind.industry}</span>
-                <div className="space-y-1.5">
-                  {ind.types.map((t) => (
-                    <div key={t.type} className="flex flex-wrap items-start gap-1.5 text-xs">
-                      <span className="badge tag-blue shrink-0">{t.type}</span>
-                      {t.subtypes.map((s) => (
-                        <span key={s.subtype} className="badge tag-purple" title={`Google query term: "${s.queryTerm}"`}>
-                          {s.subtype}
-                        </span>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-                <div className="flex items-start gap-1.5 text-xs text-gray-500">
-                  <MapPin className="w-3 h-3 mt-0.5 shrink-0" />
-                  <span>{localities.join(", ")}</span>
+                <Chip
+                  state={chipState(industrySelected, industryKeys.length)}
+                  label={ind.industry}
+                  onClick={() => toggleKeys(industryKeys)}
+                  title="Toggle every type & subtype in this industry"
+                />
+                <div className="pl-1 space-y-1.5">
+                  {ind.types.map((t) => {
+                    const typeKeys = t.subtypes.map((s) => subtypeKey(ind.industry, t.type, s.subtype));
+                    const typeSelected = typeKeys.filter((k) => selectedKeys.has(k)).length;
+                    return (
+                      <div key={t.type} className="flex flex-wrap items-center gap-1.5">
+                        <Chip
+                          state={chipState(typeSelected, typeKeys.length)}
+                          label={t.type}
+                          onClick={() => toggleKeys(typeKeys)}
+                        />
+                        {t.subtypes.map((s) => {
+                          const key = subtypeKey(ind.industry, t.type, s.subtype);
+                          return (
+                            <Chip
+                              key={key}
+                              state={selectedKeys.has(key) ? "checked" : "unchecked"}
+                              label={s.subtype}
+                              onClick={() => toggleKeys([key])}
+                              title={`Google query term: "${s.queryTerm}"`}
+                            />
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );
           })}
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-500">
+                <MapPin className="w-3.5 h-3.5" /> Localities — none selected by default, pick before running
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedLocalities((prev) => (prev.size === DISCOVERY_LOCALITIES.length ? new Set() : new Set(DISCOVERY_LOCALITIES)))}
+                className="text-xs font-semibold text-brand-600 hover:underline"
+              >
+                {selectedLocalities.size === DISCOVERY_LOCALITIES.length ? "Clear all" : "Select all"}
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {DISCOVERY_LOCALITIES.map((loc) => (
+                <Chip
+                  key={loc}
+                  state={selectedLocalities.has(loc) ? "checked" : "unchecked"}
+                  label={loc}
+                  onClick={() => toggleLocality(loc)}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -202,6 +292,8 @@ export default function BusinessDiscoveryPage() {
   const [running, setRunning] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [runResult, setRunResult] = useState<string | null>(null);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [selectedLocalities, setSelectedLocalities] = useState<Set<string>>(new Set());
 
   const load = useCallback(async (t: Tab, ind: string) => {
     setLoading(true);
@@ -217,16 +309,27 @@ export default function BusinessDiscoveryPage() {
 
   useEffect(() => { load(tab, industry); }, [tab, industry, load]);
 
+  const canRun = selectedKeys.size > 0 && selectedLocalities.size > 0;
+
   async function runDiscovery() {
+    if (!canRun) return;
     setRunning(true);
     setRunResult(null);
-    const res = await fetch("/api/admin/business-discovery/run", { method: "POST" }).catch(() => null);
+    const res = await fetch("/api/admin/business-discovery/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        subtypeKeys: Array.from(selectedKeys),
+        localities: Array.from(selectedLocalities),
+      }),
+    }).catch(() => null);
     if (res?.ok) {
       const json = await res.json();
       setRunResult(`${json.newCandidates} new · ${json.changedCandidates} changed · ${json.queried} searches run`);
       load(tab, industry);
     } else {
-      setRunResult("Run failed — check server logs.");
+      const err = await res?.json().catch(() => null);
+      setRunResult(err?.error ?? "Run failed — check server logs.");
     }
     setRunning(false);
   }
@@ -264,17 +367,28 @@ export default function BusinessDiscoveryPage() {
             Google Places search by industry, type &amp; locality, staged here for review before publishing.
           </p>
         </div>
-        <button
-          onClick={runDiscovery}
-          disabled={running}
-          className="flex items-center gap-1.5 btn-primary text-sm py-2 disabled:opacity-60"
-        >
-          {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-          Run Discovery Now
-        </button>
+        <div className="flex flex-col items-end gap-1">
+          <button
+            onClick={runDiscovery}
+            disabled={running || !canRun}
+            title={canRun ? undefined : "Select at least one type/subtype and one locality below to enable this"}
+            className="flex items-center gap-1.5 btn-primary text-sm py-2 disabled:opacity-60"
+          >
+            {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            Run Discovery Now
+          </button>
+          {!canRun && (
+            <span className="text-xs text-gray-400">Pick subtypes &amp; localities below first</span>
+          )}
+        </div>
       </div>
 
-      <SearchPlan />
+      <SearchPlan
+        selectedKeys={selectedKeys}
+        setSelectedKeys={setSelectedKeys}
+        selectedLocalities={selectedLocalities}
+        setSelectedLocalities={setSelectedLocalities}
+      />
 
       {runResult && (
         <p className="text-sm text-brand-700 bg-brand-50 border border-brand-100 rounded-xl px-4 py-2.5">
