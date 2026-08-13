@@ -7,10 +7,6 @@
     {
       "path": "/api/ai-digest/generate",
       "schedule": "30 22 * * *"
-    },
-    {
-      "path": "/api/cron/discover-businesses",
-      "schedule": "0 3 1 * *"
     }
   ]
 }
