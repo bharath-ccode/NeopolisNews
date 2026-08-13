@@ -15,8 +15,10 @@ import {
   AlertCircle,
   FileText,
   Star,
+  Trash2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { TAXONOMY } from "@/lib/businessDirectory";
 
 interface Business {
   id: string;
@@ -61,6 +63,10 @@ export default function AdminBusinessesPage() {
   const [search, setSearch] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [featuringId, setFeaturingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [industryFilter, setIndustryFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [subtypeFilter, setSubtypeFilter] = useState("all");
 
   useEffect(() => {
     const supabase = createClient();
@@ -92,20 +98,41 @@ export default function AdminBusinessesPage() {
     setFeaturingId(null);
   }
 
+  async function handleDelete(id: string, name: string) {
+    if (!confirm(`Delete "${name}"? This also removes its events, offers, news, reviews, wellness sessions, enquiries, updates, appointment requests, and favorites. This can't be undone.`)) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/admin/businesses/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setBusinesses((prev) => prev.filter((b) => b.id !== id));
+    } catch {
+      alert("Failed to delete. Please try again.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   function copyLink(id: string) {
     navigator.clipboard.writeText(getInviteLink(id));
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
   }
 
+  const industries = Object.keys(TAXONOMY);
+  const typeOptions = industryFilter !== "all" ? Object.keys(TAXONOMY[industryFilter] ?? {}) : [];
+  const subtypeOptions = industryFilter !== "all" && typeFilter !== "all" ? (TAXONOMY[industryFilter]?.[typeFilter] ?? []) : [];
+
   const q = search.toLowerCase();
   const filtered = businesses.filter(
     (b) =>
-      b.name.toLowerCase().includes(q) ||
-      b.industry.toLowerCase().includes(q) ||
-      (b.types ?? []).some((t) => t.toLowerCase().includes(q)) ||
-      (b.subtypes ?? []).some((s) => s.toLowerCase().includes(q)) ||
-      (b.owner_phone ?? "").includes(q)
+      (b.name.toLowerCase().includes(q) ||
+        b.industry.toLowerCase().includes(q) ||
+        (b.types ?? []).some((t) => t.toLowerCase().includes(q)) ||
+        (b.subtypes ?? []).some((s) => s.toLowerCase().includes(q)) ||
+        (b.owner_phone ?? "").includes(q)) &&
+      (industryFilter === "all" || b.industry === industryFilter) &&
+      (typeFilter === "all" || (b.types ?? []).includes(typeFilter)) &&
+      (subtypeFilter === "all" || (b.subtypes ?? []).includes(subtypeFilter))
   );
 
   return (
@@ -211,6 +238,42 @@ export default function AdminBusinessesPage() {
               className="flex-1 text-sm outline-none text-gray-700 placeholder-gray-400"
             />
           </div>
+          <div className="flex flex-wrap items-center gap-2 px-5 py-3 border-b border-gray-100 bg-gray-50/50">
+            <select
+              value={industryFilter}
+              onChange={(e) => { setIndustryFilter(e.target.value); setTypeFilter("all"); setSubtypeFilter("all"); }}
+              className="text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-400"
+            >
+              <option value="all">All industries</option>
+              {industries.map((i) => <option key={i} value={i}>{i}</option>)}
+            </select>
+            <select
+              value={typeFilter}
+              onChange={(e) => { setTypeFilter(e.target.value); setSubtypeFilter("all"); }}
+              disabled={industryFilter === "all"}
+              className="text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-400 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value="all">All types</option>
+              {typeOptions.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+            <select
+              value={subtypeFilter}
+              onChange={(e) => setSubtypeFilter(e.target.value)}
+              disabled={typeFilter === "all"}
+              className="text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-400 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value="all">All subtypes</option>
+              {subtypeOptions.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+            {(industryFilter !== "all" || typeFilter !== "all" || subtypeFilter !== "all") && (
+              <button
+                onClick={() => { setIndustryFilter("all"); setTypeFilter("all"); setSubtypeFilter("all"); }}
+                className="text-xs font-semibold text-brand-600 hover:underline"
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
 
           {filtered.length === 0 ? (
             <div className="px-5 py-16 flex flex-col items-center text-center">
@@ -302,6 +365,13 @@ export default function AdminBusinessesPage() {
                         >
                           <Pencil className="w-3.5 h-3.5" /> Edit
                         </Link>
+                        <button
+                          onClick={() => handleDelete(b.id, b.name)}
+                          disabled={deletingId === b.id}
+                          className="flex items-center gap-1.5 text-xs border border-gray-200 text-gray-500 hover:border-red-300 hover:text-red-600 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> {deletingId === b.id ? "Deleting…" : "Delete"}
+                        </button>
                         {b.status !== "active" && (
                           <>
                             <button
