@@ -70,7 +70,7 @@ export type ProjectTier = "affordable" | "premium" | "luxury" | "uber_luxury";
 export const LOCALITIES = [
   "Neopolis", "Kokapet", "Gandipet", "Financial District", "Rajendranagar",
   "Nanakramguda", "Nallagandla", "Tellapur", "Puppalaguda", "Narsingi", "Gachibowli",
-  "Velimala", "Kollur", "Janwada", "Khanapur", "Vattinagulapally", "Mokilla",
+  "Velimala", "Kollur", "Janwada", "Khanapur", "Vattinagulapally", "Mokila",
 ] as const;
 export type Locality = (typeof LOCALITIES)[number];
 export type LifecycleStatus =

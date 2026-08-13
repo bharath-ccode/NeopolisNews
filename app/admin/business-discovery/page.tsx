@@ -129,11 +129,23 @@ function CandidateCard({
 }
 
 type ChipState = "checked" | "partial" | "unchecked";
+// Matches the industry/type/subtype badge colors already used on the
+// candidate cards below (tag-green/tag-blue/tag-purple) so the same
+// level reads as the same color everywhere on this page.
+type ChipLevel = "industry" | "type" | "subtype" | "locality";
 
-function Chip({ state, label, onClick, title }: { state: ChipState; label: string; onClick: () => void; title?: string }) {
+const CHIP_COLORS: Record<ChipLevel, { checked: string; partial: string }> = {
+  industry: { checked: "bg-green-600 border-green-600 text-white",   partial: "bg-green-50 border-green-300 text-green-700" },
+  type:     { checked: "bg-blue-600 border-blue-600 text-white",     partial: "bg-blue-50 border-blue-300 text-blue-700" },
+  subtype:  { checked: "bg-purple-600 border-purple-600 text-white", partial: "bg-purple-50 border-purple-300 text-purple-700" },
+  locality: { checked: "bg-brand-600 border-brand-600 text-white",   partial: "bg-brand-50 border-brand-300 text-brand-700" },
+};
+
+function Chip({ state, label, onClick, title, level = "locality" }: { state: ChipState; label: string; onClick: () => void; title?: string; level?: ChipLevel }) {
+  const colors = CHIP_COLORS[level];
   const styles =
-    state === "checked" ? "bg-brand-600 border-brand-600 text-white"
-    : state === "partial" ? "bg-brand-50 border-brand-300 text-brand-700"
+    state === "checked" ? colors.checked
+    : state === "partial" ? colors.partial
     : "bg-white border-gray-200 text-gray-500 hover:border-gray-300";
   return (
     <button
@@ -201,6 +213,7 @@ function SearchPlan({
                   label={ind.industry}
                   onClick={() => toggleKeys(industryKeys)}
                   title="Toggle every type & subtype in this industry"
+                  level="industry"
                 />
                 <div className="pl-1 space-y-1.5">
                   {ind.types.map((t) => {
@@ -212,6 +225,7 @@ function SearchPlan({
                           state={chipState(typeSelected, typeKeys.length)}
                           label={t.type}
                           onClick={() => toggleKeys(typeKeys)}
+                          level="type"
                         />
                         {t.subtypes.map((s) => {
                           const key = subtypeKey(ind.industry, t.type, s.subtype);
@@ -222,6 +236,7 @@ function SearchPlan({
                               label={s.subtype}
                               onClick={() => toggleKeys([key])}
                               title={`Google query term: "${s.queryTerm}"`}
+                              level="subtype"
                             />
                           );
                         })}
