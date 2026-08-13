@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { runBusinessDiscovery } from "@/lib/businessDiscovery";
 
+// Not currently scheduled — removed from vercel.json's crons array while
+// the admin-driven search-plan selection (industry/type/subtype + a single
+// locality per run, see /admin/business-discovery) is still settling. The
+// route itself is untouched so it can be re-added to vercel.json once the
+// full, unscoped monthly sweep is wanted again; CRON_SECRET still gates it.
 export const maxDuration = 300; // multiple industry x locality x specialty searches; give it room
 
 export async function GET(req: NextRequest) {

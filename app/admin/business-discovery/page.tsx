@@ -167,15 +167,15 @@ function chipState(selected: number, total: number): ChipState {
 }
 
 function SearchPlan({
-  selectedKeys, setSelectedKeys, selectedLocalities, setSelectedLocalities,
+  selectedKeys, setSelectedKeys, selectedLocality, setSelectedLocality,
 }: {
   selectedKeys: Set<string>;
   setSelectedKeys: (updater: (prev: Set<string>) => Set<string>) => void;
-  selectedLocalities: Set<string>;
-  setSelectedLocalities: (updater: (prev: Set<string>) => Set<string>) => void;
+  selectedLocality: string | null;
+  setSelectedLocality: (locality: string | null) => void;
 }) {
   const [open, setOpen] = useState(true);
-  const totalSearches = selectedKeys.size * selectedLocalities.size;
+  const totalSearches = selectedKeys.size * (selectedLocality ? 1 : 0);
 
   function toggleKeys(keys: string[]) {
     setSelectedKeys((prev) => {
@@ -188,14 +188,6 @@ function SearchPlan({
     });
   }
 
-  function toggleLocality(locality: string) {
-    setSelectedLocalities((prev) => {
-      const next = new Set(prev);
-      if (next.has(locality)) next.delete(locality); else next.add(locality);
-      return next;
-    });
-  }
-
   return (
     <div className="card p-0 overflow-hidden">
       <button
@@ -204,7 +196,7 @@ function SearchPlan({
       >
         <span className="flex items-center gap-2 text-sm font-semibold text-gray-700">
           <ListTree className="w-4 h-4 text-brand-500" />
-          Search plan — {selectedKeys.size} subtypes × {selectedLocalities.size} localities ({totalSearches} searches selected)
+          Search plan — {selectedKeys.size} subtypes × {selectedLocality ? `"${selectedLocality}"` : "no locality"} ({totalSearches} searches selected)
         </span>
         {open ? <ChevronUp className="w-4 h-4 text-gray-400 shrink-0" /> : <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />}
       </button>
@@ -256,23 +248,25 @@ function SearchPlan({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-500">
-                <MapPin className="w-3.5 h-3.5" /> Localities — none selected by default, pick before running
+                <MapPin className="w-3.5 h-3.5" /> Locality — pick exactly one to run against (max 1 at a time)
               </span>
-              <button
-                type="button"
-                onClick={() => setSelectedLocalities((prev) => (prev.size === DISCOVERY_LOCALITIES.length ? new Set() : new Set(DISCOVERY_LOCALITIES)))}
-                className="text-xs font-semibold text-brand-600 hover:underline"
-              >
-                {selectedLocalities.size === DISCOVERY_LOCALITIES.length ? "Clear all" : "Select all"}
-              </button>
+              {selectedLocality && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedLocality(null)}
+                  className="text-xs font-semibold text-brand-600 hover:underline"
+                >
+                  Clear
+                </button>
+              )}
             </div>
             <div className="flex flex-wrap gap-1.5">
               {DISCOVERY_LOCALITIES.map((loc) => (
                 <Chip
                   key={loc}
-                  state={selectedLocalities.has(loc) ? "checked" : "unchecked"}
+                  state={selectedLocality === loc ? "checked" : "unchecked"}
                   label={loc}
-                  onClick={() => toggleLocality(loc)}
+                  onClick={() => setSelectedLocality(selectedLocality === loc ? null : loc)}
                 />
               ))}
             </div>
@@ -293,7 +287,7 @@ export default function BusinessDiscoveryPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [runResult, setRunResult] = useState<string | null>(null);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
-  const [selectedLocalities, setSelectedLocalities] = useState<Set<string>>(new Set());
+  const [selectedLocality, setSelectedLocality] = useState<string | null>(null);
 
   const load = useCallback(async (t: Tab, ind: string) => {
     setLoading(true);
@@ -309,10 +303,10 @@ export default function BusinessDiscoveryPage() {
 
   useEffect(() => { load(tab, industry); }, [tab, industry, load]);
 
-  const canRun = selectedKeys.size > 0 && selectedLocalities.size > 0;
+  const canRun = selectedKeys.size > 0 && selectedLocality !== null;
 
   async function runDiscovery() {
-    if (!canRun) return;
+    if (!canRun || !selectedLocality) return;
     setRunning(true);
     setRunResult(null);
     const res = await fetch("/api/admin/business-discovery/run", {
@@ -320,7 +314,7 @@ export default function BusinessDiscoveryPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         subtypeKeys: Array.from(selectedKeys),
-        localities: Array.from(selectedLocalities),
+        localities: [selectedLocality],
       }),
     }).catch(() => null);
     if (res?.ok) {
@@ -371,14 +365,14 @@ export default function BusinessDiscoveryPage() {
           <button
             onClick={runDiscovery}
             disabled={running || !canRun}
-            title={canRun ? undefined : "Select at least one type/subtype and one locality below to enable this"}
+            title={canRun ? undefined : "Select at least one type/subtype and exactly one locality below to enable this"}
             className="flex items-center gap-1.5 btn-primary text-sm py-2 disabled:opacity-60"
           >
             {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
             Run Discovery Now
           </button>
           {!canRun && (
-            <span className="text-xs text-gray-400">Pick subtypes &amp; localities below first</span>
+            <span className="text-xs text-gray-400">Pick subtypes &amp; one locality below first</span>
           )}
         </div>
       </div>
@@ -386,8 +380,8 @@ export default function BusinessDiscoveryPage() {
       <SearchPlan
         selectedKeys={selectedKeys}
         setSelectedKeys={setSelectedKeys}
-        selectedLocalities={selectedLocalities}
-        setSelectedLocalities={setSelectedLocalities}
+        selectedLocality={selectedLocality}
+        setSelectedLocality={setSelectedLocality}
       />
 
       {runResult && (
