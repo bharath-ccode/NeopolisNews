@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Search, Loader2, RefreshCw, CheckCircle, XCircle, Star, Globe, Phone,
-  MapPin, AlertTriangle, Clock,
+  MapPin, AlertTriangle, Clock, ChevronDown, ChevronUp, ListTree,
 } from "lucide-react";
 import { useAdminAuth } from "@/context/AdminAuthContext";
-import { DISCOVERY_INDUSTRIES } from "@/lib/businessDiscovery";
+import { DISCOVERY_INDUSTRIES, DISCOVERY_LOCALITIES, flattenDiscoveryTargets } from "@/lib/businessDiscovery";
 
 interface Candidate {
   id: string;
@@ -140,6 +140,59 @@ function CandidateCard({
   );
 }
 
+function SearchPlan() {
+  const [open, setOpen] = useState(false);
+  const totalSearches = flattenDiscoveryTargets().length;
+  const totalSubtypes = DISCOVERY_INDUSTRIES.reduce(
+    (n, ind) => n + ind.types.reduce((m, t) => m + t.subtypes.length, 0),
+    0
+  );
+
+  return (
+    <div className="card p-0 overflow-hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left"
+      >
+        <span className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+          <ListTree className="w-4 h-4 text-brand-500" />
+          Search plan — {DISCOVERY_INDUSTRIES.length} {DISCOVERY_INDUSTRIES.length === 1 ? "industry" : "industries"}, {totalSubtypes} subtypes, {DISCOVERY_LOCALITIES.length} localities ({totalSearches} searches)
+        </span>
+        {open ? <ChevronUp className="w-4 h-4 text-gray-400 shrink-0" /> : <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />}
+      </button>
+
+      {open && (
+        <div className="px-4 pb-4 space-y-4 border-t border-gray-100 pt-4">
+          {DISCOVERY_INDUSTRIES.map((ind) => {
+            const localities = ind.localities ?? DISCOVERY_LOCALITIES;
+            return (
+              <div key={ind.industry} className="space-y-2">
+                <span className="badge text-xs tag-green">{ind.industry}</span>
+                <div className="space-y-1.5">
+                  {ind.types.map((t) => (
+                    <div key={t.type} className="flex flex-wrap items-start gap-1.5 text-xs">
+                      <span className="badge tag-blue shrink-0">{t.type}</span>
+                      {t.subtypes.map((s) => (
+                        <span key={s.subtype} className="badge tag-purple" title={`Google query term: "${s.queryTerm}"`}>
+                          {s.subtype}
+                        </span>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-start gap-1.5 text-xs text-gray-500">
+                  <MapPin className="w-3 h-3 mt-0.5 shrink-0" />
+                  <span>{localities.join(", ")}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function BusinessDiscoveryPage() {
   const { admin } = useAdminAuth();
   const [tab, setTab] = useState<Tab>("pending");
@@ -220,6 +273,8 @@ export default function BusinessDiscoveryPage() {
           Run Discovery Now
         </button>
       </div>
+
+      <SearchPlan />
 
       {runResult && (
         <p className="text-sm text-brand-700 bg-brand-50 border border-brand-100 rounded-xl px-4 py-2.5">
