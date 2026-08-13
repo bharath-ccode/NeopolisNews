@@ -24,6 +24,7 @@ import {
   CalendarDays,
   Sparkles,
   Megaphone,
+  Search,
 } from "lucide-react";
 import clsx from "clsx";
 import { AdminAuthProvider, useAdminAuth } from "@/context/AdminAuthContext";
@@ -37,6 +38,7 @@ const NAV = [
   { href: "/admin/builders",      icon: HardHat,         label: "Builders"      },
   { href: "/admin/projects",      icon: Layers,          label: "Projects"      },
   { href: "/admin/businesses",    icon: Store,           label: "Businesses"    },
+  { href: "/admin/health-discovery", icon: Search,       label: "Health Discovery" },
   { href: "/admin/events",        icon: CalendarDays,    label: "Events"        },
   { href: "/admin/brokers",       icon: UserCheck,       label: "Brokers"       },
   { href: "/admin/classifieds",   icon: Home,            label: "Properties"    },

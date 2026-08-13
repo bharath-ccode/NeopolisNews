@@ -24,6 +24,7 @@ SUPABASE_SERVICE_ROLE_KEY=...     # bypasses RLS — server/API routes only
 RESEND_API_KEY=...                # email delivery (Resend)
 GOOGLE_TRANSLATE_API_KEY=...      # Cloud Translation API v2 — Telugu article translations
 GOOGLE_AI_API_KEY=...             # Gemini API key (Imagen) — AI editorial illustrations; needs billing
+GOOGLE_PLACES_API_KEY=...         # Places API (New) — monthly health business discovery; needs billing
 OTP_SECRET=...                    # HMAC secret for signing business OTP cookies
 
 # Recommended
@@ -161,6 +162,7 @@ _All DB-backed features require their `supabase/migrations/*.sql` to have been r
 | Anthropic (Claude `claude-sonnet-4-6`) | AI digests, Editor's Desk, brochure import | `ANTHROPIC_API_KEY` |
 | Google Cloud Translation v2 | Telugu article translation | `GOOGLE_TRANSLATE_API_KEY` |
 | Google Imagen (Gemini API) | AI editorial illustrations | `GOOGLE_AI_API_KEY` |
+| Google Places API (New) | Monthly health business discovery (`/admin/health-discovery`) | `GOOGLE_PLACES_API_KEY` |
 | Open-Meteo + WAQI | Weather + AQI widget | none (WAQI uses a demo token) |
 
 All AI usage is **single-call completions** — no agentic loops, tool use, or Managed Agents.
