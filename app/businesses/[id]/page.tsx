@@ -90,6 +90,7 @@ interface BusinessRow {
   address: string;
   status: string;
   verified: boolean;
+  owner_id: string | null;
   logo: string | null;
   pictures: string[];
   social_links: SocialLinks;
@@ -497,6 +498,7 @@ export default async function BusinessProfilePage({
                 businessId={b.id}
                 businessName={b.name}
                 bookingUrl={b.booking_url}
+                claimed={!!b.owner_id}
               />
 
               {((b.phone_numbers && b.phone_numbers.length > 0) || b.contact_phone || hasSocial) && (
