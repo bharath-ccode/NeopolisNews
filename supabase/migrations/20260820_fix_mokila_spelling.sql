@@ -4,27 +4,15 @@
 -- old spelling before this fix landed, this migration cleans that up —
 -- it's also safe to run if you haven't run 20260819 yet (every step is a
 -- no-op in that case, and the corrected 20260819 will do the real work).
+--
+-- Order matters: constraints are dropped *before* the rename, not after
+-- — renaming a row to 'Mokila' while the old constraint (which only
+-- allows 'Mokilla') is still active would violate it immediately.
 -- Run in the Supabase SQL editor.
 
--- Fix any data already written with the old spelling.
-update public.projects                  set locality = 'Mokila' where locality = 'Mokilla';
-update public.locality_price_trends     set locality = 'Mokila' where locality = 'Mokilla';
-update public.locality_price_floors     set locality = 'Mokila' where locality = 'Mokilla';
-update public.business_discovery_candidates set locality = 'Mokila' where locality = 'Mokilla';
-
--- Re-widen the three CHECK constraints with the corrected spelling, same
--- dynamic-lookup approach as 20260819 (safe regardless of whether that
--- migration — or an even older, narrower version of these constraints —
--- is currently in place).
+-- Drop the three CHECK constraints first (drop never fails/validates).
 alter table public.projects
   drop constraint if exists projects_locality_check;
-alter table public.projects
-  add constraint projects_locality_check
-  check (locality is null or locality in (
-    'Neopolis', 'Kokapet', 'Gandipet', 'Financial District', 'Rajendranagar', 'Nanakramguda',
-    'Nallagandla', 'Tellapur', 'Puppalaguda', 'Narsingi', 'Gachibowli',
-    'Velimala', 'Kollur', 'Janwada', 'Khanapur', 'Vattinagulapally', 'Mokila'
-  ));
 
 do $$
 declare
@@ -48,6 +36,22 @@ begin
     execute format('alter table public.locality_price_floors drop constraint %I', con.conname);
   end loop;
 end $$;
+
+-- Now rename any data already written with the old spelling — unconstrained.
+update public.projects                     set locality = 'Mokila' where locality = 'Mokilla';
+update public.locality_price_trends        set locality = 'Mokila' where locality = 'Mokilla';
+update public.locality_price_floors        set locality = 'Mokila' where locality = 'Mokilla';
+update public.business_discovery_candidates set locality = 'Mokila' where locality = 'Mokilla';
+
+-- Re-add the three constraints with the corrected spelling — every row
+-- now matches, so this validates cleanly.
+alter table public.projects
+  add constraint projects_locality_check
+  check (locality is null or locality in (
+    'Neopolis', 'Kokapet', 'Gandipet', 'Financial District', 'Rajendranagar', 'Nanakramguda',
+    'Nallagandla', 'Tellapur', 'Puppalaguda', 'Narsingi', 'Gachibowli',
+    'Velimala', 'Kollur', 'Janwada', 'Khanapur', 'Vattinagulapally', 'Mokila'
+  ));
 
 alter table public.locality_price_trends
   add constraint locality_price_trends_locality_check
