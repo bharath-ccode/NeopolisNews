@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { searchPlaces, type PlaceResult } from "@/lib/googlePlaces";
 import { DEFAULT_TIMINGS, type DayTiming } from "@/lib/businessStore";
 import { buildQuery, flattenDiscoveryTargets } from "./config";
+import type { DiscoverySelection } from "./types";
 
 // ─── Hours parsing ────────────────────────────────────────────────────────────
 
@@ -86,17 +87,18 @@ export interface DiscoveryRunSummary {
 }
 
 /** Searches every industry x type x subtype x locality target (see
- *  ./config), upserts results into business_discovery_candidates. New
- *  places land as 'pending'. A place that was already approved (live in
- *  businesses) and whose phone/address/hours changed is flipped back to
- *  'pending' with a change_summary so it resurfaces for review — an
- *  unchanged approved place is left alone. A rejected place stays rejected
- *  unless its details changed since. */
-export async function runBusinessDiscovery(): Promise<DiscoveryRunSummary> {
+ *  ./config) — or, if `selection` is given, only the subtypes/localities
+ *  an admin picked on /admin/business-discovery — upserts results into
+ *  business_discovery_candidates. New places land as 'pending'. A place
+ *  that was already approved (live in businesses) and whose phone/address/
+ *  hours changed is flipped back to 'pending' with a change_summary so it
+ *  resurfaces for review — an unchanged approved place is left alone. A
+ *  rejected place stays rejected unless its details changed since. */
+export async function runBusinessDiscovery(selection?: DiscoverySelection): Promise<DiscoveryRunSummary> {
   const sb = createAdminClient();
   const summary: DiscoveryRunSummary = { queried: 0, newCandidates: 0, changedCandidates: 0, errors: [] };
 
-  for (const target of flattenDiscoveryTargets()) {
+  for (const target of flattenDiscoveryTargets(selection)) {
     const query = buildQuery(target);
     summary.queried++;
 
