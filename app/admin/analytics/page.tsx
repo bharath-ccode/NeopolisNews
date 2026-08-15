@@ -8,6 +8,8 @@ import {
   MousePointerClick,
   Globe,
   BarChart3,
+  Ticket,
+  Film,
 } from "lucide-react";
 import clsx from "clsx";
 import {
@@ -22,6 +24,96 @@ const PERIOD_OPTIONS = [
   { label: "14 days", value: 14 },
   { label: "30 days", value: 30 },
 ];
+
+interface TicketClickStats {
+  totalClicks: number;
+  last7Days: number;
+  last30Days: number;
+  topBusinesses: { business_id: string; business_name: string; clicks: number }[];
+  topMovies: { movie_title: string; clicks: number }[];
+}
+
+function TicketClicksCard() {
+  const [stats, setStats] = useState<TicketClickStats | null>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/analytics/ticket-clicks")
+      .then((r) => r.json())
+      .then((d) => setStats(d))
+      .catch(() => {});
+  }, []);
+
+  return (
+    <div className="card p-6">
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-2">
+          <Ticket className="w-4 h-4 text-red-600" />
+          <h3 className="font-semibold text-gray-900">Ticket-Intent Clicks</h3>
+        </div>
+        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">LIVE DATA</span>
+      </div>
+      <p className="text-xs text-gray-400 mb-5">
+        "Book Tickets" click-throughs to BookMyShow — the demand-proof metric for movie ticketing.
+      </p>
+
+      {!stats ? (
+        <p className="text-sm text-gray-400">Loading…</p>
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-4 mb-5">
+            <div>
+              <p className="text-2xl font-extrabold text-gray-900">{stats.totalClicks.toLocaleString("en-IN")}</p>
+              <p className="text-xs text-gray-500">All time</p>
+            </div>
+            <div>
+              <p className="text-2xl font-extrabold text-gray-900">{stats.last30Days.toLocaleString("en-IN")}</p>
+              <p className="text-xs text-gray-500">Last 30 days</p>
+            </div>
+            <div>
+              <p className="text-2xl font-extrabold text-gray-900">{stats.last7Days.toLocaleString("en-IN")}</p>
+              <p className="text-xs text-gray-500">Last 7 days</p>
+            </div>
+          </div>
+
+          {stats.totalClicks === 0 ? (
+            <p className="text-sm text-gray-400">No clicks yet — data will appear as visitors use the "Book Tickets" links on /entertainment/cinemas and cinema profile pages.</p>
+          ) : (
+            <div className="grid sm:grid-cols-2 gap-5">
+              {stats.topBusinesses.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Top Cinemas</p>
+                  <div className="space-y-1.5">
+                    {stats.topBusinesses.map((b) => (
+                      <div key={b.business_id} className="flex items-center justify-between text-sm">
+                        <span className="text-gray-700 truncate">{b.business_name}</span>
+                        <span className="font-semibold text-gray-900 shrink-0 ml-2">{b.clicks}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {stats.topMovies.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1">
+                    <Film className="w-3 h-3" /> Top Movies
+                  </p>
+                  <div className="space-y-1.5">
+                    {stats.topMovies.map((m) => (
+                      <div key={m.movie_title} className="flex items-center justify-between text-sm">
+                        <span className="text-gray-700 truncate">{m.movie_title}</span>
+                        <span className="font-semibold text-gray-900 shrink-0 ml-2">{m.clicks}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function AdminAnalyticsPage() {
   const [period, setPeriod] = useState(14);
@@ -95,6 +187,9 @@ export default function AdminAnalyticsPage() {
           ))}
         </div>
       </div>
+
+      {/* Ticket-intent clicks — real data */}
+      <TicketClicksCard />
 
       {/* Summary stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -269,8 +364,9 @@ export default function AdminAnalyticsPage() {
 
       {/* Disclaimer */}
       <p className="text-xs text-gray-400 text-center pb-4">
-        Analytics data shown is simulated for demonstration. Integrate a real analytics
-        provider (e.g. Google Analytics, Plausible, PostHog) for live data.
+        Everything below Ticket-Intent Clicks is simulated for demonstration.
+        Integrate a real analytics provider (e.g. Google Analytics, Plausible,
+        PostHog) for live page-view data.
       </p>
     </div>
   );

@@ -28,6 +28,7 @@ import ContactButton from "./ContactButton";
 import ReviewSection from "./ReviewSection";
 import BookAppointment from "./BookAppointment";
 import BusinessCarousels from "./BusinessCarousels";
+import BookTicketsLink from "./BookTicketsLink";
 import SaveButton from "@/components/SaveButton";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -453,14 +454,13 @@ export default async function BusinessProfilePage({
                     </p>
                   )}
                   {m.bms_url && (
-                    <a
-                      href={m.bms_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-[11px] font-bold text-red-600 hover:text-red-700 mt-1.5"
-                    >
-                      <ExternalLink className="w-3 h-3" /> Book Tickets
-                    </a>
+                    <BookTicketsLink
+                      bmsUrl={m.bms_url}
+                      businessId={b.id}
+                      businessName={b.name}
+                      movieId={m.id}
+                      movieTitle={m.title}
+                    />
                   )}
                 </div>
               ))}
