@@ -147,6 +147,7 @@ _All DB-backed features require their `supabase/migrations/*.sql` to have been r
 - **Project compare** page with sticky bar; expected completion date; lifecycle timeline
 - **DB-backed price trends** with admin editor
 - **Health directory** + **wellness sessions** (slots, enrollment, attendance); **cinemas / now-showing**; **deals**; **events + spaces**; **business appointments** (booking-link deep-link + request-a-slot)
+- **Ticket-intent click tracking** — every "Book Tickets"/"View Showtimes & Book" click-through to BookMyShow (both from `/entertainment/cinemas` and a cinema's Now Showing section) logs to `ticket_click_events` via `/api/ticket-clicks` (public, rate-limited, anonymous); real (non-simulated) totals shown at the top of `/admin/analytics`; ⚠️ requires `supabase/migrations/20260822_ticket_click_events.sql` to be run
 - **Weather + AQI widget** — Open-Meteo (weather) + WAQI (air quality), client-side; Kokapet coords
 
 ### Completed — platform & ops

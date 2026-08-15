@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { MapPin, ExternalLink, Film, Ticket } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import SaveButton from "@/components/SaveButton";
+import { trackTicketClick } from "@/lib/trackTicketClick";
 
 interface Cinema {
   id: string;
@@ -159,6 +160,13 @@ export default function CinemasPage() {
                           href={bmsUrl}
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={() => trackTicketClick({
+                            businessId: cinema.id,
+                            businessName: cinema.name,
+                            showDate: selectedDate.toISOString().split("T")[0],
+                            bmsUrl,
+                            source: "cinemas_page",
+                          })}
                           className="flex items-center justify-center gap-2 w-full bg-red-600 hover:bg-red-700 text-white font-bold text-sm py-3 rounded-xl transition-colors"
                         >
                           <Ticket className="w-4 h-4" /> View Showtimes &amp; Book

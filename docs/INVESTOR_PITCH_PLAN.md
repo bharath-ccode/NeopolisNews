@@ -51,13 +51,31 @@ future industry, not a one-off data-entry job:
 district and approving listings to reach 20+ live hasn't happened yet.
 Recommend this as the next working session before Aug 17.
 
+### Track A, Item 4 — Movie tickets v1.5 (was Days 6–10) — done
+
+Instrumented every "Book Tickets" / "View Showtimes & Book" click-through
+to BookMyShow, from both the cinemas page and a cinema's Now Showing
+section on its business profile:
+
+- New `ticket_click_events` table, written to via a public, rate-limited,
+  anonymous `/api/ticket-clicks` — no login required, matches how the
+  clicks actually happen.
+- `/admin/analytics` now opens with a **real, non-simulated** "Ticket-Intent
+  Clicks" card (all-time / 30-day / 7-day totals, top cinemas, top movies)
+  — clearly marked apart from the rest of that page, which is still
+  simulated demo data. This is the exact number to show investors and the
+  negotiating card with PVR/BookMyShow.
+
+**Still open:** the counter starts at zero until this ships to production
+and gets real traffic — the earlier the promote happens, the more days of
+click data there'll be to show on Aug 17.
+
 ### Other shipped this session
 
 - `/real-estate` now has a Cards/List view toggle (List styled like the
   admin projects table); Compare works identically from either view.
-- Locality list widened from 11 to 17 (added Velimala, Kollur, Janwada,
-  Khanapur, Vattinagulapally, Mokila, with real geocoordinates for
-  location-biased search).
+- Locality list widened from 11 to 18 (added Velimala, Kollur, Janwada,
+  Khanapur, Vattinagulapally, Mokila, Manchirevula).
 - Taxonomy cleanup: Saloon moved out of Health & Wellness into Services →
   Beauty and Personal Care (Hair Saloon, Nail Spa, Makeup Saloon).
 
