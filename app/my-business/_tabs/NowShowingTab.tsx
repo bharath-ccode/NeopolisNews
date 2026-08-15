@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Film, Plus, Trash2, Loader2, Upload, X, ExternalLink } from "lucide-react";
+import { Film, Plus, Trash2, Loader2, Upload, X, ExternalLink, Clock } from "lucide-react";
+import { formatTime12h } from "@/lib/formatTime";
 
 interface NowShowingItem {
   id: string;
@@ -15,8 +16,111 @@ interface NowShowingItem {
   running_until: string | null;
 }
 
+interface ShowTime {
+  id: string;
+  movie_id: string;
+  time: string;
+  bms_url: string | null;
+}
+
 const INPUT = "w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 text-gray-800";
 const LABEL = "block text-xs font-semibold text-gray-500 mb-1.5";
+
+function ShowTimesEditor({ movieId, businessId, token }: { movieId: string; businessId: string; token: string }) {
+  const [times, setTimes] = useState<ShowTime[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [newTime, setNewTime] = useState("");
+  const [newBmsUrl, setNewBmsUrl] = useState("");
+
+  useEffect(() => {
+    fetch(`/api/my-business/now-showing/${movieId}/show-times?businessId=${businessId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((data) => { setTimes(Array.isArray(data) ? data : []); setLoading(false); });
+  }, [movieId, businessId, token]);
+
+  async function handleAdd(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newTime) return;
+    setAdding(true);
+    const res = await fetch(`/api/my-business/now-showing/${movieId}/show-times`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ businessId, time: newTime, bms_url: newBmsUrl.trim() || null }),
+    });
+    if (res.ok) {
+      const created = await res.json();
+      setTimes((prev) => [...prev, created].sort((a, b) => a.time.localeCompare(b.time)));
+      setNewTime("");
+      setNewBmsUrl("");
+    }
+    setAdding(false);
+  }
+
+  async function handleDelete(timeId: string) {
+    setDeletingId(timeId);
+    await fetch(`/api/my-business/now-showing/${movieId}/show-times/${timeId}?businessId=${businessId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setTimes((prev) => prev.filter((t) => t.id !== timeId));
+    setDeletingId(null);
+  }
+
+  if (loading) return <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-300 mt-2" />;
+
+  return (
+    <div className="mt-2 pt-2 border-t border-gray-100">
+      <p className="text-[11px] font-semibold text-gray-500 flex items-center gap-1 mb-1.5">
+        <Clock className="w-3 h-3" /> Showtimes
+        <span className="text-gray-300 font-normal">— shown with their own Book button on the site</span>
+      </p>
+      {times.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {times.map((t) => (
+            <span key={t.id} className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 text-xs font-semibold px-2 py-1 rounded-full">
+              {formatTime12h(t.time)}
+              <button
+                type="button"
+                onClick={() => handleDelete(t.id)}
+                disabled={deletingId === t.id}
+                className="text-gray-400 hover:text-red-500 transition-colors"
+              >
+                {deletingId === t.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <form onSubmit={handleAdd} className="flex flex-wrap items-center gap-1.5">
+        <input
+          type="time"
+          value={newTime}
+          onChange={(e) => setNewTime(e.target.value)}
+          className="px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
+          required
+        />
+        <input
+          type="url"
+          value={newBmsUrl}
+          onChange={(e) => setNewBmsUrl(e.target.value)}
+          placeholder="BMS link for this time (optional)"
+          className="flex-1 min-w-[140px] px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
+        />
+        <button
+          type="submit"
+          disabled={adding || !newTime}
+          className="flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700 disabled:opacity-50 px-2 py-1.5"
+        >
+          {adding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Add
+        </button>
+      </form>
+    </div>
+  );
+}
 
 const GENRE_OPTIONS = ["Action", "Comedy", "Drama", "Romance", "Thriller", "Horror", "Sci-Fi", "Animation", "Family", "Documentary", "Fantasy", "Crime", "Biography"];
 const LANGUAGE_OPTIONS = ["Telugu", "Hindi", "Tamil", "English", "Kannada", "Malayalam", "Bengali", "Marathi"];
@@ -252,6 +356,7 @@ export default function NowShowingTab({ businessId, token }: { businessId: strin
                     <ExternalLink className="w-3 h-3" /> BookMyShow
                   </a>
                 )}
+                <ShowTimesEditor movieId={m.id} businessId={businessId} token={token} />
               </div>
               <button onClick={() => handleDelete(m.id)} disabled={deletingId === m.id}
                 className="p-2 rounded-lg text-gray-300 hover:bg-red-50 hover:text-red-500 transition-colors shrink-0 self-start">
