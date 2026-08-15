@@ -10,6 +10,59 @@ driving engagement.
 
 ---
 
+## Progress Update — Aug 13
+
+**⚠️ Blocker, top priority: production is not updated yet.** Everything below
+is built and pushed to the `claude/neopolis-investor-pitch-bia6bv` branch on
+GitHub, but neopolis.news only updates via a **manual promote in the Vercel
+dashboard** — pushing to GitHub does not deploy it by itself. None of this
+work is live on neopolis.news as of this update. **Action: promote the
+latest deployment for this branch in Vercel before Aug 17.**
+
+### Track A, Item 2 — Health & Medical listings (was Days 1–5)
+
+Built a **Business Discovery pipeline** (`/admin/business-discovery`) as the
+mechanism to hit the "20+ real health listings" target — reusable for every
+future industry, not a one-off data-entry job:
+
+- Google Places search, staged for admin review before anything publishes —
+  no auto-publish, every listing gets a human look.
+- 3-step wizard: pick an industry (all 7 in the taxonomy, not just Health &
+  Wellness) → pick a locality → then either search by name (find one specific
+  business, confirm the right match, add it) or run a bulk sweep across
+  type/subtype × locality.
+- Health & Wellness fully configured: Hospital, 28 clinical specialities,
+  Diagnostics, Pharmacies, 10 Wellness subtypes (spas, gyms, studios, etc.) —
+  42 searchable subtypes.
+- Approve All (bulk approve), Clear All Results, and — the fix that actually
+  makes the target hittable — an approved listing flips straight to
+  `status: active` and is searchable immediately, instead of sitting behind
+  a separate claim step nobody would complete in time for the pitch.
+- `/health/wellness` was 100% hardcoded mock data (fictional spas/gyms/
+  trainers) — now pulls real approved listings the same way `/health`
+  already did.
+- Data-quality fixes made along the way: locality-restricted search (a
+  Kokapet search no longer returns Manikonda results), unclaimed listings
+  hide the "request appointment" form (nobody could see those requests) and
+  point to the call button instead, `/admin/businesses` got Industry/Type/
+  Subtype filters + delete for cleaning up duplicates.
+
+**Still open:** the tool is ready — actually running Discovery across the
+district and approving listings to reach 20+ live hasn't happened yet.
+Recommend this as the next working session before Aug 17.
+
+### Other shipped this session
+
+- `/real-estate` now has a Cards/List view toggle (List styled like the
+  admin projects table); Compare works identically from either view.
+- Locality list widened from 11 to 17 (added Velimala, Kollur, Janwada,
+  Khanapur, Vattinagulapally, Mokila, with real geocoordinates for
+  location-biased search).
+- Taxonomy cleanup: Saloon moved out of Health & Wellness into Services →
+  Beauty and Personal Care (Hair Saloon, Nail Spa, Makeup Saloon).
+
+---
+
 ## Track A — Website & Data (15 days)
 
 ### Days 1–5 (Aug 1–5): Data depth — answer what users are already asking for
