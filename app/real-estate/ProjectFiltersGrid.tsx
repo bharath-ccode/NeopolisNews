@@ -3,9 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Building2, ChevronRight, Tag, X, GitCompare, MapPin } from "lucide-react";
+import { Building2, ChevronRight, Tag, X, GitCompare, MapPin, LayoutGrid, List, HardHat } from "lucide-react";
 import type { ProjectType, ProjectTier, LifecycleStatus, Locality } from "@/lib/projectsStore";
 import { LIFECYCLE_STAGES, LOCALITIES } from "@/lib/projectsStore";
+
+type View = "cards" | "list";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -87,6 +89,7 @@ export default function ProjectFiltersGrid({ projects }: { projects: ProjectList
   const [localityFilter, setLocalityFilter] = useState<Locality | "all">("all");
   const [statusFilter, setStatusFilter] = useState<LifecycleStatus | "all">("all");
   const [compareIds, setCompareIds]     = useState<string[]>([]);
+  const [view, setView] = useState<View>("cards");
 
   const filtered = projects.filter((p) => {
     if (typeFilter     !== "all" && p.project_type     !== typeFilter)     return false;
@@ -172,12 +175,8 @@ export default function ProjectFiltersGrid({ projects }: { projects: ProjectList
           </div>
         </div>
 
-        {/* Clear + count */}
         {hasActiveFilter && (
-          <div className="flex items-center gap-3 pt-1">
-            <span className="text-sm text-gray-500">
-              {filtered.length} of {projects.length} project{projects.length !== 1 ? "s" : ""}
-            </span>
+          <div className="pt-1">
             <button
               type="button"
               onClick={clearAll}
@@ -189,7 +188,36 @@ export default function ProjectFiltersGrid({ projects }: { projects: ProjectList
         )}
       </div>
 
-      {/* ── Grid ── */}
+      {/* ── View toggle ── */}
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-sm text-gray-500">
+          {hasActiveFilter
+            ? `${filtered.length} of ${projects.length} project${projects.length !== 1 ? "s" : ""}`
+            : `${filtered.length} project${filtered.length !== 1 ? "s" : ""}`}
+        </span>
+        <div className="flex bg-gray-100 rounded-lg p-0.5 gap-0.5 w-fit">
+          <button
+            type="button"
+            onClick={() => setView("cards")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+              view === "cards" ? "bg-white text-brand-700 shadow-sm" : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            <LayoutGrid className="w-3.5 h-3.5" /> Cards
+          </button>
+          <button
+            type="button"
+            onClick={() => setView("list")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+              view === "list" ? "bg-white text-brand-700 shadow-sm" : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            <List className="w-3.5 h-3.5" /> List
+          </button>
+        </div>
+      </div>
+
+      {/* ── Cards / List ── */}
       {filtered.length === 0 ? (
         <div className="card p-16 text-center">
           <Building2 className="w-12 h-12 text-gray-200 mx-auto mb-3" />
@@ -197,6 +225,124 @@ export default function ProjectFiltersGrid({ projects }: { projects: ProjectList
           <button type="button" onClick={clearAll} className="text-sm text-brand-600 hover:underline mt-2">
             Clear filters
           </button>
+        </div>
+      ) : view === "list" ? (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50">
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Project</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Builder</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Locality</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">Type</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tier</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Stage</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Price</th>
+                <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {filtered.map((p) => {
+                const tier      = p.tier;
+                const type      = p.project_type;
+                const status    = p.lifecycle_status;
+                const hasPrice  = p.price_range_min || p.price_range_max;
+                const inCompare = compareIds.includes(p.id);
+                const compareDisabled = compareIds.length >= 2 && !inCompare;
+
+                return (
+                  <tr key={p.id} className={`hover:bg-gray-50 transition-colors ${inCompare ? "bg-indigo-50/50" : ""}`}>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        {p.project_logo_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={p.project_logo_url}
+                            alt={p.project_name}
+                            className="w-12 h-12 rounded-lg object-contain border border-gray-100 shrink-0 bg-white p-0.5"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-lg bg-brand-50 flex items-center justify-center shrink-0">
+                            <Building2 className="w-5 h-5 text-brand-400" />
+                          </div>
+                        )}
+                        <span className="font-semibold text-gray-900">{p.project_name}</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-gray-500 hidden md:table-cell">
+                      <div className="flex items-center gap-1.5">
+                        <HardHat className="w-3.5 h-3.5 text-gray-300 shrink-0" />
+                        {p.builder_name ?? <span className="text-gray-300 italic">None</span>}
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-gray-500 hidden md:table-cell">
+                      {p.locality ? (
+                        <div className="flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5 text-gray-300 shrink-0" /> {p.locality}
+                        </div>
+                      ) : (
+                        <span className="text-gray-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-4 text-gray-500 hidden lg:table-cell">
+                      {type ? TYPE_LABELS[type] : <span className="text-gray-300">—</span>}
+                    </td>
+                    <td className="px-5 py-4">
+                      {tier ? <span className={TIER_COLORS[tier]}>{TIER_LABELS[tier]}</span> : <span className="text-gray-300">—</span>}
+                    </td>
+                    <td className="px-5 py-4">
+                      {status ? (
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${STATUS_COLORS[status]}`}>
+                          {LIFECYCLE_STAGES.find((s) => s.id === status)?.label}
+                        </span>
+                      ) : (
+                        <span className="text-gray-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-4 text-gray-700 font-semibold whitespace-nowrap">
+                      {hasPrice
+                        ? p.price_range_min && p.price_range_max
+                          ? `₹${p.price_range_min.toLocaleString("en-IN")} – ₹${p.price_range_max.toLocaleString("en-IN")}`
+                          : p.price_range_min
+                          ? `From ₹${p.price_range_min.toLocaleString("en-IN")}`
+                          : `Up to ₹${p.price_range_max!.toLocaleString("en-IN")}`
+                        : <span className="text-gray-300 font-normal">—</span>}
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center justify-end gap-2">
+                        <Link
+                          href={`/real-estate/${p.id}`}
+                          className="flex items-center gap-1 text-xs font-semibold text-brand-600 hover:underline whitespace-nowrap"
+                        >
+                          View <ChevronRight className="w-3.5 h-3.5" />
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => toggleCompare(p.id)}
+                          disabled={compareDisabled}
+                          title={
+                            inCompare ? "Remove from compare" :
+                            compareDisabled ? "Already comparing 2 projects" :
+                            "Add to compare"
+                          }
+                          className={`flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors whitespace-nowrap ${
+                            inCompare
+                              ? "bg-indigo-600 text-white border-indigo-600"
+                              : compareDisabled
+                              ? "border-gray-100 text-gray-300 cursor-not-allowed"
+                              : "border-gray-200 text-gray-500 hover:border-indigo-400 hover:text-indigo-600"
+                          }`}
+                        >
+                          <GitCompare className="w-3.5 h-3.5" />
+                          {inCompare ? "✓" : "Compare"}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
