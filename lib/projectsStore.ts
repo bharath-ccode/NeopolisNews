@@ -71,6 +71,7 @@ export const LOCALITIES = [
   "Neopolis", "Kokapet", "Gandipet", "Financial District", "Rajendranagar",
   "Nanakramguda", "Nallagandla", "Tellapur", "Puppalaguda", "Narsingi", "Gachibowli",
   "Velimala", "Kollur", "Janwada", "Khanapur", "Vattinagulapally", "Mokila",
+  "Manchirevula",
 ] as const;
 export type Locality = (typeof LOCALITIES)[number];
 export type LifecycleStatus =
