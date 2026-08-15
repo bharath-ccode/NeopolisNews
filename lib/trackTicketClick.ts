@@ -8,6 +8,7 @@ export function trackTicketClick(payload: {
   movieId?: string;
   movieTitle?: string;
   showDate?: string;
+  showTime?: string;
   bmsUrl: string;
   source: "cinemas_page" | "now_showing";
 }) {

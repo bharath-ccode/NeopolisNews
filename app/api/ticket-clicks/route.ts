@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   if (limited) return limited;
 
   const body = await req.json().catch(() => null);
-  const { businessId, businessName, movieId, movieTitle, showDate, bmsUrl, source } = body ?? {};
+  const { businessId, businessName, movieId, movieTitle, showDate, showTime, bmsUrl, source } = body ?? {};
 
   if (!bmsUrl || typeof bmsUrl !== "string") {
     return NextResponse.json({ error: "bmsUrl is required." }, { status: 400 });
@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
     movie_id: movieId || null,
     movie_title: movieTitle || null,
     show_date: showDate || null,
+    show_time: showTime || null,
     bms_url: bmsUrl,
     source,
   });

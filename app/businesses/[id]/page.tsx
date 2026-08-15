@@ -70,6 +70,12 @@ interface BusinessEvent {
   ticket_price: number | null;
 }
 
+interface ShowTimeItem {
+  id: string;
+  time: string;
+  bms_url: string | null;
+}
+
 interface NowShowingItem {
   id: string;
   title: string;
@@ -80,6 +86,7 @@ interface NowShowingItem {
   bms_url: string | null;
   running_from: string;
   running_until: string | null;
+  show_times: ShowTimeItem[];
 }
 
 interface BusinessRow {
@@ -173,10 +180,13 @@ export default async function BusinessProfilePage({
   if (b.industry === "Entertainment") {
     const { data: movies } = await supabase
       .from("now_showing")
-      .select("*")
+      .select("*, show_times ( id, time, bms_url )")
       .eq("business_id", params.id)
       .order("running_from", { ascending: false });
-    nowShowing = movies ?? [];
+    nowShowing = (movies ?? []).map((m) => ({
+      ...m,
+      show_times: [...(m.show_times ?? [])].sort((a: ShowTimeItem, b: ShowTimeItem) => a.time.localeCompare(b.time)),
+    })) as NowShowingItem[];
   }
 
   const today = new Date().toISOString().split("T")[0];
@@ -453,15 +463,14 @@ export default async function BusinessProfilePage({
                       Until {new Date(m.running_until).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
                     </p>
                   )}
-                  {m.bms_url && (
-                    <BookTicketsLink
-                      bmsUrl={m.bms_url}
-                      businessId={b.id}
-                      businessName={b.name}
-                      movieId={m.id}
-                      movieTitle={m.title}
-                    />
-                  )}
+                  <BookTicketsLink
+                    bmsUrl={m.bms_url}
+                    businessId={b.id}
+                    businessName={b.name}
+                    movieId={m.id}
+                    movieTitle={m.title}
+                    showTimes={m.show_times}
+                  />
                 </div>
               ))}
             </div>
