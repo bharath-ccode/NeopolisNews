@@ -3,6 +3,7 @@ import { Noto_Sans_Telugu } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import ConditionalShell from "@/components/ConditionalShell";
+import PageViewTracker from "@/components/PageViewTracker";
 
 // Self-hosted Telugu UI font — clean and highly legible for headings and body.
 const notoTelugu = Noto_Sans_Telugu({
@@ -112,6 +113,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen flex flex-col">
         <AuthProvider>
+          <PageViewTracker />
           <ConditionalShell>{children}</ConditionalShell>
         </AuthProvider>
       </body>

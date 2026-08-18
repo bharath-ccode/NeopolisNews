@@ -149,6 +149,7 @@ _All DB-backed features require their `supabase/migrations/*.sql` to have been r
 - **Health directory** + **wellness sessions** (slots, enrollment, attendance); **cinemas / now-showing**; **deals**; **events + spaces**; **business appointments** (booking-link deep-link + request-a-slot)
 - **Per-movie showtimes** — `show_times` (time + optional per-time BookMyShow URL, falls back to the movie's own `bms_url`), managed per movie in My Business's Now Showing tab; `/entertainment/cinemas` (filtered by the selected date via `/api/cinemas?date=`) and a cinema's business-profile Now Showing section both show real showtimes as individual Book buttons when entered, falling back to the existing movie- or cinema-level BookMyShow link otherwise; ⚠️ requires `supabase/migrations/20260823_show_times.sql` to be run
 - **Ticket-intent click tracking** — every "Book Tickets"/"View Showtimes & Book" click-through to BookMyShow (cinemas page, cinema profile, and now per-showtime) logs to `ticket_click_events` via `/api/ticket-clicks` (public, rate-limited, anonymous), including the exact showtime when known; real (non-simulated) totals shown at the top of `/admin/analytics`; ⚠️ requires `supabase/migrations/20260822_ticket_click_events.sql` to be run
+- **Real page-view analytics** — `/admin/analytics` is now fully real (no mock data): a `page_views` row is logged per route change by `PageViewTracker` (mounted in the root layout, skips `/admin/*`) via `/api/track-pageview`, keyed to an anonymous first-party cookie (`nn_vid`, 1-year, not tied to an account); `/api/admin/analytics/page-views` aggregates daily views/visitors, top pages, referrer-bucketed traffic sources (Direct/Search/Social/Referral), and a rough session-duration estimate; ⚠️ requires `supabase/migrations/20260825_page_views.sql` to be run
 - **Weather + AQI widget** — Open-Meteo (weather) + WAQI (air quality), client-side; Kokapet coords
 
 ### Completed — platform & ops
@@ -175,7 +176,6 @@ One `auth.users` record per email/phone, always. `user_profiles` (individual dat
 
 ### Not yet implemented / known gaps
 - **Business dashboard runs on mock data** — `app/dashboard/business/page.tsx` renders hardcoded `MOCK_CLASSIFIEDS` / `MOCK_RECENT_LEADS`; the real `/api/classifieds` and `/api/leads` exist but aren't wired in
-- **Admin analytics partly mock** — `MOCK_PAGE_STATS` / `MOCK_TRAFFIC_SOURCES` in `lib/newsStore.ts`; article view counts are real, page views / traffic sources / bounce are placeholder
 - **Page-level auth guards** — `/api/admin/*` is enforced in middleware, but `/admin`, `/builder`, `/dashboard` **pages** remain client-guarded only (deliberate: sessions live in localStorage)
 - **WAQI demo token** — the AQI widget uses `token=demo`; register a real token for production
 - **AI-generated image labelling** — editorial AI illustrations are not yet visibly badged as AI on the public article
