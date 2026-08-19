@@ -58,6 +58,26 @@ export const CATEGORY_META: Record<
   digest:         { label: "Daily Digest",   tag: "Daily Digest",  tagColor: "tag-blue"   },
 };
 
+const DIGEST_LEVEL_PREFIX: Record<string, string> = {
+  international: "International",
+  national:      "National",
+  state:         "Telangana",
+  city:          "Hyderabad",
+};
+
+/** "International" / "National" / "Telangana" / "Hyderabad" / "Editorial" /
+ *  etc. — the short label shown as a "Category: Headline" prefix on
+ *  headline listings (e.g. the homepage's Latest News index). Digest
+ *  articles resolve via digest_level rather than the generic "Daily
+ *  Digest" category label, since the level is the meaningful distinction
+ *  for readers. */
+export function getHeadlinePrefix(category: ArticleCategory, digestLevel?: string | null): string {
+  if (category === "digest") {
+    return (digestLevel && DIGEST_LEVEL_PREFIX[digestLevel]) || CATEGORY_META.digest.label;
+  }
+  return CATEGORY_META[category]?.label ?? "";
+}
+
 // ─── Row mapper: Supabase snake_case → Article camelCase ─────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

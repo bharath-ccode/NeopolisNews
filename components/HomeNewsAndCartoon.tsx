@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PenTool, Trophy, ArrowRight, Newspaper } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import SectionWrapper from "@/components/SectionWrapper";
+import { getHeadlinePrefix, type ArticleCategory } from "@/lib/newsStore";
 
 /** Homepage strip below the hero: latest headlines index (left) and today's
  *  cartoon (right). Each headline links to its article; the cartoon links to
@@ -13,7 +14,7 @@ export default async function HomeNewsAndCartoon() {
   const [{ data: articles }, { data: cartoon }] = await Promise.all([
     admin
       .from("articles")
-      .select("id, title, tag, tag_color, date")
+      .select("id, title, tag, tag_color, date, category, digest_level")
       .eq("status", "published")
       .order("created_at", { ascending: false })
       .limit(6),
@@ -52,23 +53,27 @@ export default async function HomeNewsAndCartoon() {
                 </Link>
               </div>
               <ol className="space-y-3 flex-1">
-                {headlines.map((a, i) => (
-                  <li key={a.id}>
-                    <Link href={`/news/${a.id}`} className="group flex items-start gap-3">
-                      <span className="shrink-0 w-5 text-sm font-extrabold text-gray-300 group-hover:text-brand-400 transition-colors">
-                        {i + 1}
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block text-sm font-semibold text-gray-800 leading-snug line-clamp-2 group-hover:text-brand-700 transition-colors">
-                          {a.title}
+                {headlines.map((a, i) => {
+                  const prefix = getHeadlinePrefix(a.category as ArticleCategory, a.digest_level);
+                  return (
+                    <li key={a.id}>
+                      <Link href={`/news/${a.id}`} className="group flex items-start gap-3">
+                        <span className="shrink-0 w-5 text-sm font-extrabold text-gray-300 group-hover:text-brand-400 transition-colors">
+                          {i + 1}
                         </span>
-                        <span className="block text-[11px] text-gray-400 mt-0.5">
-                          {a.tag} · {a.date}
+                        <span className="min-w-0">
+                          <span className="block text-sm text-gray-800 leading-snug line-clamp-2 group-hover:text-brand-700 transition-colors">
+                            {prefix && <span className="font-extrabold">{prefix}: </span>}
+                            <span className="font-semibold">{a.title}</span>
+                          </span>
+                          <span className="block text-[11px] text-gray-400 mt-0.5">
+                            {a.tag} · {a.date}
+                          </span>
                         </span>
-                      </span>
-                    </Link>
-                  </li>
-                ))}
+                      </Link>
+                    </li>
+                  );
+                })}
               </ol>
             </div>
           )}
