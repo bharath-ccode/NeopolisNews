@@ -3,15 +3,17 @@ import { PenTool, Trophy, ArrowRight, Newspaper } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import SectionWrapper from "@/components/SectionWrapper";
 import { getHeadlinePrefix, type ArticleCategory } from "@/lib/newsStore";
+import HomePollPanel from "@/components/HomePollPanel";
 
-/** Homepage strip below the hero: latest headlines index (left) and today's
- *  cartoon (right). Each headline links to its article; the cartoon links to
- *  /cartoon. Server component. */
+/** Homepage strip below the hero: latest headlines index, today's cartoon,
+ *  and the daily poll. Each headline links to its article; the cartoon
+ *  links to /cartoon; the poll links to /polls. Server component (the poll
+ *  panel itself is a client island so it can carry the reader's vote). */
 export default async function HomeNewsAndCartoon() {
   const admin = createAdminClient();
   const today = new Date().toISOString().split("T")[0];
 
-  const [{ data: articles }, { data: cartoon }] = await Promise.all([
+  const [{ data: articles }, { data: cartoon }, { data: pollRow }] = await Promise.all([
     admin
       .from("articles")
       .select("id, title, tag, tag_color, date, category, digest_level")
@@ -26,18 +28,33 @@ export default async function HomeNewsAndCartoon() {
       .order("publish_date", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    admin
+      .from("polls")
+      .select("id")
+      .eq("status", "published")
+      .lte("publish_date", today)
+      .order("publish_date", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   const headlines = articles ?? [];
-  if (headlines.length === 0 && !cartoon) return null;
+  const hasPoll = Boolean(pollRow);
+  if (headlines.length === 0 && !cartoon && !hasPoll) return null;
 
   const isToday = cartoon?.publish_date === today;
   const openContest = cartoon?.is_contest && !cartoon?.winner_name;
 
+  const panelCount = [headlines.length > 0, Boolean(cartoon), hasPoll].filter(Boolean).length;
+
   return (
     <section className="bg-white border-b border-gray-100">
       <SectionWrapper tight>
-        <div className={`grid gap-5 ${cartoon && headlines.length > 0 ? "lg:grid-cols-2" : ""}`}>
+        <div
+          className={`grid gap-5 ${
+            panelCount === 3 ? "lg:grid-cols-3" : panelCount === 2 ? "lg:grid-cols-2" : ""
+          }`}
+        >
           {/* ── Latest headlines index ── */}
           {headlines.length > 0 && (
             <div className="card p-5 sm:p-6 flex flex-col">
@@ -116,6 +133,9 @@ export default async function HomeNewsAndCartoon() {
               </div>
             </Link>
           )}
+
+          {/* ── Daily poll ── */}
+          {hasPoll && <HomePollPanel />}
         </div>
       </SectionWrapper>
     </section>
