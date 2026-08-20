@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { BarChart2, Loader2, Clock } from "lucide-react";
 import PollPanel, { type PollResult } from "@/components/PollPanel";
+import { authHeaders } from "@/lib/authToken";
 
 interface ArchiveEntry {
   id: string;
@@ -26,7 +27,7 @@ export default function PollsPage() {
   const poll = selected ?? latest;
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/polls").catch(() => null);
+    const res = await fetch("/api/polls", { headers: await authHeaders() }).catch(() => null);
     if (res?.ok) {
       const data = await res.json();
       setLatest(data.latest);
@@ -39,7 +40,7 @@ export default function PollsPage() {
 
   async function openArchived(id: string) {
     setLoadingPoll(true);
-    const res = await fetch(`/api/polls/${id}`).catch(() => null);
+    const res = await fetch(`/api/polls/${id}`, { headers: await authHeaders() }).catch(() => null);
     if (res?.ok) {
       setSelected(await res.json());
       window.scrollTo({ top: 0, behavior: "smooth" });
