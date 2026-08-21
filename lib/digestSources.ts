@@ -62,7 +62,7 @@ export const LEVEL_TAGS: Record<StoryLevel, string> = {
 };
 
 // Simple RSS XML parser — no dependencies needed
-function stripHtml(str: string): string {
+export function stripHtml(str: string): string {
   return str.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
