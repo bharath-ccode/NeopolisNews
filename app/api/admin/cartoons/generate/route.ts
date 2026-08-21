@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { fetchHeadlines } from "@/lib/digestSources";
 import { uploadBufferToNewsMedia } from "@/lib/serverStorage";
 import { generateAiImage } from "@/lib/generateAiImage";
+import { watermarkCartoon } from "@/lib/watermarkCartoon";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -81,8 +82,8 @@ export async function POST(req: NextRequest) {
 
   try {
     const { buffer, mimeType } = await generateAiImage(buildImagenPrompt(generated.scene), "4:3");
-    const ext = mimeType.includes("png") ? "png" : "jpg";
-    const image_url = await uploadBufferToNewsMedia(buffer, ext, mimeType, "cartoons");
+    const watermarked = await watermarkCartoon(buffer, mimeType);
+    const image_url = await uploadBufferToNewsMedia(watermarked, "png", "image/png", "cartoons");
 
     return NextResponse.json({
       title: generated.title,
