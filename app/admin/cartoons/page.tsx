@@ -72,9 +72,7 @@ export default function AdminCartoonsPage() {
     try {
       const fd = new FormData();
       fd.append("file", file);
-      fd.append("folder", "cartoons");
-      fd.append("bucket", "news-media");
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const res = await fetch("/api/admin/cartoons/upload", { method: "POST", body: fd });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Upload failed");
       setImageUrl(json.url);
