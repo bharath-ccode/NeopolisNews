@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   PenTool, Loader2, Plus, Trash2, ImagePlus, X, Trophy,
-  Eye, EyeOff, ExternalLink, CheckCircle2,
+  Eye, EyeOff, ExternalLink, CheckCircle2, Sparkles, RefreshCw,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -44,6 +44,11 @@ export default function AdminCartoonsPage() {
   const [saving, setSaving]     = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Generate from headlines
+  const [generating, setGenerating]   = useState(false);
+  const [generated, setGenerated]     = useState(false);
+  const [genFeedback, setGenFeedback] = useState("");
+
   // Winner picking
   const [pickingFor, setPickingFor] = useState<string | null>(null);
   const [entries, setEntries]       = useState<CaptionEntry[]>([]);
@@ -81,6 +86,30 @@ export default function AdminCartoonsPage() {
     }
   }
 
+  async function generateFromHeadlines(feedback?: string) {
+    setGenerating(true);
+    setError("");
+    const res = await fetch("/api/admin/cartoons/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ feedback }),
+    }).catch(() => null);
+    if (!res?.ok) {
+      const j = res ? await res.json().catch(() => ({})) : {};
+      setError((j as { error?: string }).error ?? "Failed to generate.");
+      setGenerating(false);
+      return;
+    }
+    const data = await res.json();
+    setTitle(data.title ?? "");
+    setCaption(data.caption ?? "");
+    setImageUrl(data.image_url ?? "");
+    setIsContest(false);
+    setGenerated(true);
+    setGenFeedback("");
+    setGenerating(false);
+  }
+
   async function save(publish: boolean) {
     setSaving(true);
     setError("");
@@ -101,6 +130,7 @@ export default function AdminCartoonsPage() {
       setError((j as { error?: string }).error ?? "Failed to save.");
     } else {
       setTitle(""); setCaption(""); setImageUrl(""); setIsContest(false);
+      setGenerated(false); setGenFeedback("");
       load();
     }
     setSaving(false);
@@ -165,6 +195,40 @@ export default function AdminCartoonsPage() {
 
       {/* Create */}
       <div className="card p-5 space-y-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <button
+            type="button"
+            onClick={() => generateFromHeadlines()}
+            disabled={generating}
+            className="flex items-center gap-1.5 bg-brand-50 hover:bg-brand-100 text-brand-700 text-sm font-bold px-4 py-2 rounded-xl transition-colors disabled:opacity-60"
+          >
+            {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            {generating ? "Writing & drawing…" : "Generate from today's headlines"}
+          </button>
+          <p className="text-xs text-gray-400">Picks a local Hyderabad headline, writes it, illustrates it — review before publishing.</p>
+        </div>
+
+        {generated && (
+          <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+            <input
+              type="text"
+              value={genFeedback}
+              onChange={(e) => setGenFeedback(e.target.value)}
+              placeholder="Not quite right? e.g. 'focus on the metro delay' or 'make it more upbeat'…"
+              className={INPUT}
+            />
+            <button
+              type="button"
+              onClick={() => generateFromHeadlines(genFeedback.trim() || undefined)}
+              disabled={generating}
+              className="flex items-center gap-1.5 text-xs font-bold text-gray-600 border border-gray-200 bg-white rounded-lg px-3 py-1.5 hover:bg-gray-50 disabled:opacity-60"
+            >
+              {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+              Regenerate
+            </button>
+          </div>
+        )}
+
         <div className="grid sm:grid-cols-2 gap-3">
           <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={100}
             placeholder="Title * — e.g. The Site Visit" className={INPUT} />
