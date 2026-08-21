@@ -128,9 +128,9 @@ _All DB-backed features require their `supabase/migrations/*.sql` to have been r
 - **AI news digests** — daily 4 AM Vercel cron generates international/national/state/city digests from fetched headlines (Anthropic `claude-sonnet-4-6`); admin review queue at `/admin/ai-digest` (regenerate-with-feedback, approve/publish)
 - **Editor's Desk** — compose articles from editor pointers + headlines (Anthropic); always filed under the **Editorial** category
 - **Telugu edition** — path-based `/news/te/[id]` (old `?lang=te` 308-redirects); Google Cloud Translation API v2, cached in `article_translations`; auto-translate at publish + lazy on first view; admin review/edit at `/admin/news/[id]/telugu`; self-hosted Noto Sans Telugu font; hreflang + sitemap entries
-- **Cover image generation** — in `ArticleForm`, generate a branded headline card (`next/og`) or an AI editorial illustration (Google Imagen), compare candidates and pick; stored in `news-media` bucket
+- **Cover image generation** — in `ArticleForm`, generate a branded headline card (`next/og`) or an AI editorial illustration (Gemini native image generation), compare candidates and pick; stored in `news-media` bucket
 - **News comments + reactions**, **citizen reports** (earn points), **review owner responses**
-- **Daily cartoon** — homepage panel, archive, Friday caption contest (`/cartoon`, `/api/cartoons`); admin can also **generate from today's headlines** (`/api/admin/cartoons/generate`) — Claude picks a local Hyderabad RSS headline and writes a title/caption/scene, Imagen illustrates it (comic-strip prompt, distinct from the editorial-illustration one), replacing the old manual "generate in Gemini, download, upload" step; feedback + regenerate before publishing, same review-before-publish pattern as the AI digest
+- **Daily cartoon** — homepage panel, archive, Friday caption contest (`/cartoon`, `/api/cartoons`); admin can also **generate from today's headlines** (`/api/admin/cartoons/generate`) — Claude picks a local Hyderabad RSS headline and writes a title/caption/scene, Gemini illustrates it (comic-strip prompt, distinct from the editorial-illustration one), replacing the old manual "generate in Gemini, download, upload" step; feedback + regenerate before publishing, same review-before-publish pattern as the AI digest
 - **Daily poll** — admin-created question with 2–6 multiple-choice options (`/admin/polls`), one per `publish_date` like the cartoon; homepage panel + `/polls` archive; sign-in required to vote (one vote per user per poll, changeable via upsert on `(poll_id, user_id)`); results shown as bars once the reader has voted; ⚠️ requires `supabase/migrations/20260826_polls.sql` to be run
 - **Sitewide news ticker** above the navbar; homepage news + cartoon strip
 - **Brochure import** — admin extracts structured project data from an uploaded brochure (Anthropic)
@@ -166,7 +166,7 @@ _All DB-backed features require their `supabase/migrations/*.sql` to have been r
 |---|---|---|
 | Anthropic (Claude `claude-sonnet-4-6`) | AI digests, Editor's Desk, brochure import | `ANTHROPIC_API_KEY` |
 | Google Cloud Translation v2 | Telugu article translation | `GOOGLE_TRANSLATE_API_KEY` |
-| Google Imagen (Gemini API) | AI editorial illustrations | `GOOGLE_AI_API_KEY` |
+| Gemini native image generation (`gemini-3.1-flash-image-preview`) | AI editorial illustrations, cartoon generation | `GOOGLE_AI_API_KEY` |
 | Google Places API (New) | Monthly business discovery pipeline (`/admin/business-discovery`) | `GOOGLE_PLACES_API_KEY` |
 | Open-Meteo + WAQI | Weather + AQI widget | none (WAQI uses a demo token) |
 

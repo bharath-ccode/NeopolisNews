@@ -2,17 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { fetchHeadlines } from "@/lib/digestSources";
 import { uploadBufferToNewsMedia } from "@/lib/serverStorage";
+import { generateAiImage } from "@/lib/generateAiImage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const client = new Anthropic();
-
-// Google Imagen via the Gemini API — same model the editorial-illustration
-// generator uses. Requires GOOGLE_AI_API_KEY with billing on.
-const IMAGEN_ENDPOINT =
-  "https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict";
 
 interface GeneratedCartoon {
   title: string;
@@ -50,15 +46,10 @@ function buildImagenPrompt(scene: string): string {
 }
 
 /** POST { feedback? } — pick a local headline, write a title/caption/scene
- *  with Claude, illustrate it with Imagen, and return a ready-to-review
+ *  with Claude, illustrate it with Gemini, and return a ready-to-review
  *  draft (title, caption, image_url) for the admin form. Nothing is saved
  *  until the admin hits Publish/Save draft. */
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: "GOOGLE_AI_API_KEY is not configured" }, { status: 500 });
-  }
-
   const body = (await req.json().catch(() => ({}))) as { feedback?: string };
   const feedback = body.feedback?.trim() || undefined;
 
@@ -89,27 +80,9 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const res = await fetch(`${IMAGEN_ENDPOINT}?key=${apiKey}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      cache: "no-store",
-      body: JSON.stringify({
-        instances: [{ prompt: buildImagenPrompt(generated.scene) }],
-        parameters: { sampleCount: 1, aspectRatio: "4:3", personGeneration: "allow_adult" },
-      }),
-    });
-    if (!res.ok) {
-      const detail = await res.text().catch(() => "");
-      console.error("cartoon generate: imagen error:", res.status, detail.slice(0, 300));
-      return NextResponse.json({ error: "Image generation failed." }, { status: 502 });
-    }
-
-    const json = (await res.json()) as { predictions?: { bytesBase64Encoded?: string }[] };
-    const b64 = json.predictions?.[0]?.bytesBase64Encoded;
-    if (!b64) return NextResponse.json({ error: "No image returned." }, { status: 502 });
-
-    const buffer = Buffer.from(b64, "base64");
-    const image_url = await uploadBufferToNewsMedia(buffer, "png", "image/png", "cartoons");
+    const { buffer, mimeType } = await generateAiImage(buildImagenPrompt(generated.scene), "4:3");
+    const ext = mimeType.includes("png") ? "png" : "jpg";
+    const image_url = await uploadBufferToNewsMedia(buffer, ext, mimeType, "cartoons");
 
     return NextResponse.json({
       title: generated.title,
@@ -118,6 +91,10 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     console.error("cartoon generate: image step failed:", err);
+    const message = err instanceof Error ? err.message : "Image generation failed";
+    if (message.includes("not configured")) {
+      return NextResponse.json({ error: message }, { status: 500 });
+    }
     return NextResponse.json({ error: "Image generation failed." }, { status: 502 });
   }
 }
