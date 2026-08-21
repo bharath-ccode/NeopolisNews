@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { uploadBufferToNewsMedia } from "@/lib/serverStorage";
+import { generateAiImage } from "@/lib/generateAiImage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
-
-// Google Imagen via the Gemini API. Requires GOOGLE_AI_API_KEY with the
-// Generative Language API enabled and billing on (Imagen is a paid model).
-const IMAGEN_ENDPOINT =
-  "https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict";
 
 /** Deliberately illustrative, never photo-realistic — these run on opinion/
  *  editorial pieces, so the image must read as commentary art, not a photo of
@@ -30,14 +26,6 @@ function buildPrompt(title: string, excerpt: string): string {
 /** POST { title, excerpt } — generate an AI editorial illustration,
  *  store it in the news-media bucket, and return its public URL. */
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.GOOGLE_AI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "GOOGLE_AI_API_KEY is not configured" },
-      { status: 500 }
-    );
-  }
-
   const body = (await req.json().catch(() => null)) as
     | { title?: string; excerpt?: string }
     | null;
@@ -48,39 +36,16 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const res = await fetch(`${IMAGEN_ENDPOINT}?key=${apiKey}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      cache: "no-store",
-      body: JSON.stringify({
-        instances: [{ prompt: buildPrompt(title, excerpt) }],
-        parameters: {
-          sampleCount: 1,
-          aspectRatio: "16:9",
-          personGeneration: "dont_allow",
-        },
-      }),
-    });
-
-    if (!res.ok) {
-      const detail = await res.text().catch(() => "");
-      console.error("imagen error:", res.status, detail.slice(0, 300));
-      return NextResponse.json({ error: "Image generation failed" }, { status: 502 });
-    }
-
-    const json = (await res.json()) as {
-      predictions?: { bytesBase64Encoded?: string; mimeType?: string }[];
-    };
-    const b64 = json.predictions?.[0]?.bytesBase64Encoded;
-    if (!b64) {
-      return NextResponse.json({ error: "No image returned" }, { status: 502 });
-    }
-
-    const buffer = Buffer.from(b64, "base64");
-    const url = await uploadBufferToNewsMedia(buffer, "png", "image/png", "ai");
+    const { buffer, mimeType } = await generateAiImage(buildPrompt(title, excerpt), "16:9");
+    const ext = mimeType.includes("png") ? "png" : "jpg";
+    const url = await uploadBufferToNewsMedia(buffer, ext, mimeType, "ai");
     return NextResponse.json({ url });
   } catch (err) {
     console.error("generate-image:", err);
+    const message = err instanceof Error ? err.message : "Image generation failed";
+    if (message.includes("not configured")) {
+      return NextResponse.json({ error: message }, { status: 500 });
+    }
     return NextResponse.json({ error: "Image generation failed" }, { status: 502 });
   }
 }
