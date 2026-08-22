@@ -294,7 +294,7 @@ export default function AdminCartoonsPage() {
             <div key={c.id} className="card p-4">
               <div className="flex items-center gap-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={c.image_url} alt={c.title} className="w-20 h-16 rounded-lg object-cover bg-gray-50 shrink-0" />
+                <img src={c.image_url} alt={c.title} className="w-20 h-16 rounded-lg object-cover object-top bg-gray-50 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-bold text-sm text-gray-900 truncate">{c.title}</p>
