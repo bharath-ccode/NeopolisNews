@@ -136,7 +136,7 @@ export default function ArticleForm({ article }: Props) {
       const res = await fetch("/api/admin/articles/generate-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: title.trim(), excerpt: excerpt.trim() }),
+        body: JSON.stringify({ title: title.trim(), excerpt: excerpt.trim(), content: content.trim() }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Image generation failed");
