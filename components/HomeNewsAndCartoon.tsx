@@ -105,7 +105,7 @@ export default async function HomeNewsAndCartoon() {
               <img
                 src={cartoon.image_url}
                 alt={cartoon.title}
-                className="w-full h-56 object-cover bg-white"
+                className="w-full h-56 object-cover object-top bg-white"
               />
               <div className="p-5 sm:p-6 flex flex-col flex-1 min-w-0">
                 <p className="text-xs font-bold text-brand-600 uppercase tracking-wider flex items-center gap-1.5">

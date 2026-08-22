@@ -250,7 +250,7 @@ export default function CartoonPage() {
                         className="card overflow-hidden text-left hover:shadow-md transition-shadow group"
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={c.image_url} alt={c.title} className="h-28 w-full object-cover" />
+                        <img src={c.image_url} alt={c.title} className="h-28 w-full object-cover object-top" />
                         <div className="p-3">
                           <p className="text-xs font-bold text-gray-800 group-hover:text-brand-700 line-clamp-1 transition-colors">{c.title}</p>
                           <p className="text-[10px] text-gray-400 mt-0.5">
