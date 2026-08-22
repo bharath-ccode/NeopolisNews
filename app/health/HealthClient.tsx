@@ -149,7 +149,7 @@ function BusinessCard({ biz, typeId }: { biz: Business; typeId: HealthType }) {
         </p>
       )}
 
-      <div className="space-y-2" onClick={(e) => e.preventDefault()}>
+      <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
         {emergencyPhones.map((p) => (
           <a
             key={p.purpose}

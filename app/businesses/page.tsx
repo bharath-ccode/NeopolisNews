@@ -196,9 +196,13 @@ export default function BusinessesPage() {
                       </p>
                     )}
                     {b.contact_phone && (
-                      <p className="text-xs text-brand-600 font-medium flex items-center gap-1 mt-0.5">
+                      <a
+                        href={`tel:${b.contact_phone.replace(/\s/g, "")}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-xs text-brand-600 font-medium flex items-center gap-1 mt-0.5 hover:text-brand-800 w-fit"
+                      >
                         <Phone className="w-3 h-3 shrink-0" />{b.contact_phone}
-                      </p>
+                      </a>
                     )}
                     {b.types?.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-1.5">
