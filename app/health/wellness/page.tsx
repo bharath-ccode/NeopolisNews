@@ -125,7 +125,7 @@ function BusinessCard({ b, typeId }: { b: Business; typeId: WellnessType }) {
         </p>
       )}
 
-      <div onClick={(e) => e.preventDefault()}>
+      <div onClick={(e) => e.stopPropagation()}>
         {phones.length > 0 ? (
           <a
             href={`tel:${phones[0].number.replace(/\D/g, "")}`}

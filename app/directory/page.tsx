@@ -198,10 +198,14 @@ export default async function DirectoryPage() {
                   <SaveButton itemType="business" itemId={b.id} size="sm" />
                 </span>
                 {b.contact_phone && (
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <a
+                    href={`tel:${b.contact_phone.replace(/\s/g, "")}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-2 text-xs text-gray-500 hover:text-brand-600 w-fit"
+                  >
                     <Phone className="w-3.5 h-3.5" />
                     <span>{b.contact_phone}</span>
-                  </div>
+                  </a>
                 )}
               </Link>
             ))}
