@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import sharp from "sharp";
 import { uploadBufferToNewsMedia } from "@/lib/serverStorage";
-import { loadFont, getLogoDataUrl } from "@/lib/cartoonAssets";
+import { loadFont } from "@/lib/cartoonAssets";
 
 const FONT_BOLD_URL = "https://cdn.jsdelivr.net/npm/@fontsource/inter/files/inter-latin-800-normal.woff";
 const FONT_MED_URL = "https://cdn.jsdelivr.net/npm/@fontsource/inter/files/inter-latin-500-normal.woff";
@@ -11,9 +11,9 @@ const FONT_BOLD700_URL = "https://cdn.jsdelivr.net/npm/@fontsource/inter/files/i
 /** Bakes the title (banner over the art) and punchline caption (a white
  *  strip added below the art, like a printed single-panel cartoon caption)
  *  onto a cartoon image — buffer in, buffer out, same shape as
- *  watermarkCartoon. The white strip also carries the definitive logo +
- *  full-URL lockup, bottom-right — a second, more prominent mark than the
- *  lightweight one watermarkCartoon already baked onto the art itself. */
+ *  watermarkCartoon. The white strip also carries the definitive full-URL
+ *  mark, bottom-right — no logo here, that's what watermarkCartoon already
+ *  baked onto the art itself. */
 export async function bakeCartoonText(
   imageBuffer: Buffer,
   mimeType: string,
@@ -26,12 +26,11 @@ export async function bakeCartoonText(
   const stripHeight = Math.round(artWidth * 0.16);
   const totalHeight = artHeight + stripHeight;
 
-  const [bold, medium, mediumItalic, bold700, logoDataUrl] = await Promise.all([
+  const [bold, medium, mediumItalic, bold700] = await Promise.all([
     loadFont(FONT_BOLD_URL),
     loadFont(FONT_MED_URL),
     loadFont(FONT_MED_ITALIC_URL).catch(() => loadFont(FONT_MED_URL)), // italic file may not exist for every weight
     loadFont(FONT_BOLD700_URL),
-    getLogoDataUrl(),
   ]);
   const baseDataUrl = `data:${mimeType};base64,${imageBuffer.toString("base64")}`;
 
@@ -39,8 +38,7 @@ export async function bakeCartoonText(
   const padX = Math.round(artWidth * 0.04);
 
   const captionSize = Math.round(stripHeight * 0.2);
-  const markSize = Math.round(stripHeight * 0.36);
-  const urlSize = Math.round(stripHeight * 0.13);
+  const urlSize = Math.round(stripHeight * 0.16);
 
   const image = new ImageResponse(
     (
@@ -107,21 +105,17 @@ export async function bakeCartoonText(
           >
             {caption ? `“${caption}”` : ""}
           </span>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={logoDataUrl} width={markSize} height={markSize} style={{ borderRadius: "50%" }} />
-            <span
-              style={{
-                marginTop: Math.round(urlSize * 0.3),
-                fontSize: urlSize,
-                fontWeight: 700,
-                color: "#0d3a6e",
-                whiteSpace: "nowrap",
-              }}
-            >
-              https://neopolis.news
-            </span>
-          </div>
+          <span
+            style={{
+              flexShrink: 0,
+              fontSize: urlSize,
+              fontWeight: 700,
+              color: "#0d3a6e",
+              whiteSpace: "nowrap",
+            }}
+          >
+            https://neopolis.news
+          </span>
         </div>
       </div>
     ),

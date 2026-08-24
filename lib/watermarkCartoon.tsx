@@ -1,15 +1,17 @@
 import { ImageResponse } from "next/og";
 import sharp from "sharp";
-import { loadFont, getLogoDataUrl } from "@/lib/cartoonAssets";
+import { getLogoDataUrl } from "@/lib/cartoonAssets";
 
-const FONT_URL = "https://cdn.jsdelivr.net/npm/@fontsource/inter/files/inter-latin-700-normal.woff";
+// 1in x 1in at 96 CSS px/in — the standard digital-pixel definition of an
+// inch, since this only ever displays on screens.
+const LOGO_SIZE = 96;
 
-/** Stamps the NeopolisNews logo + site URL into the bottom-right corner of a
+/** Stamps just the NeopolisNews logo into the bottom-right corner of a
  *  cartoon image, so it still reads as ours wherever it's shared or
  *  screenshotted — applied to every cartoon, AI-generated or manually
  *  uploaded, at generation time (so it's already there in the draft
- *  preview). Deliberately lightweight — the more prominent logo + full URL
- *  lockup lives in the publish-time caption strip (bakeCartoonText.tsx).
+ *  preview). Deliberately lightweight — the full "https://neopolis.news"
+ *  URL lives in the publish-time caption strip (bakeCartoonText.tsx).
  *  Renders via next/og (same tooling as the headline card) rather than
  *  sharp's SVG-text compositing, since Vercel's serverless runtime has no
  *  guaranteed system fonts for raw SVG text. sharp is only used here to
@@ -19,16 +21,15 @@ export async function watermarkCartoon(imageBuffer: Buffer, mimeType: string): P
   const width = meta.width ?? 1200;
   const height = meta.height ?? 900;
 
-  const [font, logoDataUrl] = await Promise.all([loadFont(FONT_URL), getLogoDataUrl()]);
+  const logoDataUrl = await getLogoDataUrl();
   const baseDataUrl = `data:${mimeType};base64,${imageBuffer.toString("base64")}`;
 
-  const logoSize = Math.round(height * 0.1);
-  const fontSize = Math.round(logoSize * 0.36);
   const margin = Math.round(width * 0.025);
+  const pad = Math.round(LOGO_SIZE * 0.18);
 
   const image = new ImageResponse(
     (
-      <div style={{ width, height, display: "flex", position: "relative", fontFamily: "Inter" }}>
+      <div style={{ width, height, display: "flex", position: "relative" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={baseDataUrl}
@@ -42,24 +43,17 @@ export async function watermarkCartoon(imageBuffer: Buffer, mimeType: string): P
             right: margin,
             bottom: margin,
             display: "flex",
-            alignItems: "center",
-            gap: Math.round(fontSize * 0.4),
             background: "rgba(0,0,0,0.5)",
             borderRadius: 999,
-            padding: `${Math.round(fontSize * 0.4)}px ${Math.round(fontSize * 0.9)}px`,
+            padding: pad,
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={logoDataUrl} width={logoSize} height={logoSize} style={{ borderRadius: "50%" }} />
-          <span style={{ fontSize, fontWeight: 700, color: "#ffffff" }}>neopolis.news</span>
+          <img src={logoDataUrl} width={LOGO_SIZE} height={LOGO_SIZE} style={{ borderRadius: "50%" }} />
         </div>
       </div>
     ),
-    {
-      width,
-      height,
-      fonts: [{ name: "Inter", data: font, weight: 700, style: "normal" }],
-    }
+    { width, height }
   );
 
   return Buffer.from(await image.arrayBuffer());
