@@ -357,7 +357,7 @@ export default function ProjectFiltersGrid({ projects }: { projects: ProjectList
             return (
               <div
                 key={p.id}
-                className={`card overflow-hidden transition-all ${
+                className={`card overflow-hidden border-2 border-gray-200 hover:border-brand-300 hover:shadow-md transition-all duration-200 ${
                   inCompare ? "ring-2 ring-indigo-500 shadow-lg" : ""
                 }`}
               >
