@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import HomeNewsAndCartoon from "@/components/HomeNewsAndCartoon";
+import HomeTrafficWidget from "@/components/HomeTrafficWidget";
 import LeadForm from "@/components/LeadForm";
 import { createAdminClient } from "@/lib/supabase/server";
 
@@ -241,6 +242,13 @@ export default async function HomePage() {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* ── Live traffic ── */}
+      <section className="bg-gray-50 border-b border-gray-100">
+        <SectionWrapper tight>
+          <HomeTrafficWidget />
+        </SectionWrapper>
       </section>
 
       {/* ── Stats ── */}
