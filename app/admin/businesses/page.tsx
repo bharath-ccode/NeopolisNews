@@ -16,6 +16,8 @@ import {
   FileText,
   Star,
   Trash2,
+  MapPinned,
+  Loader2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { TAXONOMY } from "@/lib/businessDirectory";
@@ -67,6 +69,8 @@ export default function AdminBusinessesPage() {
   const [industryFilter, setIndustryFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [subtypeFilter, setSubtypeFilter] = useState("all");
+  const [backfilling, setBackfilling] = useState(false);
+  const [backfillMsg, setBackfillMsg] = useState("");
 
   useEffect(() => {
     const supabase = createClient();
@@ -112,6 +116,21 @@ export default function AdminBusinessesPage() {
     }
   }
 
+  async function backfillCoordinates() {
+    setBackfilling(true);
+    setBackfillMsg("");
+    try {
+      const res = await fetch("/api/admin/businesses/backfill-coordinates", { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Backfill failed");
+      setBackfillMsg(`Geocoded ${json.updated} of ${json.total} businesses missing coordinates${json.failed ? ` (${json.failed} couldn't be resolved)` : ""}.`);
+    } catch (err) {
+      setBackfillMsg(err instanceof Error ? err.message : "Backfill failed");
+    } finally {
+      setBackfilling(false);
+    }
+  }
+
   function copyLink(id: string) {
     navigator.clipboard.writeText(getInviteLink(id));
     setCopiedId(id);
@@ -150,10 +169,29 @@ export default function AdminBusinessesPage() {
             <span className="ml-2 text-xs text-gray-400">/ Admin / Businesses</span>
           </div>
         </div>
-        <Link href="/admin/businesses/new" className="btn-primary text-sm">
-          <PlusCircle className="w-4 h-4" /> Add Business
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={backfillCoordinates}
+            disabled={backfilling}
+            title="Geocode any business missing coordinates (needed for distance-from-you on listing pages)"
+            className="btn-secondary text-sm disabled:opacity-60"
+          >
+            {backfilling ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPinned className="w-4 h-4" />}
+            Backfill Coordinates
+          </button>
+          <Link href="/admin/businesses/new" className="btn-primary text-sm">
+            <PlusCircle className="w-4 h-4" /> Add Business
+          </Link>
+        </div>
       </header>
+
+      {backfillMsg && (
+        <div className="max-w-5xl mx-auto px-4 md:px-8 pt-4">
+          <p className="text-sm bg-blue-50 border border-blue-200 text-blue-700 rounded-xl px-4 py-2.5">
+            {backfillMsg}
+          </p>
+        </div>
+      )}
 
       <div className="max-w-5xl mx-auto px-4 md:px-8 py-8">
         {/* Stats row */}
