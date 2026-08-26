@@ -13,6 +13,8 @@ import LeadForm from "@/components/LeadForm";
 import SaveButton from "@/components/SaveButton";
 import { getSubtypes } from "@/lib/businessDirectory";
 import { createClient } from "@/lib/supabase/client";
+import { useUserLocation, type UserLocation } from "@/lib/useUserLocation";
+import { haversineKm, formatDistance } from "@/lib/distance";
 
 type HealthType = "hospitals" | "ambulance" | "clinics" | "diagnostics" | "pharmacies";
 
@@ -31,6 +33,8 @@ interface Business {
   contact_phone: string | null;
   phone_numbers: PhoneEntry[] | null;
   timings: DayTiming[] | null;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 const TYPE_CONFIG: {
@@ -69,9 +73,21 @@ function is24x7(timings: DayTiming[] | null): boolean {
   );
 }
 
-function BusinessCard({ biz, typeId }: { biz: Business; typeId: HealthType }) {
+function BusinessCard({
+  biz,
+  typeId,
+  userLocation,
+}: {
+  biz: Business;
+  typeId: HealthType;
+  userLocation: UserLocation | null;
+}) {
   const cfg = TYPE_MAP[typeId];
   const Icon = cfg.icon;
+  const distanceKm =
+    userLocation && biz.latitude != null && biz.longitude != null
+      ? haversineKm(userLocation.lat, userLocation.lng, biz.latitude, biz.longitude)
+      : null;
   const hasAppointments = biz.phone_numbers?.some((p) =>
     p.purpose.toLowerCase().includes("appointment")
   );
@@ -129,6 +145,9 @@ function BusinessCard({ biz, typeId }: { biz: Business; typeId: HealthType }) {
         {biz.address && (
           <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
             <MapPin className="w-3 h-3 shrink-0" /> {biz.address}
+            {distanceKm !== null && (
+              <span className="text-gray-400">· {formatDistance(distanceKm)}</span>
+            )}
           </p>
         )}
       </div>
@@ -189,6 +208,7 @@ function BusinessCard({ biz, typeId }: { biz: Business; typeId: HealthType }) {
 
 function HealthInner() {
   const router = useRouter();
+  const userLocation = useUserLocation();
   const searchParams = useSearchParams();
   const VALID: HealthType[] = ["hospitals", "ambulance", "clinics", "diagnostics", "pharmacies"];
   const typeParam = searchParams.get("type") as HealthType | null;
@@ -215,7 +235,7 @@ function HealthInner() {
     const sb = createClient();
     const { data } = await sb
       .from("businesses")
-      .select("id, name, types, subtypes, address, verified, logo, contact_phone, phone_numbers, timings")
+      .select("id, name, types, subtypes, address, verified, logo, contact_phone, phone_numbers, timings, latitude, longitude")
       .eq("status", "active")
       .eq("industry", "Health & Wellness")
       .contains("types", [cfg.taxKey]);
@@ -388,7 +408,9 @@ function HealthInner() {
             </div>
           ) : filtered.length > 0 ? (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {filtered.map((b) => <BusinessCard key={b.id} biz={b} typeId={active} />)}
+              {filtered.map((b) => (
+                <BusinessCard key={b.id} biz={b} typeId={active} userLocation={userLocation} />
+              ))}
             </div>
           ) : (
             <div className="text-center py-16 text-gray-400">

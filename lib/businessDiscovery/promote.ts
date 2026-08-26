@@ -41,12 +41,16 @@ export async function promoteCandidateToBusiness(
   const email = overrides.email ?? candidate.email ?? null;
   const website = overrides.website ?? candidate.website;
   const timings = overrides.timings ?? parseGoogleHours(candidate.hours_raw ?? []);
+  // Places already gave us this for free at discovery time — carry it
+  // forward so listing pages can show distance without a geocoding call.
+  const latitude = candidate.lat ?? null;
+  const longitude = candidate.lng ?? null;
 
   let businessId = candidate.promoted_business_id as string | null;
 
   if (businessId) {
     await sb.from("businesses").update({
-      name, address, contact_phone: phone, email, website, timings,
+      name, address, contact_phone: phone, email, website, timings, latitude, longitude,
     }).eq("id", businessId);
   } else {
     businessId = randomBusinessId();
@@ -63,6 +67,8 @@ export async function promoteCandidateToBusiness(
       email,
       website,
       timings,
+      latitude,
+      longitude,
       created_at: new Date().toISOString(),
     });
   }
