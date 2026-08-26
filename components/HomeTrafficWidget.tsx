@@ -38,6 +38,7 @@ export default function HomeTrafficWidget() {
     return () => { cancelled = true; };
   }, [areaId]);
 
+  const area = TRAFFIC_AREAS.find((a) => a.id === areaId)!;
   const meta = data ? LEVEL_META[data.level] : null;
 
   return (
@@ -65,22 +66,25 @@ export default function HomeTrafficWidget() {
         </div>
       </div>
 
-      <div className="sm:ml-auto flex items-center gap-3">
+      <div className="sm:ml-auto flex flex-col items-end gap-1">
         {loading ? (
           <span className="text-xs text-gray-400">Checking live traffic…</span>
         ) : error || !data || !meta ? (
           <span className="text-xs text-gray-400">Traffic data unavailable right now</span>
         ) : (
           <>
-            <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border ${meta.bg} ${meta.text}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
-              {meta.label}
-            </span>
-            <span className="text-sm text-gray-600 flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5 text-gray-400" />
-              {data.currentMinutes} min
-              {data.delayMinutes > 1 && <span className="text-gray-400">(usually {data.typicalMinutes})</span>}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border ${meta.bg} ${meta.text}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
+                {meta.label}
+              </span>
+              <span className="text-sm text-gray-600 flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5 text-gray-400" />
+                {data.currentMinutes} min drive
+                <span className="text-gray-400">(usually {data.typicalMinutes})</span>
+              </span>
+            </div>
+            <p className="text-[11px] text-gray-400">on {area.routeLabel}, right now</p>
           </>
         )}
       </div>
