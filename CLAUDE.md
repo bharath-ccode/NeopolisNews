@@ -23,8 +23,9 @@ Create `.env.local` with:
 SUPABASE_SERVICE_ROLE_KEY=...     # bypasses RLS — server/API routes only
 RESEND_API_KEY=...                # email delivery (Resend)
 GOOGLE_TRANSLATE_API_KEY=...      # Cloud Translation API v2 — Telugu article translations
-GOOGLE_AI_API_KEY=...             # Gemini API key (Imagen) — AI editorial illustrations; needs billing
+GOOGLE_AI_API_KEY=...             # Gemini native image generation — AI editorial illustrations + cartoons; needs billing
 GOOGLE_PLACES_API_KEY=...         # Places API (New) — monthly business discovery pipeline; needs billing
+GOOGLE_MAPS_API_KEY=...           # Routes API — homepage live traffic widget; needs billing (can be the same Cloud project as Places, just enable Routes API too)
 OTP_SECRET=...                    # HMAC secret for signing business OTP cookies
 
 # Recommended
@@ -152,6 +153,7 @@ _All DB-backed features require their `supabase/migrations/*.sql` to have been r
 - **Ticket-intent click tracking** — every "Book Tickets"/"View Showtimes & Book" click-through to BookMyShow (cinemas page, cinema profile, and now per-showtime) logs to `ticket_click_events` via `/api/ticket-clicks` (public, rate-limited, anonymous), including the exact showtime when known; real (non-simulated) totals shown at the top of `/admin/analytics`; ⚠️ requires `supabase/migrations/20260822_ticket_click_events.sql` to be run
 - **Real page-view analytics** — `/admin/analytics` is now fully real (no mock data): a `page_views` row is logged per route change by `PageViewTracker` (mounted in the root layout, skips `/admin/*`) via `/api/track-pageview`, keyed to an anonymous first-party cookie (`nn_vid`, 1-year, not tied to an account); `/api/admin/analytics/page-views` aggregates daily views/visitors, top pages, referrer-bucketed traffic sources (Direct/Search/Social/Referral), and a rough session-duration estimate; ⚠️ requires `supabase/migrations/20260825_page_views.sql` to be run
 - **Weather + AQI widget** — Open-Meteo (weather) + WAQI (air quality), client-side; Kokapet coords
+- **Live traffic widget** — homepage card (`components/HomeTrafficWidget.tsx`) with a Neopolis/Financial District dropdown; `/api/traffic` calls Google's Routes API (`GOOGLE_MAPS_API_KEY`, needs billing) for current vs. typical drive time along one representative stretch per area (`lib/trafficAreas.ts`, address-based waypoints so Google geocodes them — no hardcoded lat/lng), derives a light/moderate/heavy summary; server-cached 5 min via Next's fetch `revalidate` to limit billed calls
 
 ### Completed — platform & ops
 - **Admin panel** (`/admin`) — businesses, news, AI digest, cartoons, events, payments, analytics, settings; protected client-side by `AdminAuthContext`
@@ -168,6 +170,7 @@ _All DB-backed features require their `supabase/migrations/*.sql` to have been r
 | Google Cloud Translation v2 | Telugu article translation | `GOOGLE_TRANSLATE_API_KEY` |
 | Gemini native image generation (`gemini-3.1-flash-image-preview`) | AI editorial illustrations, cartoon generation | `GOOGLE_AI_API_KEY` |
 | Google Places API (New) | Monthly business discovery pipeline (`/admin/business-discovery`) | `GOOGLE_PLACES_API_KEY` |
+| Google Routes API | Homepage live traffic widget (`/api/traffic`) | `GOOGLE_MAPS_API_KEY` |
 | Open-Meteo + WAQI | Weather + AQI widget | none (WAQI uses a demo token) |
 
 All AI usage is **single-call completions** — no agentic loops, tool use, or Managed Agents.
