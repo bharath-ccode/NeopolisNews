@@ -59,6 +59,7 @@ import {
 import clsx from "clsx";
 import { useAuth } from "@/context/AuthContext";
 import WeatherWidget from "@/components/WeatherWidget";
+import TopBarTraffic from "@/components/TopBarTraffic";
 
 // ─── Nav items ────────────────────────────────────────────────────────────────
 
@@ -362,7 +363,10 @@ export default function Navbar() {
           </Link>
         </span>
         <span className="md:hidden text-brand-400 text-xs shrink-0">Neopolis</span>
-        <WeatherWidget />
+        <div className="flex items-center">
+          <WeatherWidget />
+          <TopBarTraffic />
+        </div>
       </div>
 
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
