@@ -61,7 +61,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: "Me",
-          tabBarIcon: ({ focused }) => <Icon emoji="👤" focused={focused} />,
+          tabBarButton: () => null,
         }}
       />
     </Tabs>
