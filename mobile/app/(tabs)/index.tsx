@@ -47,6 +47,21 @@ function aqiInfo(aqi: number) {
   return           { color: "#450a0a", label: "Hazardous",                            advice: "Stay indoors — air is hazardous." };
 }
 function aqiBg(aqi: number) { return aqiInfo(aqi).color; }
+
+type TrafficLevel = "low" | "moderate" | "heavy";
+function trafficInfo(level: TrafficLevel) {
+  if (level === "low")      return { color: "#16a34a", label: "Light traffic",    emoji: "🟢", advice: "Roads are clear — good time to travel." };
+  if (level === "moderate") return { color: "#d97706", label: "Moderate traffic", emoji: "🟡", advice: "Some congestion on main roads." };
+  return                           { color: "#dc2626", label: "Heavy traffic",    emoji: "🔴", advice: "Avoid peak routes — expect delays." };
+}
+function getTrafficLevel(): TrafficLevel {
+  const h = new Date().getHours();
+  // Morning rush: 7–10, Evening rush: 17–20
+  if ((h >= 7 && h < 10) || (h >= 17 && h < 20)) return "heavy";
+  if ((h >= 10 && h < 12) || (h >= 20 && h < 22)) return "moderate";
+  return "low";
+}
+
 function fmt12(iso: string) {
   const h = parseInt(iso.split("T")[1], 10);
   if (h === 0) return "12 AM";
@@ -118,10 +133,11 @@ export default function HomeScreen() {
   const [loading, setLoading]             = useState(true);
   const [refreshing, setRefreshing]       = useState(false);
 
-  const [wx, setWx]       = useState<WxState>({ temp: null, feelsLike: null, emoji: "🌤️", label: "Kokapet", humidity: null, wind: null, aqi: null });
-  const [hourly, setHourly] = useState<HourItem[]>([]);
-  const [daily, setDaily]   = useState<DayItem[]>([]);
-  const [wxOpen, setWxOpen] = useState(false);
+  const [wx, setWx]           = useState<WxState>({ temp: null, feelsLike: null, emoji: "🌤️", label: "Kokapet", humidity: null, wind: null, aqi: null });
+  const [hourly, setHourly]   = useState<HourItem[]>([]);
+  const [daily, setDaily]     = useState<DayItem[]>([]);
+  const [wxOpen, setWxOpen]   = useState(false);
+  const [traffic, setTraffic] = useState<TrafficLevel>(getTrafficLevel());
   const hourListRef         = useRef<FlatList<HourItem>>(null);
 
   // Prefer @screen_name, fall back to first name from profile/metadata
@@ -237,6 +253,22 @@ export default function HomeScreen() {
               </View>
               <Text style={s.aqiTap}>Details →</Text>
             </TouchableOpacity>
+          );
+        })()}
+
+        {/* Traffic strip */}
+        {(() => {
+          const t = trafficInfo(traffic);
+          return (
+            <View style={[s.trafficStrip, { backgroundColor: t.color + "18" }]}>
+              <View style={[s.trafficDot, { backgroundColor: t.color }]}>
+                <Text style={s.trafficDotText}>🚗</Text>
+              </View>
+              <View style={s.trafficText}>
+                <Text style={[s.trafficLabel, { color: t.color }]}>Traffic · {t.label}</Text>
+                <Text style={s.trafficAdvice} numberOfLines={1}>{t.advice}</Text>
+              </View>
+            </View>
           );
         })()}
       </View>
@@ -621,6 +653,21 @@ const s = StyleSheet.create({
   aqiLabel:      { fontSize: 12, fontWeight: "800" },
   aqiAdvice:     { fontSize: 11, color: "rgba(255,255,255,0.55)", marginTop: 1 },
   aqiTap:        { fontSize: 11, color: "rgba(255,255,255,0.35)", fontWeight: "600" },
+
+  // Traffic strip
+  trafficStrip: {
+    flexDirection: "row", alignItems: "center", gap: 10,
+    paddingHorizontal: 16, paddingVertical: 8,
+    borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.06)",
+  },
+  trafficDot: {
+    width: 36, height: 36, borderRadius: 10,
+    alignItems: "center", justifyContent: "center",
+  },
+  trafficDotText: { fontSize: 16 },
+  trafficText:    { flex: 1 },
+  trafficLabel:   { fontSize: 12, fontWeight: "800" },
+  trafficAdvice:  { fontSize: 11, color: "rgba(255,255,255,0.55)", marginTop: 1 },
 
   loadingWrap: { paddingTop: 80, alignItems: "center" },
 
