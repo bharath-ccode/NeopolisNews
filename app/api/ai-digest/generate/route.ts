@@ -133,7 +133,7 @@ async function runGenerate(onlyLevel: DigestLevel | null) {
           title:            generated.title,
           excerpt:          generated.excerpt,
           content:          generated.content,
-          category:         "community",
+          category:         "digest",
           tag:              LEVEL_TAGS[level],
           tag_color:        "tag-blue",
           author:           "NeopolisNews AI",

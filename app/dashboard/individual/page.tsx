@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase/client";
+import MyNeopolis from "./MyNeopolis";
 
 interface OwnedBusiness {
   id: string;
@@ -121,6 +122,9 @@ export default function IndividualDashboard() {
           </div>
         ))}
       </div>
+
+      {/* My Neopolis — favourites at a glance */}
+      <MyNeopolis />
 
       {/* Quick actions */}
       <div className="grid sm:grid-cols-3 gap-4">

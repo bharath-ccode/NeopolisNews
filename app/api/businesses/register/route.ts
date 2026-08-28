@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { createAdminClient } from "@/lib/supabase/server";
 import { generateOtp, setOtpCookie, otpEmailHtml } from "@/lib/otp";
+import { geocodeAddress } from "@/lib/googleGeocode";
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
@@ -12,6 +13,7 @@ export async function POST(req: NextRequest) {
   }
 
   const id = Math.random().toString(36).slice(2, 10).toUpperCase();
+  const coords = await geocodeAddress(address);
 
   const supabase = createAdminClient();
   const { error: insertError } = await supabase.from("businesses").insert({
@@ -26,6 +28,8 @@ export async function POST(req: NextRequest) {
     verified: false,
     owner_email: ownerEmail,
     owner_phone: ownerPhone,
+    latitude: coords?.lat ?? null,
+    longitude: coords?.lng ?? null,
   });
 
   if (insertError) {

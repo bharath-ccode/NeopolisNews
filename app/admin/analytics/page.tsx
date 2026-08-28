@@ -8,14 +8,11 @@ import {
   MousePointerClick,
   Globe,
   BarChart3,
+  Ticket,
+  Film,
+  Loader2,
 } from "lucide-react";
 import clsx from "clsx";
-import {
-  getMockPageViews,
-  MOCK_PAGE_STATS,
-  MOCK_TRAFFIC_SOURCES,
-  DailyPageView,
-} from "@/lib/newsStore";
 
 const PERIOD_OPTIONS = [
   { label: "7 days",  value: 7  },
@@ -23,30 +20,140 @@ const PERIOD_OPTIONS = [
   { label: "30 days", value: 30 },
 ];
 
-export default function AdminAnalyticsPage() {
-  const [period, setPeriod] = useState(14);
-  const [pageViews, setPageViews] = useState<DailyPageView[]>([]);
+interface TicketClickStats {
+  totalClicks: number;
+  last7Days: number;
+  last30Days: number;
+  topBusinesses: { business_id: string; business_name: string; clicks: number }[];
+  topMovies: { movie_title: string; clicks: number }[];
+}
+
+function TicketClicksCard() {
+  const [stats, setStats] = useState<TicketClickStats | null>(null);
 
   useEffect(() => {
-    setPageViews(getMockPageViews(period));
+    fetch("/api/admin/analytics/ticket-clicks")
+      .then((r) => r.json())
+      .then((d) => setStats(d))
+      .catch(() => {});
+  }, []);
+
+  return (
+    <div className="card p-6">
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-2">
+          <Ticket className="w-4 h-4 text-red-600" />
+          <h3 className="font-semibold text-gray-900">Ticket-Intent Clicks</h3>
+        </div>
+        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">LIVE DATA</span>
+      </div>
+      <p className="text-xs text-gray-400 mb-5">
+        "Book Tickets" click-throughs to BookMyShow — the demand-proof metric for movie ticketing.
+      </p>
+
+      {!stats ? (
+        <p className="text-sm text-gray-400">Loading…</p>
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-4 mb-5">
+            <div>
+              <p className="text-2xl font-extrabold text-gray-900">{stats.totalClicks.toLocaleString("en-IN")}</p>
+              <p className="text-xs text-gray-500">All time</p>
+            </div>
+            <div>
+              <p className="text-2xl font-extrabold text-gray-900">{stats.last30Days.toLocaleString("en-IN")}</p>
+              <p className="text-xs text-gray-500">Last 30 days</p>
+            </div>
+            <div>
+              <p className="text-2xl font-extrabold text-gray-900">{stats.last7Days.toLocaleString("en-IN")}</p>
+              <p className="text-xs text-gray-500">Last 7 days</p>
+            </div>
+          </div>
+
+          {stats.totalClicks === 0 ? (
+            <p className="text-sm text-gray-400">No clicks yet — data will appear as visitors use the "Book Tickets" links on /entertainment/cinemas and cinema profile pages.</p>
+          ) : (
+            <div className="grid sm:grid-cols-2 gap-5">
+              {stats.topBusinesses.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Top Cinemas</p>
+                  <div className="space-y-1.5">
+                    {stats.topBusinesses.map((b) => (
+                      <div key={b.business_id} className="flex items-center justify-between text-sm">
+                        <span className="text-gray-700 truncate">{b.business_name}</span>
+                        <span className="font-semibold text-gray-900 shrink-0 ml-2">{b.clicks}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {stats.topMovies.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1">
+                    <Film className="w-3 h-3" /> Top Movies
+                  </p>
+                  <div className="space-y-1.5">
+                    {stats.topMovies.map((m) => (
+                      <div key={m.movie_title} className="flex items-center justify-between text-sm">
+                        <span className="text-gray-700 truncate">{m.movie_title}</span>
+                        <span className="font-semibold text-gray-900 shrink-0 ml-2">{m.clicks}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+interface DailyPageView {
+  date: string;
+  views: number;
+  visitors: number;
+}
+
+interface PageViewStats {
+  daily: DailyPageView[];
+  totalViews: number;
+  totalVisitors: number;
+  avgSessionDuration: string | null;
+  topPages: { page: string; views: number }[];
+  trafficSources: { source: string; pct: number; color: string }[];
+}
+
+export default function AdminAnalyticsPage() {
+  const [period, setPeriod] = useState(14);
+  const [stats, setStats] = useState<PageViewStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`/api/admin/analytics/page-views?days=${period}`)
+      .then((r) => r.json())
+      .then((d) => setStats(d))
+      .catch(() => setStats(null))
+      .finally(() => setLoading(false));
   }, [period]);
 
-  const totalViews    = pageViews.reduce((s, d) => s + d.views, 0);
-  const totalVisitors = pageViews.reduce((s, d) => s + d.visitors, 0);
-  const avgViews      = pageViews.length ? Math.round(totalViews / pageViews.length) : 0;
-  const maxViews      = pageViews.length ? Math.max(...pageViews.map((d) => d.views)) : 1;
+  const pageViews = stats?.daily ?? [];
+  const avgViews  = pageViews.length ? Math.round((stats?.totalViews ?? 0) / pageViews.length) : 0;
+  const maxViews  = Math.max(1, ...pageViews.map((d) => d.views));
 
   const STAT_CARDS = [
     {
       label: "Total Page Views",
-      value: totalViews.toLocaleString("en-IN"),
+      value: (stats?.totalViews ?? 0).toLocaleString("en-IN"),
       sub: `Last ${period} days`,
       icon: Eye,
       color: "bg-brand-50 text-brand-600",
     },
     {
       label: "Unique Visitors",
-      value: totalVisitors.toLocaleString("en-IN"),
+      value: (stats?.totalVisitors ?? 0).toLocaleString("en-IN"),
       sub: `Last ${period} days`,
       icon: Users,
       color: "bg-blue-50 text-blue-600",
@@ -60,7 +167,7 @@ export default function AdminAnalyticsPage() {
     },
     {
       label: "Avg. Session Duration",
-      value: "2m 48s",
+      value: stats?.avgSessionDuration ?? "—",
       sub: "Across all pages",
       icon: MousePointerClick,
       color: "bg-green-50 text-green-600",
@@ -96,181 +203,198 @@ export default function AdminAnalyticsPage() {
         </div>
       </div>
 
-      {/* Summary stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {STAT_CARDS.map((s) => (
-          <div key={s.label} className="card p-5">
-            <div className={`inline-flex p-2 rounded-lg ${s.color} mb-3`}>
-              <s.icon className="w-4 h-4" />
-            </div>
-            <p className="text-2xl font-extrabold text-gray-900">{s.value}</p>
-            <p className="text-sm font-medium text-gray-700 mt-0.5">{s.label}</p>
-            <p className="text-xs text-gray-400">{s.sub}</p>
-          </div>
-        ))}
-      </div>
+      {/* Ticket-intent clicks — real data */}
+      <TicketClicksCard />
 
-      {/* Page views chart */}
-      <div className="card p-6">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h3 className="font-semibold text-gray-900">Daily Page Views</h3>
-            <p className="text-xs text-gray-400 mt-0.5">
-              Views and visitors over the last {period} days
-            </p>
-          </div>
-          <div className="flex items-center gap-3 text-xs text-gray-500">
-            <span className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-sm bg-brand-500 inline-block" />
-              Views
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-sm bg-blue-300 inline-block" />
-              Visitors
-            </span>
-          </div>
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <Loader2 className="w-6 h-6 animate-spin text-gray-300" />
         </div>
-
-        {/* Bar chart */}
-        <div className="flex items-end gap-1.5 h-40 overflow-x-auto pb-1">
-          {pageViews.map((day) => (
-            <div key={day.date} className="flex flex-col items-center gap-1 flex-1 min-w-[28px]">
-              <div className="w-full flex flex-col justify-end gap-0.5 h-32 relative group">
-                {/* Tooltip */}
-                <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded-md px-2 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                  <p className="font-semibold">{day.date}</p>
-                  <p>Views: {day.views.toLocaleString("en-IN")}</p>
-                  <p>Visitors: {day.visitors.toLocaleString("en-IN")}</p>
+      ) : (
+        <>
+          {/* Summary stats */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {STAT_CARDS.map((s) => (
+              <div key={s.label} className="card p-5">
+                <div className={`inline-flex p-2 rounded-lg ${s.color} mb-3`}>
+                  <s.icon className="w-4 h-4" />
                 </div>
-                {/* Views bar */}
-                <div
-                  className="w-full bg-brand-500 rounded-t transition-all hover:bg-brand-600"
-                  style={{ height: `${(day.views / maxViews) * 100}%` }}
-                />
-                {/* Visitors bar (overlaid semi-transparent) */}
-                <div
-                  className="w-full bg-blue-300 rounded-t absolute bottom-0"
-                  style={{
-                    height: `${(day.visitors / maxViews) * 100}%`,
-                    opacity: 0.5,
-                  }}
-                />
-              </div>
-              <span className="text-[9px] text-gray-400 whitespace-nowrap">
-                {day.date.split(" ")[1]}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Top pages */}
-        <div className="card overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
-            <Globe className="w-4 h-4 text-brand-600" />
-            <h3 className="font-semibold text-gray-900">Top Pages</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">
-                    Page
-                  </th>
-                  <th className="text-right text-xs font-semibold text-gray-500 px-4 py-3">
-                    Views
-                  </th>
-                  <th className="text-right text-xs font-semibold text-gray-500 px-4 py-3 hidden sm:table-cell">
-                    Avg. Time
-                  </th>
-                  <th className="text-right text-xs font-semibold text-gray-500 px-5 py-3 hidden sm:table-cell">
-                    Bounce
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {MOCK_PAGE_STATS.map((p) => (
-                  <tr key={p.page} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-5 py-3">
-                      <code className="text-xs text-gray-700 font-mono bg-gray-100 px-1.5 py-0.5 rounded">
-                        {p.page}
-                      </code>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <span className="text-sm font-semibold text-gray-900">
-                        {p.views.toLocaleString("en-IN")}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right hidden sm:table-cell">
-                      <span className="text-xs text-gray-500">{p.avgTime}</span>
-                    </td>
-                    <td className="px-5 py-3 text-right hidden sm:table-cell">
-                      <span className="text-xs text-gray-500">{p.bounce}</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Traffic sources */}
-        <div className="card p-6">
-          <div className="flex items-center gap-2 mb-5">
-            <TrendingUp className="w-4 h-4 text-brand-600" />
-            <h3 className="font-semibold text-gray-900">Traffic Sources</h3>
-          </div>
-          <div className="space-y-4">
-            {MOCK_TRAFFIC_SOURCES.map((src) => (
-              <div key={src.source}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-sm text-gray-700">{src.source}</span>
-                  <span className="text-sm font-semibold text-gray-900">
-                    {src.pct}%
-                  </span>
-                </div>
-                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className={clsx("h-full rounded-full transition-all", src.color)}
-                    style={{ width: `${src.pct}%` }}
-                  />
-                </div>
+                <p className="text-2xl font-extrabold text-gray-900">{s.value}</p>
+                <p className="text-sm font-medium text-gray-700 mt-0.5">{s.label}</p>
+                <p className="text-xs text-gray-400">{s.sub}</p>
               </div>
             ))}
           </div>
 
-          {/* Donut-style summary */}
-          <div className="mt-6 pt-5 border-t border-gray-100">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-              Breakdown
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {MOCK_TRAFFIC_SOURCES.map((src) => (
-                <div key={src.source} className="flex items-center gap-2">
-                  <span
-                    className={clsx(
-                      "w-2.5 h-2.5 rounded-full shrink-0",
-                      src.color
-                    )}
-                  />
-                  <span className="text-xs text-gray-600 truncate">
-                    {src.source}
-                  </span>
-                  <span className="text-xs font-medium text-gray-900 ml-auto">
-                    {src.pct}%
-                  </span>
+          {/* Page views chart */}
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="font-semibold text-gray-900">Daily Page Views</h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Views and visitors over the last {period} days
+                </p>
+              </div>
+              <div className="flex items-center gap-3 text-xs text-gray-500">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-sm bg-brand-500 inline-block" />
+                  Views
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-sm bg-blue-300 inline-block" />
+                  Visitors
+                </span>
+              </div>
+            </div>
+
+            {pageViews.every((d) => d.views === 0) ? (
+              <p className="text-sm text-gray-400 text-center py-10">
+                No page views recorded yet for this period — data will appear as visitors browse the site.
+              </p>
+            ) : (
+              <div className="flex items-end gap-1.5 h-40 overflow-x-auto pb-1">
+                {pageViews.map((day, i) => (
+                  <div key={`${day.date}-${i}`} className="flex flex-col items-center gap-1 flex-1 min-w-[28px]">
+                    <div className="w-full flex flex-col justify-end gap-0.5 h-32 relative group">
+                      {/* Tooltip */}
+                      <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded-md px-2 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                        <p className="font-semibold">{day.date}</p>
+                        <p>Views: {day.views.toLocaleString("en-IN")}</p>
+                        <p>Visitors: {day.visitors.toLocaleString("en-IN")}</p>
+                      </div>
+                      {/* Views bar */}
+                      <div
+                        className="w-full bg-brand-500 rounded-t transition-all hover:bg-brand-600"
+                        style={{ height: `${(day.views / maxViews) * 100}%` }}
+                      />
+                      {/* Visitors bar (overlaid semi-transparent) */}
+                      <div
+                        className="w-full bg-blue-300 rounded-t absolute bottom-0"
+                        style={{
+                          height: `${(day.visitors / maxViews) * 100}%`,
+                          opacity: 0.5,
+                        }}
+                      />
+                    </div>
+                    <span className="text-[9px] text-gray-400 whitespace-nowrap">
+                      {day.date.split(" ")[1]}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* Top pages */}
+            <div className="card overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                <Globe className="w-4 h-4 text-brand-600" />
+                <h3 className="font-semibold text-gray-900">Top Pages</h3>
+              </div>
+              {(stats?.topPages.length ?? 0) === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-10">No page views yet.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-100">
+                        <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3">
+                          Page
+                        </th>
+                        <th className="text-right text-xs font-semibold text-gray-500 px-5 py-3">
+                          Views
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {stats!.topPages.map((p) => (
+                        <tr key={p.page} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-5 py-3">
+                            <code className="text-xs text-gray-700 font-mono bg-gray-100 px-1.5 py-0.5 rounded">
+                              {p.page}
+                            </code>
+                          </td>
+                          <td className="px-5 py-3 text-right">
+                            <span className="text-sm font-semibold text-gray-900">
+                              {p.views.toLocaleString("en-IN")}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              ))}
+              )}
+            </div>
+
+            {/* Traffic sources */}
+            <div className="card p-6">
+              <div className="flex items-center gap-2 mb-5">
+                <TrendingUp className="w-4 h-4 text-brand-600" />
+                <h3 className="font-semibold text-gray-900">Traffic Sources</h3>
+              </div>
+              {(stats?.trafficSources.length ?? 0) === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-10">No visitors yet.</p>
+              ) : (
+                <>
+                  <div className="space-y-4">
+                    {stats!.trafficSources.map((src) => (
+                      <div key={src.source}>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-sm text-gray-700">{src.source}</span>
+                          <span className="text-sm font-semibold text-gray-900">
+                            {src.pct}%
+                          </span>
+                        </div>
+                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className={clsx("h-full rounded-full transition-all", src.color)}
+                            style={{ width: `${src.pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Donut-style summary */}
+                  <div className="mt-6 pt-5 border-t border-gray-100">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                      Breakdown
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {stats!.trafficSources.map((src) => (
+                        <div key={src.source} className="flex items-center gap-2">
+                          <span
+                            className={clsx(
+                              "w-2.5 h-2.5 rounded-full shrink-0",
+                              src.color
+                            )}
+                          />
+                          <span className="text-xs text-gray-600 truncate">
+                            {src.source}
+                          </span>
+                          <span className="text-xs font-medium text-gray-900 ml-auto">
+                            {src.pct}%
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
 
       {/* Disclaimer */}
       <p className="text-xs text-gray-400 text-center pb-4">
-        Analytics data shown is simulated for demonstration. Integrate a real analytics
-        provider (e.g. Google Analytics, Plausible, PostHog) for live data.
+        All figures on this page are real, tracked via an anonymous
+        first-party cookie (no third-party analytics). "Unique visitors" is
+        an approximation — clearing cookies or switching devices/browsers
+        counts as a new visitor. "Avg. Session Duration" only covers
+        visitors with more than one page view in the period.
       </p>
     </div>
   );

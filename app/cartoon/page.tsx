@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { PenTool, Loader2, Send, AtSign, LogIn, Trophy, Clock } from "lucide-react";
+import { PenTool, Loader2, Send, AtSign, LogIn, Trophy, Clock, Eye, Share2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { authHeaders } from "@/lib/authToken";
 import WhatsAppShare from "@/components/WhatsAppShare";
@@ -17,6 +17,12 @@ interface Cartoon {
   is_contest: boolean;
   winner_name: string | null;
   winner_caption: string | null;
+  view_count: number;
+  whatsapp_share_count: number;
+}
+
+function fmtCount(n: number) {
+  return n.toLocaleString("en-IN");
 }
 interface CaptionEntry {
   id: string;
@@ -148,7 +154,15 @@ export default function CartoonPage() {
                   </p>
                 )}
                 <div className="flex items-center justify-between mt-4">
-                  <p className="text-xs text-gray-400">✏️ {cartoon.artist_name}</p>
+                  <div className="flex items-center gap-3 text-xs text-gray-400">
+                    <span>✏️ {cartoon.artist_name}</span>
+                    <span className="flex items-center gap-1" title="Views">
+                      <Eye className="w-3.5 h-3.5" /> {fmtCount(cartoon.view_count)}
+                    </span>
+                    <span className="flex items-center gap-1" title="WhatsApp shares">
+                      <Share2 className="w-3.5 h-3.5" /> {fmtCount(cartoon.whatsapp_share_count)}
+                    </span>
+                  </div>
                   <WhatsAppShare title={`😄 ${cartoon.title} — Today in Neopolis`} size="sm" />
                 </div>
               </div>
@@ -236,7 +250,7 @@ export default function CartoonPage() {
                         className="card overflow-hidden text-left hover:shadow-md transition-shadow group"
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={c.image_url} alt={c.title} className="h-28 w-full object-cover" />
+                        <img src={c.image_url} alt={c.title} className="h-28 w-full object-cover object-top" />
                         <div className="p-3">
                           <p className="text-xs font-bold text-gray-800 group-hover:text-brand-700 line-clamp-1 transition-colors">{c.title}</p>
                           <p className="text-[10px] text-gray-400 mt-0.5">

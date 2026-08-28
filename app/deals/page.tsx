@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Tag, ShieldCheck, Building2, Clock, Sparkles } from "lucide-react";
 import PushPrompt from "@/components/PushPrompt";
+import SaveButton from "@/components/SaveButton";
 
 interface BusinessSnippet {
   id: string;
@@ -202,9 +203,12 @@ export default function DealsPage() {
 
                     {/* Info */}
                     <div className="p-4">
-                      <h3 className="font-bold text-gray-900 text-sm leading-snug mb-1 group-hover:text-brand-700 transition-colors">
-                        {offer.name}
-                      </h3>
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <h3 className="font-bold text-gray-900 text-sm leading-snug group-hover:text-brand-700 transition-colors">
+                          {offer.name}
+                        </h3>
+                        <SaveButton itemType="deal" itemId={offer.id} size="sm" className="shrink-0" />
+                      </div>
                       {offer.description && (
                         <p className="text-xs text-gray-500 line-clamp-2 mb-2">
                           {offer.description}

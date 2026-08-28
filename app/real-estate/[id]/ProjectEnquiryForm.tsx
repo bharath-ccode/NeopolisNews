@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Send, Loader2, CheckCircle, Phone, Mail, User, MessageSquare, ChevronDown } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Send, Loader2, CheckCircle, Phone, Mail, User, MessageSquare, ChevronDown, Lock, LogIn, UserPlus } from "lucide-react";
+import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
 
 // Common country codes — expandable list
 const COUNTRY_CODES = [
@@ -63,6 +65,20 @@ export default function ProjectEnquiryForm({
   const [apiError, setApiError] = useState<string | null>(null);
   const [ccOpen,  setCcOpen]    = useState(false);
 
+  const { user, loading: authLoading } = useAuth();
+
+  // Pre-fill contact fields from the signed-in profile (only where empty).
+  useEffect(() => {
+    if (!user) return;
+    setForm(prev => ({
+      ...prev,
+      senderName:  prev.senderName  || user.name  || "",
+      senderEmail: prev.senderEmail || user.email || "",
+      phoneDigits: prev.phoneDigits ||
+        (user.phone?.startsWith("+91") ? user.phone.slice(3) : prev.phoneDigits),
+    }));
+  }, [user]);
+
   function set(key: keyof FormState, value: string) {
     setForm(prev => ({ ...prev, [key]: value }));
     setFieldErrors(prev => ({ ...prev, [key === "countryCode" || key === "phoneDigits" ? "senderPhone" : key]: undefined }));
@@ -101,9 +117,10 @@ export default function ProjectEnquiryForm({
     const senderPhone = `${form.countryCode}${form.phoneDigits.replace(/\s/g, "")}`;
 
     try {
+      const { authHeaders } = await import("@/lib/authToken");
       const res = await fetch(`/api/projects/${projectId}/enquire`, {
         method:  "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(await authHeaders()) },
         body:    JSON.stringify({
           senderName:  form.senderName.trim(),
           senderPhone,
@@ -119,6 +136,44 @@ export default function ProjectEnquiryForm({
     } finally {
       setLoading(false);
     }
+  }
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 text-brand-400 animate-spin" />
+      </div>
+    );
+  }
+
+  // Viewing the project is public; contacting the team requires an account.
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
+        <div className="w-12 h-12 rounded-full bg-brand-800 flex items-center justify-center">
+          <Lock className="w-6 h-6 text-brand-300" />
+        </div>
+        <p className="font-bold text-white text-lg">Sign in to send an enquiry</p>
+        <p className="text-brand-300 text-sm max-w-xs">
+          Create a free account to contact the {projectName} team and track your
+          enquiries in one place.
+        </p>
+        <div className="flex flex-wrap justify-center gap-3 mt-2">
+          <Link
+            href={`/auth/login?redirect=${encodeURIComponent(`/real-estate/${projectId}`)}`}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500 hover:bg-brand-400 text-white text-sm font-semibold rounded-lg transition-colors"
+          >
+            <LogIn className="w-4 h-4" /> Sign In
+          </Link>
+          <Link
+            href="/auth/register"
+            className="inline-flex items-center gap-2 px-4 py-2 border border-brand-500 text-brand-200 hover:bg-brand-800 text-sm font-semibold rounded-lg transition-colors"
+          >
+            <UserPlus className="w-4 h-4" /> Register Free
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   if (done) {

@@ -124,6 +124,8 @@ export default async function NewsPage() {
     .from("articles")
     .select("*")
     .eq("status", "published")
+    // Daily AI digests live on /news/today — keep this page to local topics.
+    .neq("category", "digest")
     .order("created_at", { ascending: false });
   const allArticles: Article[] = (data ?? []).map(toArticle);
 

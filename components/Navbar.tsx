@@ -59,6 +59,7 @@ import {
 import clsx from "clsx";
 import { useAuth } from "@/context/AuthContext";
 import WeatherWidget from "@/components/WeatherWidget";
+import TopBarTraffic from "@/components/TopBarTraffic";
 
 // ─── Nav items ────────────────────────────────────────────────────────────────
 
@@ -70,6 +71,7 @@ const NAV_ITEMS = [
     sub: [
       { label: "Today's News",      href: "/news/today",          icon: Globe       },
       { label: "Daily Cartoon",     href: "/cartoon",             icon: Zap         },
+      { label: "Neopolis Poll",     href: "/polls",               icon: BarChart3   },
       { label: "Business Launches", href: "/news#launches",       icon: Zap         },
       { label: "Infrastructure",    href: "/news#infrastructure", icon: TrendingUp  },
       { label: "Community",         href: "/news#community",      icon: Users       },
@@ -81,7 +83,7 @@ const NAV_ITEMS = [
     icon: Building2,
     sub: [
       { label: "Project Pages",        href: "/real-estate#projects",              icon: Layers   },
-      { label: "Price Trends",         href: "/real-estate#prices",                icon: BarChart3 },
+      { label: "Price Trends",         href: "/real-estate/price-trends",          icon: BarChart3 },
       { label: "Construction Updates", href: "/real-estate/construction-updates",  icon: HardHat  },
       {
         label: "Resale & Rentals",
@@ -355,14 +357,16 @@ export default function Navbar() {
       {/* Top bar */}
       <div className="bg-brand-950 text-brand-200 text-xs py-1.5 px-4 flex items-center justify-between gap-4">
         <span className="hidden md:block text-center flex-1">
-          Neopolis — 100-acre mixed-use urban district &nbsp;·&nbsp; Live updates
-          every week &nbsp;·&nbsp;
-          <Link href="/advertise" className="underline hover:text-white">
-            List your property or business →
+          Live updates every day &nbsp;·&nbsp;
+          <Link href="/for-businesses" className="underline hover:text-white">
+            Own a business here? List it free →
           </Link>
         </span>
         <span className="md:hidden text-brand-400 text-xs shrink-0">Neopolis</span>
-        <WeatherWidget />
+        <div className="flex items-center">
+          <WeatherWidget />
+          <TopBarTraffic />
+        </div>
       </div>
 
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

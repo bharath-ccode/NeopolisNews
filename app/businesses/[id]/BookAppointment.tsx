@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CalendarCheck, ExternalLink, Loader2, CheckCircle, Sun, Sunset, Moon, ChevronUp, Trophy } from "lucide-react";
+import { CalendarCheck, ExternalLink, Loader2, CheckCircle, Sun, Sunset, Moon, ChevronUp, Trophy, PhoneCall } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 const SLOTS = [
@@ -27,16 +27,22 @@ const INPUT =
 /**
  * "Book Appointment" card on a business profile.
  * - booking_url set → deep-links to the business's own booking system.
- * - otherwise → request-a-slot form; the business confirms by phone.
+ * - claimed, no booking_url → request-a-slot form; the business confirms
+ *   by phone from their /my-business dashboard.
+ * - unclaimed → no request form. Nobody can see appointment_requests for
+ *   a business with no owner logged in yet, so a submitted request would
+ *   silently go nowhere — point the visitor at the call button instead.
  */
 export default function BookAppointment({
   businessId,
   businessName,
   bookingUrl,
+  claimed,
 }: {
   businessId: string;
   businessName: string;
   bookingUrl: string | null;
+  claimed: boolean;
 }) {
   const { user } = useAuth();
   const [open, setOpen]       = useState(false);
@@ -67,6 +73,22 @@ export default function BookAppointment({
         >
           Book Appointment <ExternalLink className="w-3.5 h-3.5" />
         </a>
+      </div>
+    );
+  }
+
+  // Unclaimed — no owner is logged in to see a request, so don't collect one.
+  if (!claimed) {
+    return (
+      <div className="card p-6">
+        <h2 className="font-bold text-gray-900 text-base mb-1 flex items-center gap-2">
+          <CalendarCheck className="w-4 h-4 text-brand-600" /> Appointments
+        </h2>
+        <p className="text-xs text-gray-500 flex items-start gap-1.5">
+          <PhoneCall className="w-3.5 h-3.5 text-gray-400 shrink-0 mt-0.5" />
+          This listing hasn&apos;t been claimed by {businessName} yet, so appointment
+          requests aren&apos;t being monitored. Use the call button above to book directly.
+        </p>
       </div>
     );
   }

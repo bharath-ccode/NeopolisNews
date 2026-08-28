@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
-  Building2, ArrowLeft, CheckCircle, X, ChevronRight,
+  Building2, ArrowLeft, ChevronRight,
   Tag, Layers, Users, LandPlot, Ruler, GitCompare,
 } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
@@ -140,11 +140,6 @@ function ProjectHeader({ p, side }: { p: Project; side: "a" | "b" }) {
             {TIER_LABELS[p.tier] ?? p.tier}
           </span>
         )}
-        {p.coreNeopolis && (
-          <span className="flex items-center gap-0.5 text-xs font-semibold bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full">
-            <CheckCircle className="w-3 h-3" /> Core Neopolis
-          </span>
-        )}
         {statusLabel && (
           <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">
             {statusLabel}
@@ -253,9 +248,9 @@ export default async function ComparePage({
                 b={projB.builderName ?? "—"}
               />
               <Row
-                label="Core Neopolis"
-                a={projA.coreNeopolis ? <span className="flex items-center gap-1 text-green-600"><CheckCircle className="w-3.5 h-3.5" /> Yes</span> : <span className="flex items-center gap-1 text-gray-400"><X className="w-3.5 h-3.5" /> No</span>}
-                b={projB.coreNeopolis ? <span className="flex items-center gap-1 text-green-600"><CheckCircle className="w-3.5 h-3.5" /> Yes</span> : <span className="flex items-center gap-1 text-gray-400"><X className="w-3.5 h-3.5" /> No</span>}
+                label="Locality"
+                a={projA.locality ?? "—"}
+                b={projB.locality ?? "—"}
               />
               <Row
                 label="Status"

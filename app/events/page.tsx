@@ -7,6 +7,7 @@ import {
   MapPin, Clock, ArrowRight, CheckCircle, Loader2,
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
+import SaveButton from "@/components/SaveButton";
 
 export const dynamic = "force-dynamic";
 
@@ -58,7 +59,10 @@ function EventCard({ ev, featured }: { ev: BusinessEvent; featured?: boolean }) 
         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${cat.bg}`}>
           <Icon className={`w-5 h-5 ${cat.color}`} />
         </div>
-        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${cat.bg} ${cat.color}`}>{cat.label}</span>
+        <div className="flex items-center gap-1.5">
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${cat.bg} ${cat.color}`}>{cat.label}</span>
+          <SaveButton itemType="event" itemId={ev.id} size="sm" />
+        </div>
       </div>
       <div>
         <h3 className="font-bold text-gray-900 leading-snug">{ev.name}</h3>

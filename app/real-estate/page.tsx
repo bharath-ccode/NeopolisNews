@@ -2,10 +2,8 @@ import Link from "next/link";
 import {
   Building2,
   ArrowRight,
-  TrendingUp,
   BarChart3,
   CheckCircle,
-  Star,
   Users,
   ShoppingBag,
   Zap,
@@ -21,7 +19,7 @@ export const fetchCache = "force-no-store";
 export const metadata = {
   title: "Real Estate – NeopolisNews",
   description:
-    "Project pages, price trends, unit plans and live availability for every project in the Neopolis urban district.",
+    "Project pages, unit plans and live availability for every project in the Neopolis urban district.",
 };
 
 // ─── Server data fetch ───────────────────────────────────────────────────────
@@ -30,7 +28,7 @@ async function getProjects(): Promise<ProjectListItem[]> {
   const sb = createAdminClient();
   const { data } = await sb
     .from("projects")
-    .select("id, project_name, total_land_area_acres, total_units, core_neopolis, project_logo_url, project_type, tier, lifecycle_status, price_range_min, price_range_max, builders(builder_name)")
+    .select("id, project_name, total_land_area_acres, total_units, project_logo_url, project_type, tier, locality, lifecycle_status, price_range_min, price_range_max, builders(builder_name)")
     .order("project_name");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (data ?? []).map((p: any) => ({
@@ -39,55 +37,10 @@ async function getProjects(): Promise<ProjectListItem[]> {
   }));
 }
 
-// ─── Price trend data (admin-curated in price_trends; static fallback) ───────
-
-const FALLBACK_TRENDS = [
-  { quarter: "Q1 2024", residential: 7200, office: 82, retail: 110 },
-  { quarter: "Q2 2024", residential: 7600, office: 85, retail: 118 },
-  { quarter: "Q3 2024", residential: 7900, office: 88, retail: 122 },
-  { quarter: "Q4 2024", residential: 8300, office: 92, retail: 130 },
-  { quarter: "Q1 2025", residential: 8800, office: 95, retail: 138 },
-  { quarter: "Q2 2025", residential: 9200, office: 98, retail: 145 },
-  { quarter: "Q3 2025", residential: 9700, office: 102, retail: 150 },
-  { quarter: "Q4 2025", residential: 10400, office: 108, retail: 160 },
-];
-
-async function getPriceTrends() {
-  const sb = createAdminClient();
-  const { data } = await sb
-    .from("price_trends")
-    .select("period, period_date, segment, price")
-    .order("period_date", { ascending: true });
-
-  if (!data?.length) return FALLBACK_TRENDS;
-
-  // Pivot rows (period x segment) into the shape the section renders
-  const byPeriod = new Map<string, { quarter: string; residential: number; office: number; retail: number }>();
-  for (const row of data) {
-    const entry = byPeriod.get(row.period) ?? { quarter: row.period, residential: 0, office: 0, retail: 0 };
-    if (row.segment === "residential") entry.residential = Number(row.price);
-    if (row.segment === "office")      entry.office      = Number(row.price);
-    if (row.segment === "retail")      entry.retail      = Number(row.price);
-    byPeriod.set(row.period, entry);
-  }
-  return Array.from(byPeriod.values()).filter((e) => e.residential > 0);
-}
-
-function pctChange(first: number, last: number) {
-  if (!first) return null;
-  return Math.round(((last - first) / first) * 100);
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function RealEstatePage() {
-  const [projects, PRICE_TRENDS] = await Promise.all([getProjects(), getPriceTrends()]);
-  const maxPrice = Math.max(...PRICE_TRENDS.map((d) => d.residential));
-  const first = PRICE_TRENDS[0];
-  const last  = PRICE_TRENDS[PRICE_TRENDS.length - 1];
-  const resChange    = pctChange(first.residential, last.residential);
-  const officeChange = pctChange(first.office, last.office);
-  const retailChange = pctChange(first.retail, last.retail);
+  const projects = await getProjects();
 
   return (
     <>
@@ -101,8 +54,8 @@ export default async function RealEstatePage() {
               <span className="text-brand-400">Live.</span>
             </h1>
             <p className="text-brand-200 text-lg mb-6">
-              Project pages, unit plans, price history, and live availability
-              status — all for the Neopolis district.
+              Project pages, unit plans, and live availability status —
+              all for the Neopolis district.
             </p>
             <div className="flex flex-wrap gap-3">
               <a href="#projects" className="btn-primary">
@@ -127,7 +80,6 @@ export default async function RealEstatePage() {
         <ProjectFiltersGrid projects={projects} />
       </SectionWrapper>
 
-      {/* ── Price Trends ── */}
       {/* ── Why NeopolisNews Scales ── */}
       <section className="bg-gray-900 text-white">
         <SectionWrapper>
@@ -160,82 +112,23 @@ export default async function RealEstatePage() {
         </SectionWrapper>
       </section>
 
-      <section className="bg-gray-50" id="prices">
-        <SectionWrapper>
-          <div className="mb-8">
-            <h2 className="section-heading">Price Trends</h2>
-            <p className="text-gray-500 text-sm mt-1">
-              Residential sq ft rates, office &amp; retail lease rates — quarterly data
-            </p>
-          </div>
-
-          <div className="grid lg:grid-cols-3 gap-5 mb-8">
-            <div className="card p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <TrendingUp className="w-5 h-5 text-green-500" />
-                <h3 className="font-bold text-gray-900">Residential</h3>
-              </div>
-              <p className="text-3xl font-extrabold text-gray-900">
-                ₹{last.residential.toLocaleString()}
+      <section className="bg-gray-50">
+        <SectionWrapper tight>
+          <Link
+            href="/real-estate/price-trends"
+            className="card p-6 flex items-center justify-between gap-4 hover:border-brand-300 hover:shadow-md transition-all group"
+          >
+            <div>
+              <h2 className="font-bold text-gray-900 flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-brand-500" />
+                Price Trends
+              </h2>
+              <p className="text-gray-500 text-sm mt-1">
+                ₹ per sq ft by locality, tier and construction stage, updated monthly.
               </p>
-              <p className="text-xs text-gray-500 mt-0.5">per sq ft ({last.quarter})</p>
-              {resChange !== null && (
-                <p className={`text-xs font-semibold mt-2 ${resChange >= 0 ? "text-green-600" : "text-red-500"}`}>
-                  {resChange >= 0 ? "+" : ""}{resChange}% since {first.quarter}
-                </p>
-              )}
             </div>
-            <div className="card p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <BarChart3 className="w-5 h-5 text-blue-500" />
-                <h3 className="font-bold text-gray-900">Grade A Office</h3>
-              </div>
-              <p className="text-3xl font-extrabold text-gray-900">
-                ₹{last.office}
-              </p>
-              <p className="text-xs text-gray-500 mt-0.5">per sq ft / month ({last.quarter})</p>
-              {officeChange !== null && (
-                <p className={`text-xs font-semibold mt-2 ${officeChange >= 0 ? "text-green-600" : "text-red-500"}`}>
-                  {officeChange >= 0 ? "+" : ""}{officeChange}% since {first.quarter}
-                </p>
-              )}
-            </div>
-            <div className="card p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <Star className="w-5 h-5 text-purple-500" />
-                <h3 className="font-bold text-gray-900">Retail</h3>
-              </div>
-              <p className="text-3xl font-extrabold text-gray-900">
-                ₹{last.retail}
-              </p>
-              <p className="text-xs text-gray-500 mt-0.5">per sq ft / month ({last.quarter})</p>
-              {retailChange !== null && (
-                <p className={`text-xs font-semibold mt-2 ${retailChange >= 0 ? "text-green-600" : "text-red-500"}`}>
-                  {retailChange >= 0 ? "+" : ""}{retailChange}% since {first.quarter}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Bar chart */}
-          <div className="card p-5">
-            <h3 className="font-bold text-gray-900 mb-4 text-sm">
-              Residential Rate (₹/sq ft) — Quarterly
-            </h3>
-            <div className="flex items-end gap-2 h-28">
-              {PRICE_TRENDS.map((d) => (
-                <div key={d.quarter} className="flex-1 flex flex-col items-center gap-1">
-                  <div
-                    className="w-full bg-brand-500 rounded-t"
-                    style={{ height: `${(d.residential / maxPrice) * 100}px` }}
-                  />
-                  <span className="text-xs text-gray-400 rotate-45 origin-left translate-x-2 hidden sm:block">
-                    {d.quarter.replace(" 20", " '")}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
+            <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-brand-600 transition-colors shrink-0" />
+          </Link>
         </SectionWrapper>
       </section>
 

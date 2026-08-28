@@ -16,7 +16,7 @@ export function extractYouTubeId(url: string): string | null {
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type ArticleCategory = "construction" | "launches" | "infrastructure" | "community" | "editorial";
+export type ArticleCategory = "construction" | "launches" | "infrastructure" | "community" | "editorial" | "digest";
 export type ArticleStatus = "draft" | "published";
 export type TagColor = "tag-orange" | "tag-green" | "tag-blue" | "tag-purple" | "tag-slate";
 
@@ -39,6 +39,7 @@ export interface Article {
   source?: string | null;
   projectId?: string | null;
   builderId?: string | null;
+  digestLevel?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -52,7 +53,30 @@ export const CATEGORY_META: Record<
   infrastructure: { label: "Infrastructure", tag: "Infrastructure",tagColor: "tag-blue"   },
   community:      { label: "Community",      tag: "Community",     tagColor: "tag-purple" },
   editorial:      { label: "Editorial",      tag: "Editorial",     tagColor: "tag-slate"  },
+  // Daily AI digests — identity lives in digest_level (international/national/
+  // state/city); the article keeps its level tag (World/India/Telangana/Hyderabad).
+  digest:         { label: "Daily Digest",   tag: "Daily Digest",  tagColor: "tag-blue"   },
 };
+
+const DIGEST_LEVEL_PREFIX: Record<string, string> = {
+  international: "International",
+  national:      "National",
+  state:         "Telangana",
+  city:          "Hyderabad",
+};
+
+/** "International" / "National" / "Telangana" / "Hyderabad" / "Editorial" /
+ *  etc. — the short label shown as a "Category: Headline" prefix on
+ *  headline listings (e.g. the homepage's Latest News index). Digest
+ *  articles resolve via digest_level rather than the generic "Daily
+ *  Digest" category label, since the level is the meaningful distinction
+ *  for readers. */
+export function getHeadlinePrefix(category: ArticleCategory, digestLevel?: string | null): string {
+  if (category === "digest") {
+    return (digestLevel && DIGEST_LEVEL_PREFIX[digestLevel]) || CATEGORY_META.digest.label;
+  }
+  return CATEGORY_META[category]?.label ?? "";
+}
 
 // ─── Row mapper: Supabase snake_case → Article camelCase ─────────────────────
 
@@ -77,6 +101,7 @@ export function toArticle(row: any): Article {
     source:    row.source ?? null,
     projectId: row.project_id ?? null,
     builderId: row.builder_id ?? null,
+    digestLevel: row.digest_level ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -228,53 +253,3 @@ export async function getArticleStats() {
   };
 }
 
-// ─── Analytics mock data (replace with real analytics later) ─────────────────
-
-export interface DailyPageView {
-  date: string;
-  views: number;
-  visitors: number;
-}
-
-export function getMockPageViews(days = 14): DailyPageView[] {
-  const result: DailyPageView[] = [];
-  const base = new Date("2026-03-24");
-  // Use a seeded-ish value based on index so it's stable per render
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(base);
-    d.setDate(d.getDate() - i);
-    const label = d.toLocaleDateString("en-IN", { month: "short", day: "numeric" });
-    const seed  = (i * 137 + 42) % 100;
-    const views    = 800 + seed * 14;
-    const visitors = Math.floor(views * 0.68);
-    result.push({ date: label, views, visitors });
-  }
-  return result;
-}
-
-export interface PageStat {
-  page: string;
-  views: number;
-  avgTime: string;
-  bounce: string;
-}
-
-export const MOCK_PAGE_STATS: PageStat[] = [
-  { page: "/",              views: 18420, avgTime: "2m 14s", bounce: "42%" },
-  { page: "/news",          views: 12350, avgTime: "3m 08s", bounce: "35%" },
-  { page: "/real-estate",   views: 9810,  avgTime: "4m 22s", bounce: "28%" },
-  { page: "/rentals",       views: 7640,  avgTime: "3m 51s", bounce: "31%" },
-  { page: "/directory",     views: 5230,  avgTime: "2m 40s", bounce: "47%" },
-  { page: "/services",      views: 3980,  avgTime: "1m 58s", bounce: "52%" },
-  { page: "/advertise",     views: 2810,  avgTime: "2m 02s", bounce: "55%" },
-  { page: "/auth/login",    views: 2140,  avgTime: "1m 12s", bounce: "30%" },
-  { page: "/auth/register", views: 1820,  avgTime: "3m 45s", bounce: "22%" },
-];
-
-export const MOCK_TRAFFIC_SOURCES = [
-  { source: "Organic Search", pct: 44, color: "bg-brand-500"  },
-  { source: "Direct",         pct: 28, color: "bg-blue-500"   },
-  { source: "Social Media",   pct: 16, color: "bg-purple-500" },
-  { source: "Referral",       pct: 8,  color: "bg-orange-500" },
-  { source: "Other",          pct: 4,  color: "bg-gray-400"   },
-];
