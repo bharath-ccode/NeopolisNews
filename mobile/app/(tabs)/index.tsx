@@ -135,8 +135,9 @@ export default function HomeScreen() {
   const [wx, setWx]           = useState<WxState>({ temp: null, feelsLike: null, emoji: "🌤️", label: "Kokapet", humidity: null, wind: null, aqi: null });
   const [hourly, setHourly]   = useState<HourItem[]>([]);
   const [daily, setDaily]     = useState<DayItem[]>([]);
-  const [wxOpen, setWxOpen]     = useState(false);
-  const [traffic, setTraffic]   = useState<TrafficData | null>(null);
+  const [wxOpen, setWxOpen]       = useState(false);
+  const [traffic, setTraffic]     = useState<TrafficData | null>(null);
+  const [trafficArea, setTrafficArea] = useState<"neopolis" | "financial-district">("neopolis");
   const hourListRef         = useRef<FlatList<HourItem>>(null);
 
   // Prefer @screen_name, fall back to first name from profile/metadata
@@ -219,11 +220,15 @@ export default function HomeScreen() {
       .then(j => { if (j?.status === "ok" && j?.data?.aqi != null) setWx(prev => ({ ...prev, aqi: Number(j.data.aqi) })); })
       .catch(() => {});
 
-    fetch(`${API}/api/traffic?area=neopolis`)
+  }, []);
+
+  useEffect(() => {
+    setTraffic(null);
+    fetch(`${API}/api/traffic?area=${trafficArea}`)
       .then(r => { if (!r.ok) throw new Error("bad"); return r.json(); })
       .then(j => { if (j?.level) setTraffic(j as TrafficData); })
       .catch(() => {});
-  }, []);
+  }, [trafficArea]);
 
   return (
     <SafeAreaView style={s.root}>
@@ -234,16 +239,27 @@ export default function HomeScreen() {
             <Image source={require("../../assets/logo.png")} style={s.headerLogo} resizeMode="contain" />
             <Text style={s.greeting}>Hi {displayHandle} 👋</Text>
           </View>
-          <TouchableOpacity style={s.weatherBadge} onPress={() => setWxOpen(true)} activeOpacity={0.75}>
-            <Text style={s.weatherEmoji}>{wx.emoji}</Text>
-            <Text style={s.weatherTemp}>{wx.temp !== null ? `${wx.temp}°` : "—"}</Text>
-            {wx.feelsLike !== null && (
-              <Text style={s.feelsLike}>Feels {wx.feelsLike}°</Text>
-            )}
+          <TouchableOpacity onPress={() => router.push("/(tabs)/profile")} activeOpacity={0.75} style={s.profileBtn}>
+            <Text style={s.profileIcon}>👤</Text>
           </TouchableOpacity>
         </View>
 
-        {/* AQI + walking advice strip */}
+        {/* Weather strip */}
+        <TouchableOpacity style={s.weatherStrip} onPress={() => setWxOpen(true)} activeOpacity={0.8}>
+          <Text style={s.weatherStripEmoji}>{wx.emoji}</Text>
+          <View style={s.weatherStripText}>
+            <Text style={s.weatherStripMain}>
+              {wx.temp !== null ? `${wx.temp}°C` : "—"} · {wx.label}
+              {wx.feelsLike !== null ? `  Feels ${wx.feelsLike}°` : ""}
+            </Text>
+            {wx.humidity !== null && (
+              <Text style={s.weatherStripSub}>💧 {wx.humidity}%  💨 {wx.wind} km/h · Kokapet</Text>
+            )}
+          </View>
+          <Text style={s.aqiTap}>Details →</Text>
+        </TouchableOpacity>
+
+        {/* AQI strip */}
         {wx.aqi !== null && (() => {
           const info = aqiInfo(wx.aqi!);
           return (
@@ -263,6 +279,12 @@ export default function HomeScreen() {
         {/* Traffic strip */}
         {traffic && (() => {
           const t = trafficInfo(traffic.level);
+          const areas = [
+            { id: "neopolis", routeLabel: "Kokapet → Gandipet" },
+            { id: "financial-district", routeLabel: "Nanakramguda → ISB Rd" },
+          ];
+          const currentArea = areas.find(a => a.id === trafficArea) ?? areas[0];
+          const nextArea = areas.find(a => a.id !== trafficArea) ?? areas[1];
           return (
             <View style={[s.trafficStrip, { backgroundColor: t.color + "18" }]}>
               <View style={[s.trafficDot, { backgroundColor: t.color }]}>
@@ -271,11 +293,13 @@ export default function HomeScreen() {
               <View style={s.trafficText}>
                 <Text style={[s.trafficLabel, { color: t.color }]}>Traffic · {t.label}</Text>
                 <Text style={s.trafficAdvice} numberOfLines={1}>
-                  {traffic.currentMinutes} min drive · Kokapet → Gandipet
-                  {traffic.delayMinutes > 0 ? ` (+${traffic.delayMinutes} min delay)` : ""}
+                  {traffic.currentMinutes} min · {currentArea.routeLabel}
+                  {traffic.delayMinutes > 0 ? ` (+${traffic.delayMinutes} min)` : ""}
                 </Text>
               </View>
-              <Text style={s.trafficTypical}>{traffic.typicalMinutes} min usual</Text>
+              <TouchableOpacity onPress={() => setTrafficArea(nextArea.id as "neopolis" | "financial-district")} activeOpacity={0.7} style={s.areaToggle}>
+                <Text style={s.areaToggleText}>{trafficArea === "neopolis" ? "FD" : "Neo"} →</Text>
+              </TouchableOpacity>
             </View>
           );
         })()}
@@ -322,8 +346,8 @@ export default function HomeScreen() {
               <>
                 <SectionHeader title="📰 News" />
                 <View style={s.newsListCard}>
-                  {news.slice(0, 5).map(n => (
-                    <NewsCard key={n.id} item={n} onPress={() => router.push(`/news/${n.id}`)} />
+                  {news.slice(0, 5).map((n, i) => (
+                    <NewsCard key={n.id} item={n} index={i} onPress={() => router.push(`/news/${n.id}`)} />
                   ))}
                 </View>
               </>
@@ -577,16 +601,15 @@ function AnnouncementCard({ item }: { item: Announcement }) {
   );
 }
 
-function NewsCard({ item, onPress }: { item: NewsItem; onPress: () => void }) {
+function NewsCard({ item, onPress, index }: { item: NewsItem; onPress: () => void; index: number }) {
   return (
     <TouchableOpacity style={s.newsCard} activeOpacity={0.75} onPress={onPress}>
+      <Text style={s.newsNum}>{index + 1}</Text>
       <View style={s.newsCardInner}>
-        {item.tag && (
-          <View style={[s.newsBadge, { backgroundColor: item.tag_color ?? colors.gray[600] }]}>
-            <Text style={s.newsBadgeText}>{item.tag}</Text>
-          </View>
-        )}
         <Text style={s.newsTitle} numberOfLines={1}>{item.title}</Text>
+        <Text style={s.newsMeta} numberOfLines={1}>
+          {[item.tag, item.date].filter(Boolean).join(" · ")}
+        </Text>
       </View>
       <Text style={s.newsArrow}>›</Text>
     </TouchableOpacity>
@@ -637,11 +660,21 @@ const s = StyleSheet.create({
   greeting:    { color: colors.white, fontSize: 16, fontWeight: "700" },
   location:    { color: colors.brand[400], fontSize: 12, marginTop: 2 },
 
-  weatherBadge: {
-    flexDirection: "row", alignItems: "center", gap: 6,
-    backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 100,
-    paddingHorizontal: 10, paddingVertical: 5,
+  profileBtn:   { padding: 6, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 100 },
+  profileIcon:  { fontSize: 18, lineHeight: 22 },
+
+  weatherStrip: {
+    flexDirection: "row", alignItems: "center", gap: 10,
+    paddingHorizontal: 16, paddingVertical: 8,
+    borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.06)",
+    backgroundColor: "rgba(255,255,255,0.05)",
   },
+  weatherStripEmoji: { fontSize: 20 },
+  weatherStripText:  { flex: 1 },
+  weatherStripMain:  { fontSize: 12, fontWeight: "800", color: colors.white },
+  weatherStripSub:   { fontSize: 11, color: "rgba(255,255,255,0.5)", marginTop: 1 },
+
+  // keep old names referenced elsewhere (feelsLike no longer used in topBar)
   weatherEmoji: { fontSize: 14 },
   weatherTemp:  { color: colors.white, fontSize: 13, fontWeight: "700" },
   feelsLike:    { color: "rgba(255,255,255,0.5)", fontSize: 11 },
@@ -677,6 +710,8 @@ const s = StyleSheet.create({
   trafficLabel:   { fontSize: 12, fontWeight: "800" },
   trafficAdvice:  { fontSize: 11, color: "rgba(255,255,255,0.55)", marginTop: 1 },
   trafficTypical: { fontSize: 10, color: "rgba(255,255,255,0.35)", fontWeight: "600" },
+  areaToggle:     { paddingHorizontal: 8, paddingVertical: 4, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 8 },
+  areaToggleText: { fontSize: 10, fontWeight: "800", color: colors.white },
 
   loadingWrap: { paddingTop: 80, alignItems: "center" },
 
@@ -713,10 +748,10 @@ const s = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 12,
     borderBottomWidth: 1, borderBottomColor: colors.gray[100],
   },
-  newsCardInner: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8, marginRight: 6 },
-  newsBadge:     { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  newsBadgeText: { color: colors.white, fontSize: 9, fontWeight: "800", letterSpacing: 0.3 },
-  newsTitle:     { flex: 1, fontSize: 13, fontWeight: "600", color: colors.gray[800] },
+  newsNum:       { width: 20, fontSize: 13, fontWeight: "900", color: colors.gray[300], textAlign: "center" },
+  newsCardInner: { flex: 1, marginRight: 4 },
+  newsTitle:     { fontSize: 13, fontWeight: "600", color: colors.gray[800] },
+  newsMeta:      { fontSize: 10, color: colors.gray[400], marginTop: 2 },
   newsArrow:     { fontSize: 18, color: colors.gray[300], lineHeight: 20 },
   cardBody:   { padding: 12 },
   cardTopRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 7 },
