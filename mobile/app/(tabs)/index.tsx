@@ -48,18 +48,17 @@ function aqiInfo(aqi: number) {
 }
 function aqiBg(aqi: number) { return aqiInfo(aqi).color; }
 
-type TrafficLevel = "low" | "moderate" | "heavy";
-function trafficInfo(level: TrafficLevel) {
-  if (level === "low")      return { color: "#16a34a", label: "Light traffic",    emoji: "🟢", advice: "Roads are clear — good time to travel." };
-  if (level === "moderate") return { color: "#d97706", label: "Moderate traffic", emoji: "🟡", advice: "Some congestion on main roads." };
-  return                           { color: "#dc2626", label: "Heavy traffic",    emoji: "🔴", advice: "Avoid peak routes — expect delays." };
+type TrafficLevel = "light" | "moderate" | "heavy";
+interface TrafficData {
+  level: TrafficLevel;
+  currentMinutes: number;
+  typicalMinutes: number;
+  delayMinutes: number;
 }
-function getTrafficLevel(): TrafficLevel {
-  const h = new Date().getHours();
-  // Morning rush: 7–10, Evening rush: 17–20
-  if ((h >= 7 && h < 10) || (h >= 17 && h < 20)) return "heavy";
-  if ((h >= 10 && h < 12) || (h >= 20 && h < 22)) return "moderate";
-  return "low";
+function trafficInfo(level: TrafficLevel) {
+  if (level === "light")    return { color: "#16a34a", label: "Light traffic",    advice: "Roads are clear — good time to travel." };
+  if (level === "moderate") return { color: "#d97706", label: "Moderate traffic", advice: "Some congestion on main roads." };
+  return                           { color: "#dc2626", label: "Heavy traffic",    advice: "Avoid peak routes — expect delays." };
 }
 
 function fmt12(iso: string) {
@@ -136,8 +135,8 @@ export default function HomeScreen() {
   const [wx, setWx]           = useState<WxState>({ temp: null, feelsLike: null, emoji: "🌤️", label: "Kokapet", humidity: null, wind: null, aqi: null });
   const [hourly, setHourly]   = useState<HourItem[]>([]);
   const [daily, setDaily]     = useState<DayItem[]>([]);
-  const [wxOpen, setWxOpen]   = useState(false);
-  const [traffic, setTraffic] = useState<TrafficLevel>(getTrafficLevel());
+  const [wxOpen, setWxOpen]     = useState(false);
+  const [traffic, setTraffic]   = useState<TrafficData | null>(null);
   const hourListRef         = useRef<FlatList<HourItem>>(null);
 
   // Prefer @screen_name, fall back to first name from profile/metadata
@@ -219,6 +218,11 @@ export default function HomeScreen() {
       .then(r => r.json())
       .then(j => { if (j?.status === "ok" && j?.data?.aqi != null) setWx(prev => ({ ...prev, aqi: Number(j.data.aqi) })); })
       .catch(() => {});
+
+    fetch(`${API}/api/traffic?area=neopolis`)
+      .then(r => { if (!r.ok) throw new Error("bad"); return r.json(); })
+      .then(j => { if (j?.level) setTraffic(j as TrafficData); })
+      .catch(() => {});
   }, []);
 
   return (
@@ -257,8 +261,8 @@ export default function HomeScreen() {
         })()}
 
         {/* Traffic strip */}
-        {(() => {
-          const t = trafficInfo(traffic);
+        {traffic && (() => {
+          const t = trafficInfo(traffic.level);
           return (
             <View style={[s.trafficStrip, { backgroundColor: t.color + "18" }]}>
               <View style={[s.trafficDot, { backgroundColor: t.color }]}>
@@ -266,8 +270,12 @@ export default function HomeScreen() {
               </View>
               <View style={s.trafficText}>
                 <Text style={[s.trafficLabel, { color: t.color }]}>Traffic · {t.label}</Text>
-                <Text style={s.trafficAdvice} numberOfLines={1}>{t.advice}</Text>
+                <Text style={s.trafficAdvice} numberOfLines={1}>
+                  {traffic.currentMinutes} min drive · Kokapet → Gandipet
+                  {traffic.delayMinutes > 0 ? ` (+${traffic.delayMinutes} min delay)` : ""}
+                </Text>
               </View>
+              <Text style={s.trafficTypical}>{traffic.typicalMinutes} min usual</Text>
             </View>
           );
         })()}
@@ -668,6 +676,7 @@ const s = StyleSheet.create({
   trafficText:    { flex: 1 },
   trafficLabel:   { fontSize: 12, fontWeight: "800" },
   trafficAdvice:  { fontSize: 11, color: "rgba(255,255,255,0.55)", marginTop: 1 },
+  trafficTypical: { fontSize: 10, color: "rgba(255,255,255,0.35)", fontWeight: "600" },
 
   loadingWrap: { paddingTop: 80, alignItems: "center" },
 
