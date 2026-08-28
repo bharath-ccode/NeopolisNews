@@ -328,9 +328,11 @@ export default async function HomePage() {
                 const status = p.lifecycle_status ?? "Under Construction";
                 const statusColor = STATUS_COLORS[status] ?? "tag-blue";
                 const price = p.price_range_min && p.price_range_max
-                  ? `₹${(p.price_range_min / 100).toFixed(0)}L – ₹${(p.price_range_max / 100).toFixed(0)}L`
+                  ? `₹${p.price_range_min.toLocaleString("en-IN")} – ₹${p.price_range_max.toLocaleString("en-IN")} /sft`
                   : p.price_range_min
-                  ? `From ₹${(p.price_range_min / 100).toFixed(0)}L`
+                  ? `From ₹${p.price_range_min.toLocaleString("en-IN")} /sft`
+                  : p.price_range_max
+                  ? `Up to ₹${p.price_range_max.toLocaleString("en-IN")} /sft`
                   : null;
                 return (
                   <Link key={p.id} href={`/real-estate/${p.id}`} className="card p-5 group hover:shadow-md transition-shadow">
