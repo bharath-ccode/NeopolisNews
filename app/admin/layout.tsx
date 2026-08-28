@@ -10,23 +10,47 @@ import {
   LogOut,
   ChevronRight,
   Building2,
+  Store,
   PlusCircle,
   Loader2,
   ExternalLink,
   Settings,
   HardHat,
   Layers,
+  Home,
+  Tag,
+  UserCheck,
+  IndianRupee,
+  CalendarDays,
+  Sparkles,
+  Megaphone,
+  Search,
+  BarChart2,
 } from "lucide-react";
 import clsx from "clsx";
 import { AdminAuthProvider, useAdminAuth } from "@/context/AdminAuthContext";
 
 const NAV = [
-  { href: "/admin",            icon: LayoutDashboard, label: "Dashboard"     },
-  { href: "/admin/news",       icon: Newspaper,       label: "News Articles" },
-  { href: "/admin/builders",   icon: HardHat,         label: "Builders"      },
-  { href: "/admin/projects",   icon: Layers,          label: "Projects"      },
-  { href: "/admin/analytics",  icon: BarChart3,       label: "Analytics"     },
-  { href: "/admin/settings",   icon: Settings,        label: "Settings"      },
+  { href: "/admin",               icon: LayoutDashboard, label: "Dashboard"     },
+  { href: "/admin/news",          icon: Newspaper,       label: "News Articles" },
+  { href: "/admin/citizen-reports", icon: Megaphone,     label: "Citizen Reports" },
+  { href: "/admin/cartoons",      icon: Sparkles,        label: "Daily Cartoon" },
+  { href: "/admin/polls",         icon: BarChart2,       label: "Polls"         },
+  { href: "/admin/clubs",         icon: UserCheck,       label: "Clubs"         },
+  { href: "/admin/builders",      icon: HardHat,         label: "Builders"      },
+  { href: "/admin/projects",      icon: Layers,          label: "Projects"      },
+  { href: "/admin/businesses",    icon: Store,           label: "Businesses"    },
+  { href: "/admin/business-discovery", icon: Search,     label: "Business Discovery" },
+  { href: "/admin/events",        icon: CalendarDays,    label: "Events"        },
+  { href: "/admin/brokers",       icon: UserCheck,       label: "Brokers"       },
+  { href: "/admin/classifieds",   icon: Home,            label: "Properties"    },
+  { href: "/admin/ads",           icon: Tag,             label: "Classifieds"   },
+  { href: "/admin/payments",       icon: IndianRupee,     label: "Payments"      },
+  { href: "/admin/ai-digest",      icon: Sparkles,        label: "AI Digest"     },
+  { href: "/admin/price-trends",   icon: BarChart3,       label: "Price Trends"  },
+  { href: "/admin/notifications",  icon: Megaphone,       label: "Notifications" },
+  { href: "/admin/analytics",     icon: BarChart3,       label: "Analytics"     },
+  { href: "/admin/settings",      icon: Settings,        label: "Settings"      },
 ];
 
 function AdminShell({ children }: { children: React.ReactNode }) {
@@ -211,12 +235,20 @@ function AdminShell({ children }: { children: React.ReactNode }) {
               })}
             </p>
           </div>
-          {pathname !== "/admin/settings" && (
-            <Link href="/admin/news/create" className="btn-primary text-sm py-2">
-              <PlusCircle className="w-3.5 h-3.5" />
-              New Article
-            </Link>
-          )}
+          {pathname !== "/admin/settings" && (() => {
+            const ctaMap: Record<string, { href: string; label: string }> = {
+              "/admin/events":     { href: "/admin/events/create",   label: "New Event"    },
+              "/admin/businesses": { href: "/admin/businesses/new",  label: "New Business" },
+            };
+            const match = Object.entries(ctaMap).find(([prefix]) => pathname.startsWith(prefix));
+            const cta = match ? match[1] : { href: "/admin/news/create", label: "New Article" };
+            return (
+              <Link href={cta.href} className="btn-primary text-sm py-2">
+                <PlusCircle className="w-3.5 h-3.5" />
+                {cta.label}
+              </Link>
+            );
+          })()}
         </div>
 
         <div className="p-4 md:p-8">{children}</div>

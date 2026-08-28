@@ -12,6 +12,7 @@ import {
   Building2,
   CheckCircle2,
   Clock,
+  MessageSquare,
 } from "lucide-react";
 import { useBuilderAuth } from "@/context/BuilderAuthContext";
 import { getProjectsByBuilderId, Project } from "@/lib/projectsStore";
@@ -111,7 +112,7 @@ export default function BuilderDashboard() {
         </Link>
 
         <Link
-          href="/builder/projects"
+          href="/builder/updates/create"
           className="card p-4 flex items-center gap-3 hover:border-orange-200 transition-colors group"
         >
           <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
@@ -121,7 +122,7 @@ export default function BuilderDashboard() {
             <p className="font-semibold text-sm text-gray-900 group-hover:text-orange-700">
               Construction Update
             </p>
-            <p className="text-xs text-gray-400">Post for a project</p>
+            <p className="text-xs text-gray-400">Post milestone update</p>
           </div>
           <ArrowRight className="w-4 h-4 text-gray-300 ml-auto" />
         </Link>
@@ -138,6 +139,22 @@ export default function BuilderDashboard() {
               Announce Launch
             </p>
             <p className="text-xs text-gray-400">New project launch</p>
+          </div>
+          <ArrowRight className="w-4 h-4 text-gray-300 ml-auto" />
+        </Link>
+
+        <Link
+          href="/builder/enquiries"
+          className="card p-4 flex items-center gap-3 hover:border-purple-200 transition-colors group"
+        >
+          <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
+            <MessageSquare className="w-5 h-5 text-purple-600" />
+          </div>
+          <div>
+            <p className="font-semibold text-sm text-gray-900 group-hover:text-purple-700">
+              Buyer Enquiries
+            </p>
+            <p className="text-xs text-gray-400">Messages from project pages</p>
           </div>
           <ArrowRight className="w-4 h-4 text-gray-300 ml-auto" />
         </Link>
@@ -190,7 +207,7 @@ export default function BuilderDashboard() {
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <Link
-                      href={`/builder/projects/${p.id}/update`}
+                      href={`/builder/updates/create?project=${p.id}`}
                       className="text-xs px-2 py-1 rounded-md bg-orange-50 text-orange-700 font-medium hover:bg-orange-100 transition-colors"
                     >
                       + Update
@@ -212,6 +229,9 @@ export default function BuilderDashboard() {
         <div className="card overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
             <h2 className="font-bold text-sm text-gray-900">Recent Posts</h2>
+            <Link href="/builder/updates" className="text-xs text-brand-600 font-semibold hover:underline">
+              View all
+            </Link>
           </div>
           {loading ? (
             <div className="px-5 py-8 text-center text-sm text-gray-400">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, useRef, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   Save,
@@ -10,6 +10,12 @@ import {
   AlertCircle,
   Loader2,
   Newspaper,
+  Upload,
+  X,
+  Youtube,
+  Sparkles,
+  LayoutTemplate,
+  Check,
 } from "lucide-react";
 import clsx from "clsx";
 import {
@@ -17,20 +23,29 @@ import {
   ArticleCategory,
   ArticleStatus,
   CATEGORY_META,
-  createArticle,
-  updateArticle,
+  extractYouTubeId,
 } from "@/lib/newsStore";
 
 interface Props {
   article?: Article;
 }
 
+// Manually-authored topics only. "editorial" (Editor's Desk) and "digest"
+// (daily AI digests) are generated categories — locked in the form, never
+// assignable to a manual article.
 const CATEGORIES: ArticleCategory[] = [
   "construction",
   "launches",
   "infrastructure",
   "community",
 ];
+
+const DIGEST_LEVEL_LABELS: Record<string, string> = {
+  international: "International",
+  national:      "National",
+  state:         "State (Telangana)",
+  city:          "Hyderabad",
+};
 
 function formatDisplayDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-IN", {
@@ -54,15 +69,94 @@ export default function ArticleForm({ article }: Props) {
   const [source, setSource]     = useState(article?.source ?? "");
   const [readTime, setReadTime] = useState(article?.readTime ?? "3 min");
   const [imageUrl, setImageUrl] = useState(article?.imageUrl ?? "");
+  const [videoUrl, setVideoUrl] = useState(article?.videoUrl ?? "");
   const [sponsored, setSponsored] = useState(article?.sponsored ?? false);
   const [status, setStatus]     = useState<ArticleStatus>(
     article?.status ?? "draft"
   );
 
-  const [saving, setSaving] = useState(false);
-  const [error, setError]   = useState("");
+  const [saving, setSaving]       = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError]         = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // AI cover generation — keep both candidates so the editor can compare & switch
+  const [genBusy, setGenBusy] = useState<"card" | "ai" | null>(null);
+  const [cardUrl, setCardUrl] = useState("");
+  const [aiUrl, setAiUrl]     = useState("");
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setError("");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("folder", "news");
+      fd.append("bucket", "news-media");
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Upload failed");
+      setImageUrl(json.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Image upload failed");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  async function generateCard() {
+    if (!title.trim()) { setError("Add a title before generating a cover."); return; }
+    setGenBusy("card");
+    setError("");
+    try {
+      const res = await fetch("/api/admin/articles/generate-card", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: title.trim(), tag: displayTag }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Card generation failed");
+      setCardUrl(json.url);
+      setImageUrl(json.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Card generation failed");
+    } finally {
+      setGenBusy(null);
+    }
+  }
+
+  async function generateAiImage() {
+    if (!title.trim()) { setError("Add a title before generating a cover."); return; }
+    setGenBusy("ai");
+    setError("");
+    try {
+      const res = await fetch("/api/admin/articles/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: title.trim(), excerpt: excerpt.trim(), content: content.trim() }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Image generation failed");
+      setAiUrl(json.url);
+      setImageUrl(json.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Image generation failed");
+    } finally {
+      setGenBusy(null);
+    }
+  }
 
   const meta = CATEGORY_META[category];
+  const isEditorial = category === "editorial";
+  const isDigest = category === "digest";
+  // Generated articles keep the identity the pipeline gave them: digests keep
+  // their level tag (World/India/Telangana/Hyderabad), editorials stay editorial.
+  const isGenerated = isDigest || isEditorial;
+  const displayTag = isDigest ? article?.tag ?? meta.tag : meta.tag;
+  const displayTagColor = isDigest ? article?.tagColor ?? meta.tagColor : meta.tagColor;
 
   async function handleSubmit(e: FormEvent, submitStatus: ArticleStatus) {
     e.preventDefault();
@@ -79,22 +173,36 @@ export default function ArticleForm({ article }: Props) {
         excerpt:  excerpt.trim(),
         content:  content.trim(),
         category,
-        tag:      meta.tag,
-        tagColor: meta.tagColor,
+        tag:      displayTag,
+        tagColor: displayTagColor,
         author:   author.trim(),
         source:   source.trim() || null,
         readTime: readTime.trim(),
         imageUrl: imageUrl.trim() || undefined,
+        videoUrl: videoUrl.trim() || null,
         sponsored,
         status:   submitStatus,
         views:    article?.views ?? 0,
         date:     formatDisplayDate(new Date().toISOString()),
       };
 
+      let res: Response;
       if (isEdit) {
-        await updateArticle(article.id, payload);
+        res = await fetch("/api/articles", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: article.id, ...payload }),
+        });
       } else {
-        await createArticle(payload);
+        res = await fetch("/api/articles", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      }
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.error ?? "Save failed");
       }
 
       router.push("/admin/news");
@@ -138,13 +246,13 @@ export default function ArticleForm({ article }: Props) {
       )}
 
       <form>
-        <div className="space-y-5">
+        <div className="space-y-6">
           {/* Title */}
-          <div className="card p-5 space-y-4">
-            <h3 className="font-semibold text-gray-900 text-sm">Content</h3>
+          <div className="card p-6 space-y-5">
+            <h3 className="font-semibold text-gray-900 text-sm uppercase tracking-wide text-gray-500">Content</h3>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Title <span className="text-red-500">*</span>
               </label>
               <input
@@ -161,7 +269,7 @@ export default function ArticleForm({ article }: Props) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Excerpt <span className="text-red-500">*</span>
               </label>
               <textarea
@@ -178,7 +286,7 @@ export default function ArticleForm({ article }: Props) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Full Content <span className="text-red-500">*</span>
               </label>
               <textarea
@@ -192,36 +300,52 @@ export default function ArticleForm({ article }: Props) {
           </div>
 
           {/* Meta */}
-          <div className="card p-5 space-y-4">
-            <h3 className="font-semibold text-gray-900 text-sm">Details</h3>
+          <div className="card p-6 space-y-5">
+            <h3 className="font-semibold text-gray-900 text-sm uppercase tracking-wide text-gray-500">Details</h3>
 
             <div className="grid sm:grid-cols-2 gap-4">
               {/* Category */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Category <span className="text-red-500">*</span>
                 </label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value as ArticleCategory)}
-                  className={inputCls}
-                >
-                  {CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
-                      {CATEGORY_META[c].label}
-                    </option>
-                  ))}
-                </select>
+                {isGenerated ? (
+                  <>
+                    <div className={`${inputCls} bg-gray-50 text-gray-500 cursor-not-allowed select-none`}>
+                      {isDigest
+                        ? `Daily Digest — ${
+                            DIGEST_LEVEL_LABELS[article?.digestLevel ?? ""] ?? displayTag
+                          }`
+                        : "Editorial (Editor's Desk)"}
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-1.5">
+                      Set by the AI news pipeline — generated articles can&apos;t be
+                      re-filed under a local topic.
+                    </p>
+                  </>
+                ) : (
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value as ArticleCategory)}
+                    className={inputCls}
+                  >
+                    {CATEGORIES.map((c) => (
+                      <option key={c} value={c}>
+                        {CATEGORY_META[c].label}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <div className="mt-2">
-                  <span className={`badge text-xs ${meta.tagColor}`}>
-                    {meta.tag}
+                  <span className={`badge text-xs ${displayTagColor}`}>
+                    {displayTag}
                   </span>
                 </div>
               </div>
 
               {/* Author */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Author
                 </label>
                 <input
@@ -235,7 +359,7 @@ export default function ArticleForm({ article }: Props) {
 
               {/* Source */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   <Newspaper className="inline w-3.5 h-3.5 mr-1 text-gray-400" />
                   News Source
                 </label>
@@ -250,7 +374,7 @@ export default function ArticleForm({ article }: Props) {
 
               {/* Read time */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Read Time
                 </label>
                 <input
@@ -262,20 +386,153 @@ export default function ArticleForm({ article }: Props) {
                 />
               </div>
 
-              {/* Image URL */}
+              {/* Image upload */}
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   <ImageIcon className="inline w-3.5 h-3.5 mr-1 text-gray-400" />
-                  Image URL
+                  Article Image
                 </label>
                 <input
-                  type="url"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="https://…"
-                  className={inputCls}
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handleImageUpload}
                 />
+                {imageUrl ? (
+                  <div className="relative rounded-lg overflow-hidden border border-gray-200">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={imageUrl} alt="Article" className="w-full h-48 object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setImageUrl("")}
+                      className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="w-full flex flex-col items-center gap-2 border-2 border-dashed border-gray-200 rounded-lg py-8 text-gray-400 hover:border-brand-400 hover:text-brand-500 transition-colors disabled:opacity-60"
+                  >
+                    {uploading
+                      ? <Loader2 className="w-6 h-6 animate-spin" />
+                      : <Upload className="w-6 h-6" />}
+                    <span className="text-sm font-medium">
+                      {uploading ? "Uploading…" : "Click to upload image"}
+                    </span>
+                    <span className="text-xs">JPEG, PNG or WebP · max 5 MB</span>
+                  </button>
+                )}
+
+                {/* Generate a cover — headline card or AI illustration */}
+                <div className="mt-3 rounded-lg border border-gray-100 bg-gray-50 p-3">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Sparkles className="w-3.5 h-3.5 text-brand-500" />
+                    <span className="text-xs font-semibold text-gray-600">Generate a cover</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={generateCard}
+                      disabled={genBusy !== null}
+                      className={clsx(
+                        "inline-flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-lg border transition-colors disabled:opacity-60",
+                        !isEditorial
+                          ? "border-brand-300 bg-brand-50 text-brand-700 hover:bg-brand-100"
+                          : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                      )}
+                    >
+                      {genBusy === "card"
+                        ? <Loader2 className="w-4 h-4 animate-spin" />
+                        : <LayoutTemplate className="w-4 h-4" />}
+                      Headline card
+                    </button>
+                    <button
+                      type="button"
+                      onClick={generateAiImage}
+                      disabled={genBusy !== null}
+                      className={clsx(
+                        "inline-flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-lg border transition-colors disabled:opacity-60",
+                        isEditorial
+                          ? "border-brand-300 bg-brand-50 text-brand-700 hover:bg-brand-100"
+                          : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                      )}
+                    >
+                      {genBusy === "ai"
+                        ? <Loader2 className="w-4 h-4 animate-spin" />
+                        : <Sparkles className="w-4 h-4" />}
+                      AI illustration
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-gray-400 mt-2">
+                    {isEditorial
+                      ? "AI illustration is recommended for editorials. Illustrative art only — labelled, never a real photo."
+                      : "Headline card is recommended for news. Generate both to compare, then pick one below."}
+                  </p>
+
+                  {(cardUrl || aiUrl) && (
+                    <div className="grid grid-cols-2 gap-2 mt-3">
+                      {[
+                        { url: cardUrl, label: "Headline card", icon: LayoutTemplate },
+                        { url: aiUrl,   label: "AI illustration", icon: Sparkles },
+                      ]
+                        .filter((c) => c.url)
+                        .map(({ url, label, icon: Icon }) => {
+                          const active = imageUrl === url;
+                          return (
+                            <button
+                              key={label}
+                              type="button"
+                              onClick={() => setImageUrl(url)}
+                              className={clsx(
+                                "relative rounded-lg overflow-hidden border-2 text-left transition-colors",
+                                active ? "border-brand-500" : "border-transparent hover:border-gray-200"
+                              )}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={url} alt={label} className="w-full h-24 object-cover" />
+                              <span className="flex items-center gap-1 text-[11px] font-medium text-gray-600 px-2 py-1">
+                                <Icon className="w-3 h-3" /> {label}
+                              </span>
+                              {active && (
+                                <span className="absolute top-1.5 right-1.5 bg-brand-600 text-white rounded-full p-0.5">
+                                  <Check className="w-3 h-3" />
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
               </div>
+            </div>
+
+            {/* YouTube video */}
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <Youtube className="inline w-3.5 h-3.5 mr-1 text-red-500" />
+                YouTube Video URL <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input
+                type="url"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="https://www.youtube.com/watch?v=… or https://youtu.be/…"
+                className={inputCls}
+              />
+              {videoUrl.trim() && (() => {
+                const id = extractYouTubeId(videoUrl.trim());
+                return id ? (
+                  <p className="text-xs text-green-600 mt-1">✓ Video ID detected: {id}</p>
+                ) : (
+                  <p className="text-xs text-red-500 mt-1">Could not detect a YouTube video ID from this URL</p>
+                );
+              })()}
             </div>
 
             {/* Sponsored toggle */}

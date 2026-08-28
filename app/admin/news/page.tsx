@@ -13,12 +13,12 @@ import {
   AlertCircle,
   Filter,
   Newspaper,
+  Building2,
 } from "lucide-react";
 import clsx from "clsx";
 import {
   getArticles,
   deleteArticle,
-  updateArticle,
   Article,
   ArticleCategory,
 } from "@/lib/newsStore";
@@ -29,6 +29,8 @@ const CATEGORIES: { value: "" | ArticleCategory; label: string }[] = [
   { value: "launches",       label: "New Launches"   },
   { value: "infrastructure", label: "Infrastructure" },
   { value: "community",      label: "Community"      },
+  { value: "editorial",      label: "Editorial"      },
+  { value: "digest",         label: "Daily Digest"   },
 ];
 
 const STATUS_FILTERS = [
@@ -70,7 +72,13 @@ export default function AdminNewsPage() {
 
   async function handleToggleStatus(article: Article) {
     const newStatus = article.status === "published" ? "draft" : "published";
-    await updateArticle(article.id, { status: newStatus });
+    // Via the API route (not direct Supabase) so publish-time side effects run:
+    // push notifications, subscriber emails, Telugu translation.
+    await fetch("/api/articles", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: article.id, status: newStatus }),
+    });
     refresh();
   }
 
@@ -201,7 +209,14 @@ export default function AdminNewsPage() {
                           <p className="text-sm font-medium text-gray-900 line-clamp-2 leading-snug">
                             {article.title}
                           </p>
-                          <p className="text-xs text-gray-400 mt-0.5">{article.date}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-xs text-gray-400">{article.date}</span>
+                            {article.source === "business" && (
+                              <span className="inline-flex items-center gap-1 text-xs font-semibold bg-cyan-50 text-cyan-700 border border-cyan-200 px-1.5 py-0.5 rounded-full">
+                                <Building2 className="w-3 h-3" />Business
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -256,6 +271,13 @@ export default function AdminNewsPage() {
                           title="Edit"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
+                        </Link>
+                        <Link
+                          href={`/admin/news/${article.id}/telugu`}
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-brand-600 hover:bg-brand-50 transition-colors text-[11px] font-bold leading-none"
+                          title="Review Telugu translation"
+                        >
+                          తె
                         </Link>
                         {deleteConfirm === article.id ? (
                           <div className="flex items-center gap-1">

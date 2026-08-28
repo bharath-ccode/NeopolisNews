@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
+import NewsTicker from "./NewsTicker";
 
 export default function ConditionalShell({
   children,
@@ -18,6 +19,7 @@ export default function ConditionalShell({
 
   return (
     <>
+      <NewsTicker />
       <Navbar />
       <main className="flex-1">{children}</main>
       <Footer />

@@ -4,12 +4,12 @@ import { useState, useEffect, useRef } from "react";
 import { Wind, Droplets, Thermometer, X, ChevronDown, PersonStanding, Leaf } from "lucide-react";
 
 function getAqiInfo(aqi: number) {
-  if (aqi <= 50)  return { label: "Good",                          color: "bg-green-100",  textColor: "text-green-700",  advice: "Great day for a walk!" };
-  if (aqi <= 100) return { label: "Moderate",                      color: "bg-yellow-100", textColor: "text-yellow-700", advice: "Fine for most people outdoors." };
-  if (aqi <= 150) return { label: "Unhealthy for Sensitive Groups", color: "bg-orange-100", textColor: "text-orange-700", advice: "Sensitive groups should limit outdoor walks." };
-  if (aqi <= 200) return { label: "Unhealthy",                     color: "bg-red-100",    textColor: "text-red-700",    advice: "Limit prolonged outdoor activity." };
-  if (aqi <= 300) return { label: "Very Unhealthy",                color: "bg-purple-100", textColor: "text-purple-700", advice: "Avoid outdoor walks today." };
-  return           { label: "Hazardous",                           color: "bg-rose-100",   textColor: "text-rose-800",   advice: "Stay indoors — air is hazardous." };
+  if (aqi <= 50)  return { label: "Good",                           badgeBg: "bg-green-500",   badgeText: "text-white",        numBg: "bg-green-100",   numText: "text-green-700",  advice: "Great day for a walk!" };
+  if (aqi <= 100) return { label: "Moderate",                       badgeBg: "bg-yellow-400",  badgeText: "text-yellow-900",   numBg: "bg-yellow-100",  numText: "text-yellow-700", advice: "Fine for most people outdoors." };
+  if (aqi <= 150) return { label: "Unhealthy for Sensitive Groups", badgeBg: "bg-orange-500",  badgeText: "text-white",        numBg: "bg-orange-100",  numText: "text-orange-700", advice: "Sensitive groups should limit outdoor walks." };
+  if (aqi <= 200) return { label: "Unhealthy",                      badgeBg: "bg-red-500",     badgeText: "text-white",        numBg: "bg-red-100",     numText: "text-red-700",    advice: "Limit prolonged outdoor activity." };
+  if (aqi <= 300) return { label: "Very Unhealthy",                 badgeBg: "bg-red-800",     badgeText: "text-white",        numBg: "bg-red-200",     numText: "text-red-900",    advice: "Avoid outdoor walks today." };
+  return           { label: "Hazardous",                            badgeBg: "bg-rose-950",    badgeText: "text-white",        numBg: "bg-rose-200",    numText: "text-rose-950",   advice: "Stay indoors — air is hazardous." };
 }
 
 // Kokapet, Hyderabad — typical April weather (used until live data loads)
@@ -58,10 +58,11 @@ function shortDay(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-IN", { weekday: "short" });
 }
 
-function weatherInfo(code: number) {
-  if (code === 0)                  return { emoji: "☀️",  label: "Clear sky" };
-  if (code === 1)                  return { emoji: "🌤️", label: "Mainly clear" };
-  if (code === 2)                  return { emoji: "⛅",  label: "Partly cloudy" };
+function weatherInfo(code: number, hour?: number) {
+  const isNight = hour !== undefined && (hour < 6 || hour >= 19);
+  if (code === 0)                  return { emoji: isNight ? "🌙"  : "☀️",  label: "Clear sky" };
+  if (code === 1)                  return { emoji: isNight ? "🌙"  : "🌤️", label: "Mainly clear" };
+  if (code === 2)                  return { emoji: isNight ? "☁️"  : "⛅",  label: "Partly cloudy" };
   if (code === 3)                  return { emoji: "☁️",  label: "Overcast" };
   if (code === 45 || code === 48)  return { emoji: "🌫️", label: "Foggy" };
   if (code >= 51 && code <= 55)    return { emoji: "🌦️", label: "Drizzle" };
@@ -88,10 +89,12 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
   const [weather, setWeather] = useState<ReturnType<typeof buildWeatherData>>(() =>
     buildWeatherData(HOURLY_TEMPS, HOURLY_FEELS, HOURLY_CODES, HOURLY_PRECIP, HOURLY_WIND, 38)
   );
-  const [aqi, setAqi]         = useState<number | null>(null);
-  const [open, setOpen]       = useState(false);
-  const panelRef              = useRef<HTMLDivElement>(null);
-  const btnRef                = useRef<HTMLButtonElement>(null);
+  const [aqi, setAqi]           = useState<number | null>(null);
+  const [open, setOpen]         = useState(false);
+  const panelRef                = useRef<HTMLDivElement>(null);
+  const btnRef                  = useRef<HTMLButtonElement>(null);
+  const hourScrollRef           = useRef<HTMLDivElement>(null);
+  const nowHourRef              = useRef<HTMLDivElement>(null);
 
   // Try to fetch live data in background; silently fall back on error
   useEffect(() => {
@@ -104,8 +107,7 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
       "&timezone=Asia%2FKolkata&forecast_days=4";
 
     const aqiUrl =
-      "https://air-quality-api.open-meteo.com/v1/air-quality" +
-      "?latitude=17.4065&longitude=78.3772&current=us_aqi";
+      "https://api.waqi.info/feed/geo:17.4126;78.3338/?token=demo";
 
     fetch(weatherUrl)
       .then((r) => r.json())
@@ -125,9 +127,14 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
       })
       .catch(() => {/* keep mock data */});
 
+    // WAQI uses real CPCB/TSPCB monitoring station data — matches weather.com / AccuWeather
     fetch(aqiUrl)
       .then((r) => r.json())
-      .then((j) => { if (j?.current?.us_aqi != null) setAqi(j.current.us_aqi); })
+      .then((j) => {
+        if (j?.status === "ok" && j?.data?.aqi != null) {
+          setAqi(Number(j.data.aqi));
+        }
+      })
       .catch(() => {/* silently fail */});
   }, []);
 
@@ -152,17 +159,32 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
     return () => document.removeEventListener("keydown", handler);
   }, [open]);
 
+  // Scroll hourly strip to current hour when panel opens
+  useEffect(() => {
+    if (!open) return;
+    const t = setTimeout(() => {
+      const container = hourScrollRef.current;
+      const el = nowHourRef.current;
+      if (!container || !el) return;
+      const elRect = el.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      container.scrollLeft += elRect.left - containerRect.left - (container.offsetWidth / 2 - el.offsetWidth / 2);
+    }, 0);
+    return () => clearTimeout(t);
+  }, [open]);
+
   const { current, hourly, daily } = weather;
-  const { emoji, label }    = weatherInfo(current.weather_code);
+  const nowHour             = new Date().getHours();
+  const { emoji, label }    = weatherInfo(current.weather_code, nowHour);
   const temp                = Math.round(current.temperature_2m);
   const feelsLike           = Math.round(current.apparent_temperature);
-  const nowHour             = new Date().getHours();
   const aqiInfo             = aqi !== null ? getAqiInfo(aqi) : null;
 
   return (
     <div className="relative">
 
       {/* ── Trigger button ─────────────────────────────────────────────── */}
+      <div className="flex flex-col gap-0.5">
       <button
         ref={btnRef}
         onClick={() => setOpen((v) => !v)}
@@ -178,8 +200,20 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
         <span className="text-base font-black tracking-tight">{temp}°C</span>
         <span className={variant === "nav" ? "text-gray-400" : "text-brand-300 font-medium"}>{label}</span>
         {variant === "topbar" && <span className="text-brand-400 text-xs">· Kokapet</span>}
+        {aqiInfo && aqi !== null && (
+          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${aqiInfo.badgeBg} ${aqiInfo.badgeText}`}>
+            AQI {aqi} · {aqiInfo.label}
+          </span>
+        )}
         <ChevronDown className={`w-3.5 h-3.5 text-brand-300 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
+      {aqiInfo && (
+        <p className={`text-[11px] font-medium flex items-center gap-1 ${variant === "nav" ? "text-gray-500" : "text-brand-300/70"}`}>
+          <PersonStanding className="w-3 h-3 shrink-0" />
+          {aqiInfo.advice}
+        </p>
+      )}
+      </div>
 
       {/* ── Detail panel ───────────────────────────────────────────────── */}
       {open && (
@@ -226,17 +260,18 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
             <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">
               Hourly forecast
             </p>
-            <div className="overflow-x-auto">
+            <div ref={hourScrollRef} className="overflow-x-auto">
               <div className="flex gap-1" style={{ width: "max-content" }}>
                 {hourly.time.map((t, i) => {
                   const h     = parseInt(t.split("T")[1], 10);
                   const isNow = h === nowHour;
-                  const { emoji: e } = weatherInfo(hourly.weather_code[i]);
+                  const { emoji: e } = weatherInfo(hourly.weather_code[i], h);
                   const pr    = hourly.precipitation_probability[i];
 
                   return (
                     <div
                       key={t}
+                      ref={isNow ? nowHourRef : null}
                       className={`flex flex-col items-center gap-1 px-2.5 py-2 rounded-xl min-w-[50px] ${
                         isNow ? "bg-brand-600 text-white" : "hover:bg-gray-50 text-gray-700"
                       }`}
@@ -290,16 +325,18 @@ export default function WeatherWidget({ variant = "topbar" }: { variant?: "topba
                 Air Quality
               </p>
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Leaf className="w-4 h-4 text-brand-400 shrink-0" />
+                <div className="flex items-center gap-2.5">
+                  <div className={`flex items-center justify-center w-11 h-11 rounded-xl font-black text-lg ${aqiInfo.numBg} ${aqiInfo.numText}`}>
+                    {aqi}
+                  </div>
                   <div>
-                    <p className="text-xs text-gray-400">AQI (US)</p>
-                    <p className="text-sm font-bold text-gray-800">{aqi}</p>
+                    <p className="text-xs text-gray-400">AQI · Kokapet</p>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${aqiInfo.badgeBg} ${aqiInfo.badgeText}`}>
+                      {aqiInfo.label}
+                    </span>
                   </div>
                 </div>
-                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${aqiInfo.color} ${aqiInfo.textColor}`}>
-                  {aqiInfo.label}
-                </span>
+                <Leaf className={`w-5 h-5 shrink-0 ${aqiInfo.numText}`} />
               </div>
               <div className="flex items-start gap-2 rounded-lg bg-gray-50 px-3 py-2">
                 <PersonStanding className="w-4 h-4 text-brand-500 shrink-0 mt-0.5" />

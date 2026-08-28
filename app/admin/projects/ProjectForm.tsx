@@ -4,13 +4,16 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Save, Loader2, PlusCircle, Trash2, ChevronDown, ChevronUp,
-  Building2, Phone, Globe, Users, Layers, LayoutList, ExternalLink,
+  Building2, Phone, Globe, Users, Layers, LayoutList, ExternalLink, Sparkles,
 } from "lucide-react";
 import ImageUpload from "@/components/admin/ImageUpload";
+import BrochureImporter, { type ImportedProjectData } from "@/components/admin/BrochureImporter";
 import { getBuilders, type Builder } from "@/lib/buildersStore";
+import { AMENITY_CATEGORIES } from "@/lib/amenitiesData";
 import {
   createProject, updateProject,
-  type Project, type ProjectInput, type ProjectType, type ProjectTier,
+  type Project, type ProjectInput, type ProjectType, type ProjectTier, type LifecycleStatus, type Locality,
+  LIFECYCLE_STAGES, LOCALITIES,
   type UnitFacing, type UnitPlan, type ContactPhone, type Tower, type TowerFloorPlan,
 } from "@/lib/projectsStore";
 
@@ -34,7 +37,7 @@ const FACING_OPTIONS: UnitFacing[] = [
   "North-East", "North-West", "South-East", "South-West",
 ];
 
-type Tab = "info" | "contacts" | "towers" | "unit_plans";
+type Tab = "info" | "contacts" | "towers" | "unit_plans" | "amenities";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -58,11 +61,16 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
   const [builderId, setBuilderId]       = useState(lockedBuilderId ?? initialData?.builderId ?? "");
   const [totalLandArea, setTotalLandArea] = useState(initialData?.totalLandAreaAcres?.toString() ?? "");
   const [totalUnits, setTotalUnits]     = useState(initialData?.totalUnits?.toString() ?? "");
-  const [coreNeopolis, setCoreNeopolis] = useState(initialData?.coreNeopolis ?? false);
+  const [featured, setFeatured]         = useState(initialData?.featured ?? false);
   const [projectLogoUrl, setProjectLogoUrl] = useState<string | null>(initialData?.projectLogoUrl ?? null);
+  const [bannerImageUrl, setBannerImageUrl] = useState<string | null>(initialData?.bannerImageUrl ?? null);
   const [projectPlanUrl, setProjectPlanUrl] = useState(initialData?.projectPlanUrl ?? "");
+  const [brochureUrl, setBrochureUrl]       = useState(initialData?.brochureUrl ?? "");
   const [projectType, setProjectType]   = useState<ProjectType | "">(initialData?.projectType ?? "");
   const [tier, setTier]                 = useState<ProjectTier | "">(initialData?.tier ?? "");
+  const [locality, setLocality]         = useState<Locality | "">(initialData?.locality ?? "");
+  const [lifecycleStatus, setLifecycleStatus] = useState<LifecycleStatus | "">(initialData?.lifecycleStatus ?? "");
+  const [expectedCompletionDate, setExpectedCompletionDate] = useState(initialData?.expectedCompletionDate ?? "");
   const [maxFloors, setMaxFloors]       = useState(initialData?.projectDetail?.maxFloors?.toString() ?? "");
   const [amenitiesSqft, setAmenitiesSqft] = useState(initialData?.projectDetail?.amenitiesSqft?.toString() ?? "");
   const [priceRangeMin, setPriceRangeMin] = useState(initialData?.priceRangeMin?.toString() ?? "");
@@ -79,7 +87,7 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
     initialData?.contact?.phones?.length ? initialData.contact.phones : [emptyPhone()]
   );
 
-  // Towers — convert unitPlanId → unitPlanIndex using the initial unit plans list
+  // Towers
   const [towers, setTowers] = useState<Tower[]>(() => {
     if (!initialData?.projectDetail?.towers?.length) return [emptyTower(0)];
     return initialData.projectDetail.towers.map(t => ({
@@ -96,12 +104,45 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
     initialData?.unitPlans?.length ? initialData.unitPlans : []
   );
 
+  // Amenities
+  const [amenities, setAmenities] = useState<string[]>(initialData?.amenities ?? []);
+
   useEffect(() => {
     if (lockedBuilderId) return;
     getBuilders().then(setBuilders).catch(() => {});
   }, [lockedBuilderId]);
 
   const isEdit = !!initialData;
+
+  // ── Brochure import handler ──
+  function handleImport(data: ImportedProjectData, pdfUrl: string) {
+    if (pdfUrl) setBrochureUrl(pdfUrl);
+    if (data.projectName)        setProjectName(data.projectName);
+    if (data.projectType)        setProjectType(data.projectType as ProjectType);
+    if (data.tier)               setTier(data.tier as ProjectTier);
+    if (data.lifecycleStatus)    setLifecycleStatus(data.lifecycleStatus as LifecycleStatus);
+    if (data.totalLandAreaAcres) setTotalLandArea(data.totalLandAreaAcres.toString());
+    if (data.totalUnits)         setTotalUnits(data.totalUnits.toString());
+    if (data.priceRangeMin)      setPriceRangeMin(data.priceRangeMin.toString());
+    if (data.priceRangeMax)      setPriceRangeMax(data.priceRangeMax.toString());
+    if (data.maxFloors)          setMaxFloors(data.maxFloors.toString());
+    if (data.amenitiesSqft)      setAmenitiesSqft(data.amenitiesSqft.toString());
+    if (data.contact?.email)     setContactEmail(data.contact.email);
+    if (data.contact?.website)   setContactWebsite(data.contact.website);
+    if (data.contact?.projectOwner) setProjectOwner(data.contact.projectOwner);
+    if (data.contact?.phone)     setPhones([{ phoneNumber: data.contact.phone, role: "sales", sortOrder: 0 }]);
+    if (data.towers?.length)     setTowers(data.towers.map((t, i) => ({ ...emptyTower(i), towerName: t.towerName, numFloors: t.numFloors })));
+    if (data.unitPlans?.length)  setUnitPlans(data.unitPlans.map((u, i) => ({
+      ...emptyUnitPlan(i),
+      planName:   u.planName,
+      bhk:        u.bhk,
+      sizeSqft:   u.sizeSqft,
+      facing:     (u.facing as UnitFacing) ?? null,
+      maidRoom:   u.maidRoom ?? false,
+      homeOffice: u.homeOffice ?? false,
+    })));
+    if (data.amenities?.length)  setAmenities(data.amenities);
+  }
 
   // ── Phone helpers ──
   const addPhone    = () => { if (phones.length < 5) setPhones(p => [...p, emptyPhone()]); };
@@ -152,6 +193,10 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
   const updateUnitPlan = (i: number, field: keyof UnitPlan, value: string | number | boolean | null) =>
     setUnitPlans(u => u.map((p, idx) => idx === i ? { ...p, [field]: value } : p));
 
+  // ── Amenity helpers ──
+  const toggleAmenity = (item: string) =>
+    setAmenities(a => a.includes(item) ? a.filter(x => x !== item) : [...a, item]);
+
   // ── Submit ──
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -159,11 +204,9 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
     setError(null);
     setSaving(true);
 
-    // Build filtered unit plans (valid only) and an index remap
     const filteredUnitPlans = unitPlans
       .filter(u => u.planName.trim() && u.sizeSqft > 0)
       .map((u, i) => ({ ...u, sortOrder: i }));
-    // Map original unitPlans index → filtered array index
     const indexRemap = new Map<number, number>();
     let fi = 0;
     for (let oi = 0; oi < unitPlans.length; oi++) {
@@ -176,13 +219,22 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
       builderId:             builderId || null,
       totalLandAreaAcres:    totalLandArea ? parseFloat(totalLandArea) : null,
       totalUnits:            totalUnits    ? parseInt(totalUnits, 10)  : null,
-      coreNeopolis,
+      // No longer settable — Locality supersedes it. Preserve whatever an
+      // existing project already had rather than resetting it on edit.
+      coreNeopolis:          initialData?.coreNeopolis ?? false,
+      featured,
       projectLogoUrl,
+      bannerImageUrl,
       projectPlanUrl:        projectPlanUrl || null,
+      brochureUrl:           brochureUrl || null,
       projectType:           projectType   || null,
       tier:                  tier          || null,
-      priceRangeMin:         priceRangeMin ? parseFloat(priceRangeMin) : null,
+      locality:              locality      || null,
+      lifecycleStatus:         lifecycleStatus || null,
+      expectedCompletionDate:  expectedCompletionDate || null,
+      priceRangeMin:           priceRangeMin ? parseFloat(priceRangeMin) : null,
       priceRangeMax:         priceRangeMax ? parseFloat(priceRangeMax) : null,
+      amenities,
       contact: {
         email:        contactEmail   || null,
         website:      contactWebsite || null,
@@ -199,7 +251,6 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
         towers: towers.map((t, i) => ({
           ...t,
           sortOrder: i,
-          // Remap floor plan indices to match the filtered unitPlans array order
           floorPlans: t.floorPlans
             .filter(fp => fp.unitPlanIndex !== undefined && indexRemap.has(fp.unitPlanIndex))
             .map(fp => ({ ...fp, unitPlanIndex: indexRemap.get(fp.unitPlanIndex!)! })),
@@ -215,44 +266,67 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
       router.refresh();
     } catch (err) {
       console.error(err);
-      setError("Failed to save project. Please try again.");
+      // Supabase/PostgREST errors carry the exact rejection reason — show it.
+      const e = err as { message?: string; details?: string; hint?: string; code?: string };
+      const detail = [e.message, e.details, e.hint].filter(Boolean).join(" — ");
+      setError(
+        detail
+          ? `Save failed${e.code ? ` (${e.code})` : ""}: ${detail}`
+          : "Failed to save project. Please try again."
+      );
     } finally {
       setSaving(false);
     }
   }
 
-  const tabs: { key: Tab; label: string; icon: React.ElementType }[] = [
-    { key: "info",       label: "Project Info",                    icon: Building2  },
-    { key: "contacts",   label: "Contacts",                        icon: Users      },
-    { key: "towers",     label: "Towers",                          icon: Layers     },
-    { key: "unit_plans", label: `Unit Plans (${unitPlans.length})`, icon: LayoutList },
+  const tabs: { key: Tab; label: string; icon: React.ElementType; badge?: number }[] = [
+    { key: "info",       label: "Project Info",   icon: Building2  },
+    { key: "contacts",   label: "Contacts",        icon: Users      },
+    { key: "towers",     label: "Towers",          icon: Layers     },
+    { key: "unit_plans", label: "Unit Plans",      icon: LayoutList, badge: unitPlans.length },
+    { key: "amenities",  label: "Amenities",       icon: Sparkles,   badge: amenities.length },
   ];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Brochure Importer */}
+      <BrochureImporter onImport={handleImport} />
+
       {error && (
         <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-xl border border-red-100">{error}</div>
       )}
 
       {/* Tab bar */}
       <div className="flex border-b border-gray-100 gap-1 overflow-x-auto">
-        {tabs.map(({ key, label, icon: Icon }) => (
+        {tabs.map(({ key, label, icon: Icon, badge }) => (
           <button key={key} type="button" onClick={() => setTab(key)}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap ${
               tab === key ? "border-brand-500 text-brand-700" : "border-transparent text-gray-500 hover:text-gray-700"
             }`}
           >
-            <Icon className="w-4 h-4" />{label}
+            <Icon className="w-4 h-4" />
+            {label}
+            {badge !== undefined && badge > 0 && (
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${tab === key ? "bg-brand-100 text-brand-700" : "bg-gray-100 text-gray-500"}`}>
+                {badge}
+              </span>
+            )}
           </button>
         ))}
       </div>
 
       {/* ── Tab: Project Info ── */}
       {tab === "info" && (
-        <div className="space-y-5">
+        <div className="space-y-6">
           <div>
             <label className="label">Project Logo</label>
             <ImageUpload value={projectLogoUrl} onChange={setProjectLogoUrl} folder="projects/logos" label="Upload Logo" />
+          </div>
+
+          <div>
+            <label className="label">Banner Picture</label>
+            <p className="text-xs text-gray-400 mb-2">Full-width hero image shown at the top of the project page — use a high-quality render or photo of the completed project.</p>
+            <ImageUpload value={bannerImageUrl} onChange={setBannerImageUrl} folder="projects/banners" label="Upload Banner" />
           </div>
 
           <div>
@@ -280,6 +354,25 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
             <p className="text-xs text-gray-400 mt-1">Link to the overall project layout diagram shown on the public project page.</p>
           </div>
 
+          <div>
+            <label className="label flex items-center gap-1.5">
+              Brochure
+              <span className="text-xs text-gray-400 font-normal">(PDF URL · auto-filled on import)</span>
+            </label>
+            <div className="flex gap-2">
+              <input className="input flex-1" type="url" placeholder="https://…"
+                value={brochureUrl}
+                onChange={e => setBrochureUrl(e.target.value)} />
+              {brochureUrl && (
+                <a href={brochureUrl} target="_blank" rel="noopener noreferrer"
+                  className="p-2.5 border border-gray-200 rounded-lg text-gray-400 hover:text-brand-600 hover:border-brand-300 transition-colors">
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              )}
+            </div>
+            <p className="text-xs text-gray-400 mt-1">Users can download this brochure from the public project page.</p>
+          </div>
+
           {!lockedBuilderId && (
             <div>
               <label className="label">Builder</label>
@@ -289,6 +382,16 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
               </select>
             </div>
           )}
+
+          <div>
+            <label className="label">Locality</label>
+            <select className="input" value={locality} onChange={e => setLocality(e.target.value as Locality | "")}>
+              <option value="">— Select locality —</option>
+              {LOCALITIES.map(l => (
+                <option key={l} value={l}>{l}</option>
+              ))}
+            </select>
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -316,6 +419,28 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
 
           <div className="grid grid-cols-2 gap-4">
             <div>
+              <label className="label">Construction Lifecycle Status</label>
+              <select className="input" value={lifecycleStatus} onChange={e => setLifecycleStatus(e.target.value as LifecycleStatus | "")}>
+                <option value="">— Not set —</option>
+                {LIFECYCLE_STAGES.map(s => (
+                  <option key={s.id} value={s.id}>{s.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label">Expected Completion Date</label>
+              <input
+                className="input"
+                type="month"
+                value={expectedCompletionDate ?? ""}
+                onChange={e => setExpectedCompletionDate(e.target.value)}
+                placeholder="YYYY-MM"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
               <label className="label">Total Land Area (acres)</label>
               <input className="input" type="number" step="0.01" min="0" placeholder="e.g. 7.7"
                 value={totalLandArea} onChange={e => setTotalLandArea(e.target.value)} />
@@ -334,8 +459,8 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
                 value={maxFloors} onChange={e => setMaxFloors(e.target.value)} />
             </div>
             <div>
-              <label className="label">Amenities Area (sq ft)</label>
-              <input className="input" type="number" min="0" placeholder="e.g. 180000"
+              <label className="label">Clubhouse Size (sq ft)</label>
+              <input className="input" type="number" min="0" placeholder="e.g. 50000"
                 value={amenitiesSqft} onChange={e => setAmenitiesSqft(e.target.value)} />
             </div>
           </div>
@@ -354,11 +479,11 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
           </div>
 
           <label className="flex items-center gap-3 cursor-pointer">
-            <input type="checkbox" checked={coreNeopolis} onChange={e => setCoreNeopolis(e.target.checked)}
+            <input type="checkbox" checked={featured} onChange={e => setFeatured(e.target.checked)}
               className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
             <div>
-              <span className="text-sm font-medium text-gray-900">Core Neopolis</span>
-              <p className="text-xs text-gray-400">Mark if this is a core/flagship Neopolis project</p>
+              <span className="text-sm font-medium text-gray-900">Featured on Homepage</span>
+              <p className="text-xs text-gray-400">Show this project in the Featured Projects section on the homepage</p>
             </div>
           </label>
         </div>
@@ -366,7 +491,7 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
 
       {/* ── Tab: Contacts ── */}
       {tab === "contacts" && (
-        <div className="space-y-5">
+        <div className="space-y-6">
           <div>
             <label className="label">Project Owner</label>
             <input className="input" placeholder="Owner name or company" value={projectOwner}
@@ -473,7 +598,6 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
                   </div>
                 </div>
 
-                {/* Floor Plan Assignment */}
                 <div className="mt-4 pt-4 border-t border-gray-100">
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
                     Floor Plans in This Tower
@@ -573,6 +697,57 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
               onRemove={() => removeUnitPlan(idx)}
               onUpdate={(field, value) => updateUnitPlan(idx, field, value)}
             />
+          ))}
+        </div>
+      )}
+
+      {/* ── Tab: Amenities ── */}
+      {tab === "amenities" && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-gray-700">
+                Amenities
+                {amenities.length > 0 && (
+                  <span className="ml-2 text-xs font-bold text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full">
+                    {amenities.length} selected
+                  </span>
+                )}
+              </p>
+              <p className="text-xs text-gray-400 mt-0.5">Check all amenities this project offers</p>
+            </div>
+            {amenities.length > 0 && (
+              <button type="button" onClick={() => setAmenities([])}
+                className="text-xs text-red-400 hover:text-red-600 transition-colors">
+                Clear all
+              </button>
+            )}
+          </div>
+
+          {AMENITY_CATEGORIES.map((cat) => (
+            <div key={cat.category}>
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
+                {cat.category}
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4">
+                {cat.items.map((item) => {
+                  const checked = amenities.includes(item);
+                  return (
+                    <label key={item} className="flex items-center gap-2.5 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleAmenity(item)}
+                        className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 shrink-0"
+                      />
+                      <span className={`text-sm transition-colors ${checked ? "text-gray-900 font-medium" : "text-gray-500 group-hover:text-gray-700"}`}>
+                        {item}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
           ))}
         </div>
       )}

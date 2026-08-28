@@ -39,7 +39,7 @@ export interface AnnouncementInput {
 // ─── Mapping ─────────────────────────────────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function toAnnouncement(row: any): Announcement {
+export function toAnnouncement(row: any): Announcement {
   const up = row.unit_plans;
   const unitPlanSummary = up
     ? [

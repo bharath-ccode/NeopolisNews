@@ -28,6 +28,8 @@ export default function AdminLoginPage() {
         setError("Invalid email or password. Please try again.");
       } else if (result === "not_admin") {
         setError("This account is registered as a builder. Use the Builder Portal to sign in.");
+      } else if (result === "timeout") {
+        setError("Connection timed out. The Supabase project may be paused — restore it at supabase.com/dashboard and try again.");
       } else {
         setError("Login failed. Check your credentials or that your admin account exists in Supabase.");
       }

@@ -1,62 +1,101 @@
 "use client";
 
-import { useState } from "react";
-import { MessageSquare, Phone, Clock, CheckCheck, Home } from "lucide-react";
+import { useEffect, useState } from "react";
+import { MessageSquare, Phone, Clock, CheckCheck, Home, Loader2 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { createClient } from "@/lib/supabase/client";
 
-const MOCK_ENQUIRIES = [
-  {
-    id: "e1",
-    from: "Rahul Sharma",
-    phone: "+91 98765 43210",
-    listing: "3 BHK in Apex Tower, Tower B — Floor 24",
-    listingType: "Rent",
-    time: "2 hours ago",
-    message: "Is the flat still available? I'm looking to move in by April 15. Can we schedule a site visit this weekend?",
-    read: false,
-  },
-  {
-    id: "e2",
-    from: "Priya Mehta",
-    phone: "+91 87654 32109",
-    listing: "2 BHK in Neopolis Heights, Tower A — Floor 12",
-    listingType: "Sale",
-    time: "Yesterday, 4:32 PM",
-    message: "What is the negotiated price? I'm a serious buyer and have pre-approved home loan from SBI. Can we meet?",
-    read: false,
-  },
-  {
-    id: "e3",
-    from: "Amit Kumar",
-    phone: "+91 76543 21098",
-    listing: "3 BHK in Apex Tower, Tower B — Floor 24",
-    listingType: "Rent",
-    time: "2 days ago",
-    message: "Looking for 11-month rent agreement. Any flexibility on security deposit? Preferred move-in April 1.",
-    read: true,
-  },
-  {
-    id: "e4",
-    from: "Neha Gupta",
-    phone: "+91 65432 10987",
-    listing: "2 BHK in Neopolis Heights, Tower A — Floor 12",
-    listingType: "Sale",
-    time: "3 days ago",
-    message: "I saw your listing online. Is this a direct-owner deal or through broker? Happy to discuss further.",
-    read: true,
-  },
-];
+interface ClassifiedInfo {
+  property_type: string;
+  bedrooms: number | null;
+  project_name: string | null;
+  listing_type: string;
+  is_standalone: boolean;
+  standalone_description: string | null;
+}
+
+interface Enquiry {
+  id: string;
+  sender_name: string;
+  sender_phone: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+  classified_id: string;
+  classified: ClassifiedInfo | null;
+}
+
+function relativeTime(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return "Yesterday";
+  return `${days} days ago`;
+}
+
+function listingLabel(c: ClassifiedInfo | null) {
+  if (!c) return "Your listing";
+  const title = c.bedrooms ? `${c.bedrooms} BHK ${c.property_type}` : c.property_type;
+  const location = c.is_standalone
+    ? (c.standalone_description ?? "Standalone")
+    : (c.project_name ?? "Neopolis");
+  return `${title} · ${location}`;
+}
 
 export default function IndividualEnquiries() {
-  const [enquiries, setEnquiries] = useState(MOCK_ENQUIRIES);
+  const { user } = useAuth();
+  const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
+  const [loading, setLoading] = useState(true);
   const [active, setActive] = useState<string | null>(null);
 
-  function markRead(id: string) {
-    setEnquiries((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, read: true } : e))
-    );
+  useEffect(() => {
+    if (!user) return;
+    const sb = createClient();
+
+    sb.from("classifieds")
+      .select("id")
+      .eq("user_id", user.id)
+      .is("broker_id", null)
+      .then(async ({ data: classifieds }) => {
+        const ids = (classifieds ?? []).map((c: { id: string }) => c.id);
+        if (ids.length === 0) { setLoading(false); return; }
+
+        const { data } = await sb
+          .from("enquiries")
+          .select("id, sender_name, sender_phone, message, is_read, created_at, classified_id, classified:classifieds(property_type, bedrooms, project_name, listing_type, is_standalone, standalone_description)")
+          .in("classified_id", ids)
+          .order("created_at", { ascending: false });
+
+        setEnquiries(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (data ?? []).map((row: any) => ({
+            ...row,
+            classified: Array.isArray(row.classified) ? (row.classified[0] ?? null) : row.classified,
+          }))
+        );
+        setLoading(false);
+      });
+  }, [user]);
+
+  async function markRead(id: string) {
+    setEnquiries((prev) => prev.map((e) => (e.id === id ? { ...e, is_read: true } : e)));
+    const sb = createClient();
+    await sb.from("enquiries").update({ is_read: true }).eq("id", id);
   }
 
-  const unread = enquiries.filter((e) => !e.read).length;
+  const unread = enquiries.filter((e) => !e.is_read).length;
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 className="w-6 h-6 animate-spin text-gray-300" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl space-y-5">
@@ -71,72 +110,69 @@ export default function IndividualEnquiries() {
         <div className="card p-12 text-center">
           <MessageSquare className="w-10 h-10 text-gray-300 mx-auto mb-3" />
           <p className="font-semibold text-gray-500">No enquiries yet</p>
-          <p className="text-xs text-gray-400 mt-1">Enquiries from buyers and tenants will appear here.</p>
+          <p className="text-xs text-gray-400 mt-1">
+            Enquiries from buyers and tenants will appear here.
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
           {enquiries.map((e) => (
             <div
               key={e.id}
-              className={`card overflow-hidden ${!e.read ? "border-l-4 border-l-brand-500" : ""}`}
+              className={`card overflow-hidden ${!e.is_read ? "border-l-4 border-l-brand-500" : ""}`}
             >
               <button
                 className="w-full text-left p-4"
                 onClick={() => {
                   setActive(active === e.id ? null : e.id);
-                  markRead(e.id);
+                  if (!e.is_read) markRead(e.id);
                 }}
               >
                 <div className="flex items-start gap-3">
                   <div className="w-9 h-9 rounded-full bg-brand-100 text-brand-700 font-bold text-sm flex items-center justify-center shrink-0">
-                    {e.from.charAt(0)}
+                    {e.sender_name.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm text-gray-900">{e.from}</span>
-                        {!e.read && (
-                          <span className="w-2 h-2 rounded-full bg-brand-500 shrink-0" />
-                        )}
+                        <span className="font-bold text-sm text-gray-900">{e.sender_name}</span>
+                        {!e.is_read && <span className="w-2 h-2 rounded-full bg-brand-500 shrink-0" />}
                       </div>
                       <span className="flex items-center gap-1 text-xs text-gray-400 shrink-0">
-                        <Clock className="w-3 h-3" /> {e.time}
+                        <Clock className="w-3 h-3" /> {relativeTime(e.created_at)}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <Home className="w-3.5 h-3.5 text-gray-400" />
-                      <span className="text-xs text-gray-500 truncate">{e.listing}</span>
-                      <span className={e.listingType === "Rent" ? "tag-green text-xs" : "tag-blue text-xs"}>
-                        {e.listingType}
+                      <Home className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <span className="text-xs text-gray-500 truncate">{listingLabel(e.classified)}</span>
+                      <span className={e.classified?.listing_type === "rent" ? "tag-green text-xs" : "tag-blue text-xs"}>
+                        {e.classified?.listing_type === "rent" ? "Rent" : "Sale"}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-500 mt-1.5 line-clamp-1">
-                      {e.message}
-                    </p>
+                    <p className="text-sm text-gray-500 mt-1.5 line-clamp-1">{e.message}</p>
                   </div>
                 </div>
               </button>
 
-              {/* Expanded */}
               {active === e.id && (
                 <div className="px-4 pb-4 border-t border-gray-50 pt-3 ml-12">
                   <p className="text-sm text-gray-700 leading-relaxed mb-4">{e.message}</p>
                   <div className="flex flex-wrap gap-2">
                     <a
-                      href={`tel:${e.phone}`}
+                      href={`tel:${e.sender_phone}`}
                       className="flex items-center gap-2 btn-primary text-xs py-2"
                     >
-                      <Phone className="w-3.5 h-3.5" /> Call {e.from.split(" ")[0]}
+                      <Phone className="w-3.5 h-3.5" /> Call {e.sender_name.split(" ")[0]}
                     </a>
                     <a
-                      href={`https://wa.me/${e.phone.replace(/\D/g, "")}`}
+                      href={`https://wa.me/${e.sender_phone.replace(/\D/g, "")}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 btn-secondary text-xs py-2"
                     >
                       WhatsApp
                     </a>
-                    {!e.read && (
+                    {!e.is_read && (
                       <button
                         onClick={() => markRead(e.id)}
                         className="flex items-center gap-1 text-xs text-gray-400 hover:text-green-600"

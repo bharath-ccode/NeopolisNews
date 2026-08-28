@@ -56,7 +56,7 @@ export default function ImageUpload({
           <img
             src={value}
             alt="Uploaded"
-            className="h-28 w-28 object-cover rounded-xl border border-gray-200"
+            className="h-28 w-28 object-contain rounded-xl border border-gray-200 bg-white p-1"
           />
           <button
             type="button"

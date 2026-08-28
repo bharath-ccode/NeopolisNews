@@ -98,9 +98,9 @@ export default function BuilderProjectsPage() {
                 <p className="font-bold text-gray-900 truncate">{p.projectName}</p>
                 <p className="text-xs text-gray-400 mt-0.5">
                   {[
+                    p.locality,
                     p.totalUnits ? `${p.totalUnits} units` : null,
                     p.totalLandAreaAcres ? `${p.totalLandAreaAcres} acres` : null,
-                    p.coreNeopolis ? "Core Neopolis" : null,
                   ]
                     .filter(Boolean)
                     .join(" · ") || "No details yet"}
@@ -117,7 +117,7 @@ export default function BuilderProjectsPage() {
                   Availability
                 </Link>
                 <Link
-                  href={`/builder/projects/${p.id}/update`}
+                  href={`/builder/updates/create?project=${p.id}`}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-orange-50 text-orange-700 hover:bg-orange-100 transition-colors"
                 >
                   <HardHat className="w-3.5 h-3.5" />

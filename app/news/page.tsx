@@ -1,4 +1,5 @@
 import Link from "next/link";
+import PushPrompt from "@/components/PushPrompt";
 import {
   Newspaper,
   Camera,
@@ -9,11 +10,16 @@ import {
   CheckCircle,
   Clock,
   Eye,
+  PenLine,
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import LeadForm from "@/components/LeadForm";
 import InfrastructureSection from "@/components/InfrastructureSection";
-import { getPublishedArticles, Article, ArticleCategory } from "@/lib/newsStore";
+import { toArticle, Article, ArticleCategory } from "@/lib/newsStore";
+import { createAdminClient } from "@/lib/supabase/server";
+
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 export const metadata = {
   title: "Local News & Updates – NeopolisNews",
@@ -29,12 +35,13 @@ const CATEGORY_CONFIG: {
   anchor: string;
 }[] = [
   { id: "construction",   icon: Camera,      label: "Construction Updates", color: "bg-orange-50 text-orange-600", anchor: "construction"   },
-  { id: "launches",       icon: Zap,         label: "New Launches",         color: "bg-green-50 text-green-600",  anchor: "launches"       },
+  { id: "launches",       icon: Zap,         label: "Business Launches",    color: "bg-green-50 text-green-600",  anchor: "launches"       },
   { id: "infrastructure", icon: TrendingUp,  label: "Infrastructure",       color: "bg-blue-50 text-blue-600",   anchor: "infrastructure" },
   { id: "community",      icon: Users,       label: "Community",            color: "bg-purple-50 text-purple-600",anchor: "community"      },
+  { id: "editorial",      icon: PenLine,     label: "Editorial",            color: "bg-slate-100 text-slate-600", anchor: "editorial"      },
 ];
 
-const NON_INFRA_CATEGORIES: ArticleCategory[] = ["construction", "launches", "community"];
+const NON_INFRA_CATEGORIES: ArticleCategory[] = ["construction", "launches", "community", "editorial"];
 
 const CONTENT_PACKAGES = [
   {
@@ -73,7 +80,7 @@ const CONTENT_PACKAGES = [
 
 function ArticleCard({ article }: { article: Article }) {
   return (
-    <div className="card p-5 relative">
+    <Link href={`/news/${article.id}`} className="card p-5 relative block hover:shadow-md transition-shadow">
       {article.sponsored && (
         <span className="absolute top-3 right-3 bg-yellow-100 text-yellow-700 text-xs font-bold px-2 py-0.5 rounded-full">
           Sponsored
@@ -107,12 +114,20 @@ function ArticleCard({ article }: { article: Article }) {
           <Eye className="w-3 h-3" /> {article.views.toLocaleString("en-IN")}
         </span>
       </div>
-    </div>
+    </Link>
   );
 }
 
 export default async function NewsPage() {
-  const allArticles = await getPublishedArticles();
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("articles")
+    .select("*")
+    .eq("status", "published")
+    // Daily AI digests live on /news/today — keep this page to local topics.
+    .neq("category", "digest")
+    .order("created_at", { ascending: false });
+  const allArticles: Article[] = (data ?? []).map(toArticle);
 
   // Group by category
   const byCategory = (cat: ArticleCategory) =>
@@ -143,6 +158,12 @@ export default async function NewsPage() {
                 Read Latest
               </a>
               <Link
+                href="/news/report"
+                className="btn-secondary border-gray-500 text-gray-300 hover:bg-gray-700"
+              >
+                Report Local News <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
                 href="/advertise#content"
                 className="btn-secondary border-gray-500 text-gray-300 hover:bg-gray-700"
               >
@@ -150,6 +171,16 @@ export default async function NewsPage() {
               </Link>
             </div>
           </div>
+        </SectionWrapper>
+      </section>
+
+      {/* ── Push opt-in ── */}
+      <section className="bg-gray-50 pt-6">
+        <SectionWrapper tight>
+          <PushPrompt
+            topic="news"
+            message="Breaking local news — road closures, outages, new launches. Get an alert when something happens in Neopolis?"
+          />
         </SectionWrapper>
       </section>
 
@@ -180,7 +211,7 @@ export default async function NewsPage() {
       {/* ── Featured Article ── */}
       {featured && (
         <SectionWrapper>
-          <div className="card overflow-hidden">
+          <Link href={`/news/${featured.id}`} className="card overflow-hidden block hover:shadow-md transition-shadow">
             {featured.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -213,7 +244,7 @@ export default async function NewsPage() {
                 <span>{featured.date}</span>
               </div>
             </div>
-          </div>
+          </Link>
         </SectionWrapper>
       )}
 

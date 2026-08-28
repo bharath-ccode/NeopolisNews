@@ -125,10 +125,10 @@ export default function BuilderLoginPage() {
         <p className="text-center text-xs text-gray-400 mt-5">
           Account issues? Contact{" "}
           <a
-            href="mailto:admin@neopolisnews.in"
+            href="mailto:support@neopolis.news"
             className="underline hover:text-gray-600"
           >
-            admin@neopolisnews.in
+            support@neopolis.news
           </a>
         </p>
       </div>

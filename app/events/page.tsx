@@ -1,166 +1,106 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  CalendarDays,
-  Music,
-  Trophy,
-  Utensils,
-  Users,
-  Ticket,
-  MapPin,
-  Clock,
-  ArrowRight,
-  CheckCircle,
-  Landmark,
+  CalendarDays, Music, Trophy, Utensils, Palette, Package,
+  MapPin, Clock, ArrowRight, CheckCircle, Loader2,
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
+import SaveButton from "@/components/SaveButton";
 
-export const metadata = {
-  title: "Upcoming Events – NeopolisNews",
-  description:
-    "Music concerts, marathons, food festivals, and community events in the Neopolis district.",
-};
+export const dynamic = "force-dynamic";
 
-type EventCategory = {
+type EventType = "all" | "music_concert" | "sports_run" | "food_festival" | "culture_art" | "exhibition";
+
+const CATEGORIES: { id: EventType; label: string; Icon: React.ComponentType<{ className?: string }>; color: string; bg: string }[] = [
+  { id: "all",           label: "All Events",     Icon: CalendarDays, color: "text-violet-600", bg: "bg-violet-50"  },
+  { id: "music_concert", label: "Music Concerts", Icon: Music,        color: "text-purple-600", bg: "bg-purple-50"  },
+  { id: "sports_run",    label: "Sports & Runs",  Icon: Trophy,       color: "text-orange-600", bg: "bg-orange-50"  },
+  { id: "food_festival", label: "Food Festivals", Icon: Utensils,     color: "text-yellow-700", bg: "bg-yellow-50"  },
+  { id: "culture_art",   label: "Culture & Art",  Icon: Palette,      color: "text-rose-600",   bg: "bg-rose-50"    },
+  { id: "exhibition",    label: "Exhibitions",    Icon: Package,      color: "text-teal-600",   bg: "bg-teal-50"    },
+];
+
+const CAT_MAP = Object.fromEntries(CATEGORIES.map((c) => [c.id, c]));
+
+interface BusinessEvent {
   id: string;
-  label: string;
-  Icon: React.ComponentType<{ className?: string }>;
-  color: string;
-};
+  name: string;
+  event_type: string;
+  event_date: string;
+  start_time: string;
+  end_time: string;
+  description: string | null;
+  image_url: string | null;
+  business_id: string;
+  businesses: { name: string; address: string | null } | null;
+}
 
-const CATEGORIES: EventCategory[] = [
-  { id: "music",     label: "Music & Concerts",  Icon: Music,        color: "bg-purple-50 text-purple-600" },
-  { id: "sports",    label: "Sports & Runs",     Icon: Trophy,       color: "bg-orange-50 text-orange-600" },
-  { id: "food",      label: "Food & Lifestyle",  Icon: Utensils,     color: "bg-yellow-50 text-yellow-700" },
-  { id: "community", label: "Community",         Icon: Users,        color: "bg-blue-50 text-blue-600"     },
-  { id: "venue",     label: "Venue Events",      Icon: Landmark,     color: "bg-violet-50 text-violet-600" },
-];
+function formatDate(d: string) {
+  return new Date(d).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+}
 
-const EVENTS = [
-  {
-    id: 1,
-    title: "Neopolis Summer Music Festival",
-    category: "Music & Concerts",
-    catColor: "bg-purple-50 text-purple-700",
-    date: "Sat, 19 Apr 2026",
-    time: "5:00 PM – 11:00 PM",
-    venue: "Neopolis Central Park Amphitheatre",
-    description: "Three stages, 12 artists, and a night of live music across genres — pop, indie, and electronic.",
-    ticketPrice: "₹499 onwards",
-    ticketsLeft: 320,
-    featured: true,
-    tags: ["Live Music", "Outdoor", "All Ages"],
-  },
-  {
-    id: 2,
-    title: "Neopolis Half Marathon 2026",
-    category: "Sports & Runs",
-    catColor: "bg-orange-50 text-orange-700",
-    date: "Sun, 27 Apr 2026",
-    time: "5:30 AM – 10:00 AM",
-    venue: "Neopolis District Ring Road",
-    description: "21 km, 10 km, and 5 km categories open for all fitness levels. Certified timing chips and medals for finishers.",
-    ticketPrice: "₹799",
-    ticketsLeft: 145,
-    featured: true,
-    tags: ["Running", "Outdoor", "Prizes"],
-  },
-  {
-    id: 3,
-    title: "Neopolis Food & Craft Festival",
-    category: "Food & Lifestyle",
-    catColor: "bg-yellow-50 text-yellow-700",
-    date: "Fri–Sun, 2–4 May 2026",
-    time: "11:00 AM – 10:00 PM",
-    venue: "Grand Mall Atrium, Level 1",
-    description: "40+ food vendors, live cooking demos, craft stalls, and a kids' zone over three days.",
-    ticketPrice: "Free entry",
-    ticketsLeft: null,
-    featured: false,
-    tags: ["Food", "Family", "Free"],
-  },
-  {
-    id: 4,
-    title: "Neopolis Standup Comedy Night",
-    category: "Music & Concerts",
-    catColor: "bg-purple-50 text-purple-700",
-    date: "Sat, 10 May 2026",
-    time: "7:30 PM – 10:00 PM",
-    venue: "The Convention Centre, Hall B",
-    description: "An evening of stand-up with four headlining comedians. Seating limited to 400.",
-    ticketPrice: "₹699",
-    ticketsLeft: 88,
-    featured: false,
-    tags: ["Comedy", "Indoor", "18+"],
-  },
-  {
-    id: 5,
-    title: "District Wellness & Yoga Morning",
-    category: "Community",
-    catColor: "bg-blue-50 text-blue-700",
-    date: "Sun, 18 May 2026",
-    time: "6:30 AM – 8:30 AM",
-    venue: "Central Park, East Lawn",
-    description: "A free community yoga and mindfulness session led by certified instructors. Bring your own mat.",
-    ticketPrice: "Free",
-    ticketsLeft: null,
-    featured: false,
-    tags: ["Wellness", "Outdoor", "Free"],
-  },
-  {
-    id: 6,
-    title: "Neopolis Startup Demo Day",
-    category: "Community",
-    catColor: "bg-blue-50 text-blue-700",
-    date: "Fri, 23 May 2026",
-    time: "2:00 PM – 7:00 PM",
-    venue: "Neopolis Convention Centre, Hall A",
-    description: "20 district-based startups present to investors and residents. Open to the public for the final session.",
-    ticketPrice: "Free",
-    ticketsLeft: null,
-    featured: false,
-    tags: ["Business", "Networking", "Indoor"],
-  },
-  {
-    id: 7,
-    title: "Cycling Criterium — Neopolis Sprint Cup",
-    category: "Sports & Runs",
-    catColor: "bg-orange-50 text-orange-700",
-    date: "Sun, 1 Jun 2026",
-    time: "6:00 AM – 9:00 AM",
-    venue: "Neopolis Boulevard Circuit",
-    description: "A closed-circuit criterium race for amateur and competitive cyclists. Separate heats by category.",
-    ticketPrice: "₹500 (registration)",
-    ticketsLeft: 60,
-    featured: false,
-    tags: ["Cycling", "Outdoor", "Competitive"],
-  },
-  {
-    id: 8,
-    title: "Neopolis Dine-Around Evening",
-    category: "Food & Lifestyle",
-    catColor: "bg-yellow-50 text-yellow-700",
-    date: "Sat, 7 Jun 2026",
-    time: "7:00 PM – 11:00 PM",
-    venue: "F&B Strip, Neopolis Boulevard",
-    description: "Wristband access to tasting portions at 18 restaurants along the boulevard. One price, unlimited rounds.",
-    ticketPrice: "₹1,299",
-    ticketsLeft: 200,
-    featured: false,
-    tags: ["Food", "Social", "Adult"],
-  },
-];
-
-const CATEGORY_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
-  "Music & Concerts": Music,
-  "Sports & Runs":    Trophy,
-  "Food & Lifestyle": Utensils,
-  "Community":        Users,
-  "Venue Events":     Landmark,
-};
+function EventCard({ ev, featured }: { ev: BusinessEvent; featured?: boolean }) {
+  const cat = CAT_MAP[ev.event_type as EventType] ?? CAT_MAP["exhibition"];
+  const Icon = cat.Icon;
+  return (
+    <div className={`card p-5 space-y-3 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 ${featured ? "ring-2 ring-violet-200" : ""}`}>
+      {featured && (
+        <span className="inline-block text-xs font-bold bg-violet-600 text-white px-2.5 py-0.5 rounded-full">Featured</span>
+      )}
+      {ev.image_url && (
+        <div className="w-full h-36 rounded-xl overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={ev.image_url} alt={ev.name} className="w-full h-full object-cover" />
+        </div>
+      )}
+      <div className="flex items-start justify-between gap-2">
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${cat.bg}`}>
+          <Icon className={`w-5 h-5 ${cat.color}`} />
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${cat.bg} ${cat.color}`}>{cat.label}</span>
+          <SaveButton itemType="event" itemId={ev.id} size="sm" />
+        </div>
+      </div>
+      <div>
+        <h3 className="font-bold text-gray-900 leading-snug">{ev.name}</h3>
+        {ev.businesses?.name && (
+          <p className="text-xs text-brand-600 font-medium mt-0.5">by {ev.businesses.name}</p>
+        )}
+      </div>
+      {ev.description && <p className="text-sm text-gray-600 line-clamp-2">{ev.description}</p>}
+      <div className="space-y-1 text-xs text-gray-500">
+        <p className="flex items-center gap-1.5"><CalendarDays className="w-3.5 h-3.5 text-gray-400" />{formatDate(ev.event_date)}</p>
+        <p className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-gray-400" />{ev.start_time.slice(0, 5)} – {ev.end_time.slice(0, 5)}</p>
+        {ev.businesses?.address && (
+          <p className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-gray-400" />{ev.businesses.address}</p>
+        )}
+      </div>
+      <Link href={`/events/${ev.id}`}
+        className="inline-flex items-center gap-1 text-xs font-semibold text-violet-600 hover:text-violet-700">
+        View Details <ArrowRight className="w-3 h-3" />
+      </Link>
+    </div>
+  );
+}
 
 export default function EventsPage() {
-  const featured = EVENTS.filter((e) => e.featured);
-  const rest = EVENTS.filter((e) => !e.featured);
+  const [filter, setFilter] = useState<EventType>("all");
+  const [events, setEvents] = useState<BusinessEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/events")
+      .then((r) => r.json())
+      .then((data) => { setEvents(Array.isArray(data) ? data : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const filtered = filter === "all" ? events : events.filter((e) => e.event_type === filter);
+  const featured = filtered.slice(0, 2);
+  const rest = filtered.slice(2);
 
   return (
     <>
@@ -174,160 +114,95 @@ export default function EventsPage() {
             <h1 className="text-3xl md:text-5xl font-extrabold mt-3 mb-4">
               Upcoming <span className="text-violet-300">Events</span>
             </h1>
-            <p className="text-violet-100 text-lg mb-6">
-              Concerts, marathons, food festivals, community days, and more —
-              happening right here in the district.
+            <p className="text-violet-100 text-lg">
+              Concerts, exhibitions, food festivals, sports events, and more —
+              hosted by businesses right here in the district.
             </p>
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href="/events/spaces"
-                className="inline-flex items-center gap-2 bg-white text-violet-700 font-bold px-5 py-2.5 rounded-xl text-sm hover:bg-violet-50 transition-colors"
-              >
-                <Landmark className="w-4 h-4" /> Browse Event Spaces
-              </Link>
-              <a
-                href="#all-events"
-                className="inline-flex items-center gap-2 bg-violet-600 border border-violet-500 text-white font-semibold px-5 py-2.5 rounded-xl text-sm hover:bg-violet-500 transition-colors"
-              >
-                <CalendarDays className="w-4 h-4" /> See All Events
-              </a>
-            </div>
           </div>
         </SectionWrapper>
       </section>
 
       {/* ── Category filter bar ── */}
-      <section className="bg-white border-b border-gray-100">
+      <section className="bg-white border-b border-gray-100 sticky top-[calc(4rem+28px)] z-30">
         <SectionWrapper tight>
-          <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-none">
-            {CATEGORIES.map(({ id, label, Icon, color }) => (
-              <a
+          <div className="flex gap-2 overflow-x-auto py-3 scrollbar-none">
+            {CATEGORIES.map(({ id, label, Icon, color, bg }) => (
+              <button
                 key={id}
-                href={`#${id}`}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-100 hover:border-violet-300 hover:shadow-sm transition-all shrink-0"
+                onClick={() => setFilter(id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold whitespace-nowrap transition-all shrink-0 ${
+                  filter === id
+                    ? `${bg} ${color} border-current`
+                    : "border-gray-200 text-gray-500 hover:border-gray-400"
+                }`}
               >
-                <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${color}`}>
-                  <Icon className="w-4 h-4" />
-                </div>
-                <span className="text-sm font-semibold text-gray-700 whitespace-nowrap">{label}</span>
-              </a>
+                <Icon className="w-4 h-4" />
+                {label}
+                {!loading && (
+                  <span className="opacity-60 text-xs">
+                    ({filter === id || id === "all"
+                      ? id === "all" ? events.length : filtered.length
+                      : events.filter((e) => e.event_type === id).length})
+                  </span>
+                )}
+              </button>
             ))}
           </div>
         </SectionWrapper>
       </section>
 
-      {/* ── Featured events ── */}
+      {/* ── Events grid ── */}
       <SectionWrapper>
-        <h2 className="section-heading mb-6">Featured This Month</h2>
-        <div className="grid md:grid-cols-2 gap-5 mb-12">
-          {featured.map((e) => {
-            const Icon = CATEGORY_ICON[e.category] ?? CalendarDays;
-            return (
-              <div key={e.id} className="card p-6 ring-2 ring-violet-200 relative">
-                <span className="absolute top-4 right-4 text-xs font-bold bg-violet-600 text-white px-2.5 py-1 rounded-full">
-                  Featured
-                </span>
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="w-12 h-12 rounded-2xl bg-violet-100 flex items-center justify-center shrink-0">
-                    <Icon className="w-6 h-6 text-violet-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${e.catColor}`}>{e.category}</span>
-                    <h3 className="font-extrabold text-gray-900 text-lg mt-2 leading-snug">{e.title}</h3>
-                  </div>
-                </div>
-                <p className="text-sm text-gray-600 mb-4">{e.description}</p>
-                <div className="space-y-1.5 mb-4">
-                  <p className="text-xs text-gray-500 flex items-center gap-2">
-                    <CalendarDays className="w-3.5 h-3.5 text-gray-400" /> {e.date}
-                  </p>
-                  <p className="text-xs text-gray-500 flex items-center gap-2">
-                    <Clock className="w-3.5 h-3.5 text-gray-400" /> {e.time}
-                  </p>
-                  <p className="text-xs text-gray-500 flex items-center gap-2">
-                    <MapPin className="w-3.5 h-3.5 text-gray-400" /> {e.venue}
-                  </p>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-lg font-extrabold text-violet-700">{e.ticketPrice}</p>
-                    {e.ticketsLeft && (
-                      <p className="text-xs text-orange-600 font-semibold">{e.ticketsLeft} spots left</p>
-                    )}
-                  </div>
-                  <button className="btn-primary text-sm py-2">
-                    <Ticket className="w-4 h-4" /> Get Tickets
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* ── All events ── */}
-        <div id="all-events">
-          <h2 className="section-heading mb-6">All Upcoming Events</h2>
-          <div className="space-y-3">
-            {rest.map((e) => {
-              const Icon = CATEGORY_ICON[e.category] ?? CalendarDays;
-              return (
-                <div key={e.id} className="card p-5 flex flex-col sm:flex-row sm:items-center gap-4">
-                  <div className="w-11 h-11 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0">
-                    <Icon className="w-5 h-5 text-gray-500" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${e.catColor}`}>{e.category}</span>
-                      {e.tags.map((t) => (
-                        <span key={t} className="text-xs text-gray-400 bg-gray-50 border border-gray-100 px-2 py-0.5 rounded-full">{t}</span>
-                      ))}
-                    </div>
-                    <h3 className="font-bold text-gray-900 text-sm">{e.title}</h3>
-                    <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1">
-                      <p className="text-xs text-gray-500 flex items-center gap-1">
-                        <CalendarDays className="w-3 h-3" /> {e.date} · {e.time}
-                      </p>
-                      <p className="text-xs text-gray-500 flex items-center gap-1">
-                        <MapPin className="w-3 h-3" /> {e.venue}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <div className="text-right">
-                      <p className="font-bold text-violet-700 text-sm">{e.ticketPrice}</p>
-                      {e.ticketsLeft && (
-                        <p className="text-xs text-orange-500">{e.ticketsLeft} left</p>
-                      )}
-                    </div>
-                    <button className="btn-secondary text-xs py-2 px-3 whitespace-nowrap">
-                      <Ticket className="w-3.5 h-3.5" /> Register
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <Loader2 className="w-7 h-7 animate-spin text-violet-500" />
           </div>
-        </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-20 text-gray-400">
+            <CalendarDays className="w-10 h-10 mx-auto mb-3 opacity-30" />
+            <p className="font-medium text-gray-500">No upcoming events in this category</p>
+            <p className="text-sm mt-1">Check back soon or browse another category.</p>
+          </div>
+        ) : (
+          <>
+            {featured.length > 0 && (
+              <>
+                <h2 className="section-heading mb-5">Coming Up</h2>
+                <div className="grid sm:grid-cols-2 gap-5 mb-10">
+                  {featured.map((ev) => <EventCard key={ev.id} ev={ev} featured />)}
+                </div>
+              </>
+            )}
+            {rest.length > 0 && (
+              <>
+                <h2 className="section-heading mb-5">More Events</h2>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {rest.map((ev) => <EventCard key={ev.id} ev={ev} />)}
+                </div>
+              </>
+            )}
+          </>
+        )}
       </SectionWrapper>
 
-      {/* ── List your event CTA ── */}
+      {/* ── CTA ── */}
       <section className="bg-violet-900 text-white py-14">
         <SectionWrapper tight>
           <div className="flex flex-col md:flex-row items-center justify-between gap-8">
             <div className="max-w-xl">
               <h2 className="text-2xl md:text-3xl font-extrabold text-white mb-3">
-                Hosting an Event in Neopolis?
+                Hosting an Event?
               </h2>
               <p className="text-violet-200 mb-5">
-                Get it in front of 12,000+ district residents. We list concerts,
-                runs, food events, community days, and corporate gatherings.
+                Any business in the Neopolis directory can post events — concerts,
+                exhibitions, food festivals, runs, and more.
               </p>
               <ul className="space-y-2 text-sm text-violet-100">
                 {[
-                  "Listed on Events page and Home feed",
-                  "Promoted in weekly newsletter",
-                  "Ticket / registration link included",
-                  "Event recap article available",
+                  "Appears on the public Events page instantly",
+                  "Shown on your business profile",
+                  "Filtered by event type",
+                  "Free for all listed businesses",
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-violet-400 shrink-0" />
@@ -336,20 +211,12 @@ export default function EventsPage() {
                 ))}
               </ul>
             </div>
-            <div className="flex flex-col gap-3 shrink-0">
-              <Link
-                href="/advertise"
-                className="inline-flex items-center justify-center gap-2 bg-white text-violet-700 font-bold px-8 py-3.5 rounded-xl text-sm hover:bg-violet-50 transition-colors"
-              >
-                List Your Event <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link
-                href="/events/spaces"
-                className="inline-flex items-center justify-center gap-2 bg-violet-700 border border-violet-500 text-white font-semibold px-8 py-3 rounded-xl text-sm hover:bg-violet-600 transition-colors"
-              >
-                <Landmark className="w-4 h-4" /> Find an Event Space
-              </Link>
-            </div>
+            <Link
+              href="/my-business"
+              className="inline-flex items-center justify-center gap-2 bg-white text-violet-700 font-bold px-8 py-3.5 rounded-xl text-sm hover:bg-violet-50 transition-colors shrink-0"
+            >
+              Post an Event <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
         </SectionWrapper>
       </section>

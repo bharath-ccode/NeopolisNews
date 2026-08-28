@@ -13,11 +13,20 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
+  Store,
+  Home,
+  Tag,
+  UserCheck,
+  Mail,
 } from "lucide-react";
 import { getArticles, getArticleStats, Article } from "@/lib/newsStore";
+import { createClient } from "@/lib/supabase/client";
 
 export default function AdminDashboardPage() {
   const [articles, setArticles] = useState<Article[]>([]);
+  const [businessCount, setBusinessCount] = useState(0);
+  const [pendingClassifieds, setPendingClassifieds] = useState(0);
+  const [pendingBrokers, setPendingBrokers] = useState(0);
   const [stats, setStats] = useState({
     total: 0,
     published: 0,
@@ -29,6 +38,26 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     getArticles().then(setArticles);
     getArticleStats().then(setStats);
+    createClient()
+      .from("businesses")
+      .select("id", { count: "exact", head: true })
+      .then(({ count }) => { if (count !== null) setBusinessCount(count); });
+    fetch("/api/admin/classifieds")
+      .then((r) => r.json())
+      .then((data: { status: string }[]) => {
+        if (Array.isArray(data)) {
+          setPendingClassifieds(data.filter((c) => c.status === "pending").length);
+        }
+      })
+      .catch(() => {});
+    fetch("/api/admin/brokers")
+      .then((r) => r.json())
+      .then((data: { status: string }[]) => {
+        if (Array.isArray(data)) {
+          setPendingBrokers(data.filter((b) => b.status === "pending").length);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const recent = [...articles]
@@ -147,6 +176,96 @@ export default function AdminDashboardPage() {
           <div>
             <p className="font-semibold text-gray-900 text-sm">Analytics</p>
             <p className="text-xs text-gray-400">Views, traffic & stats</p>
+          </div>
+          <ArrowRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-brand-500 transition-colors" />
+        </Link>
+
+        <Link
+          href="/admin/businesses"
+          className="card p-5 flex items-center gap-4 hover:border-brand-300 group"
+        >
+          <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center shrink-0 group-hover:bg-green-100 transition-colors">
+            <Store className="w-5 h-5 text-green-600" />
+          </div>
+          <div>
+            <p className="font-semibold text-gray-900 text-sm">Businesses</p>
+            <p className="text-xs text-gray-400">{businessCount} listed · Invite &amp; manage</p>
+          </div>
+          <ArrowRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-brand-500 transition-colors" />
+        </Link>
+
+        <Link
+          href="/admin/brokers"
+          className="card p-5 flex items-center gap-4 hover:border-brand-300 group"
+        >
+          <div className="w-10 h-10 rounded-xl bg-cyan-50 flex items-center justify-center shrink-0 group-hover:bg-cyan-100 transition-colors">
+            <UserCheck className="w-5 h-5 text-cyan-600" />
+          </div>
+          <div>
+            <p className="font-semibold text-gray-900 text-sm">Brokers</p>
+            <p className="text-xs text-gray-400">
+              {pendingBrokers > 0
+                ? `${pendingBrokers} pending approval`
+                : "Real estate broker accounts"}
+            </p>
+          </div>
+          {pendingBrokers > 0 ? (
+            <span className="ml-auto bg-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+              {pendingBrokers}
+            </span>
+          ) : (
+            <ArrowRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-brand-500 transition-colors" />
+          )}
+        </Link>
+
+        <Link
+          href="/admin/classifieds"
+          className="card p-5 flex items-center gap-4 hover:border-brand-300 group"
+        >
+          <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center shrink-0 group-hover:bg-rose-100 transition-colors">
+            <Home className="w-5 h-5 text-rose-600" />
+          </div>
+          <div>
+            <p className="font-semibold text-gray-900 text-sm">Properties</p>
+            <p className="text-xs text-gray-400">
+              {pendingClassifieds > 0
+                ? `${pendingClassifieds} pending review`
+                : "Property listings queue"}
+            </p>
+          </div>
+          {pendingClassifieds > 0 ? (
+            <span className="ml-auto bg-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+              {pendingClassifieds}
+            </span>
+          ) : (
+            <ArrowRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-brand-500 transition-colors" />
+          )}
+        </Link>
+
+        <Link
+          href="/admin/ads"
+          className="card p-5 flex items-center gap-4 hover:border-brand-300 group"
+        >
+          <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0 group-hover:bg-indigo-100 transition-colors">
+            <Tag className="w-5 h-5 text-indigo-600" />
+          </div>
+          <div>
+            <p className="font-semibold text-gray-900 text-sm">Classifieds</p>
+            <p className="text-xs text-gray-400">Cars, bikes, furniture &amp; more</p>
+          </div>
+          <ArrowRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-brand-500 transition-colors" />
+        </Link>
+
+        <Link
+          href="/admin/digest"
+          className="card p-5 flex items-center gap-4 hover:border-brand-300 group"
+        >
+          <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center shrink-0 group-hover:bg-teal-100 transition-colors">
+            <Mail className="w-5 h-5 text-teal-600" />
+          </div>
+          <div>
+            <p className="font-semibold text-gray-900 text-sm">Email Digest</p>
+            <p className="text-xs text-gray-400">Subscribers &amp; weekly send</p>
           </div>
           <ArrowRight className="w-4 h-4 text-gray-300 ml-auto group-hover:text-brand-500 transition-colors" />
         </Link>

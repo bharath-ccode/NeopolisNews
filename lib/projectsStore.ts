@@ -67,6 +67,31 @@ export interface ProjectDetail {
 
 export type ProjectType = "apartments" | "independent_homes" | "residential" | "mixed_use" | "commercial";
 export type ProjectTier = "affordable" | "premium" | "luxury" | "uber_luxury";
+export const LOCALITIES = [
+  "Neopolis", "Kokapet", "Gandipet", "Financial District", "Rajendranagar",
+  "Nanakramguda", "Nallagandla", "Tellapur", "Puppalaguda", "Narsingi", "Gachibowli",
+  "Velimala", "Kollur", "Janwada", "Khanapur", "Vattinagulapally", "Mokila",
+  "Manchirevula",
+] as const;
+export type Locality = (typeof LOCALITIES)[number];
+export type LifecycleStatus =
+  | "pre_launch"
+  | "rera_registered"
+  | "under_construction"
+  | "structure_complete"
+  | "finishing"
+  | "oc_received"
+  | "ready_to_move";
+
+export const LIFECYCLE_STAGES: { id: LifecycleStatus; label: string }[] = [
+  { id: "pre_launch",          label: "Pre-Launch"          },
+  { id: "rera_registered",     label: "RERA Registered"     },
+  { id: "under_construction",  label: "Under Construction"  },
+  { id: "structure_complete",  label: "Structure Complete"  },
+  { id: "finishing",           label: "Finishing"           },
+  { id: "oc_received",         label: "OC Received"         },
+  { id: "ready_to_move",       label: "Ready to Move"       },
+];
 
 export interface Project {
   id: string;
@@ -76,12 +101,19 @@ export interface Project {
   totalLandAreaAcres: number | null;
   totalUnits: number | null;
   coreNeopolis: boolean;
+  featured: boolean;
   projectLogoUrl: string | null;
+  bannerImageUrl: string | null;
   projectPlanUrl: string | null;
+  brochureUrl: string | null;
   projectType: ProjectType | null;
   tier: ProjectTier | null;
+  locality: Locality | null;
+  lifecycleStatus: LifecycleStatus | null;
+  expectedCompletionDate: string | null;
   priceRangeMin: number | null;
   priceRangeMax: number | null;
+  amenities: string[];
   createdAt: string;
   updatedAt: string;
   contact?: Contact;
@@ -95,12 +127,19 @@ export interface ProjectInput {
   totalLandAreaAcres: number | null;
   totalUnits: number | null;
   coreNeopolis: boolean;
+  featured: boolean;
   projectLogoUrl: string | null;
+  bannerImageUrl: string | null;
   projectPlanUrl: string | null;
+  brochureUrl: string | null;
   projectType: ProjectType | null;
   tier: ProjectTier | null;
+  locality: Locality | null;
+  lifecycleStatus: LifecycleStatus | null;
+  expectedCompletionDate: string | null;
   priceRangeMin: number | null;
   priceRangeMax: number | null;
+  amenities: string[];
   contact: Contact;
   projectDetail: ProjectDetail;
   unitPlans: UnitPlan[];
@@ -109,7 +148,7 @@ export interface ProjectInput {
 // ─── Mapping ─────────────────────────────────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function toProject(row: any): Project {
+export function toProject(row: any): Project {
   const contactRow = Array.isArray(row.contacts) ? row.contacts[0] : row.contacts;
   const detailRow  = Array.isArray(row.project_details) ? row.project_details[0] : row.project_details;
 
@@ -190,12 +229,19 @@ function toProject(row: any): Project {
     totalLandAreaAcres: row.total_land_area_acres,
     totalUnits: row.total_units,
     coreNeopolis: row.core_neopolis ?? false,
+    featured: row.featured ?? false,
     projectLogoUrl: row.project_logo_url,
+    bannerImageUrl: row.banner_image_url ?? null,
     projectPlanUrl: row.project_plan_url ?? null,
+    brochureUrl: row.brochure_url ?? null,
     projectType: row.project_type ?? null,
     tier: row.tier ?? null,
+    locality: row.locality ?? null,
+    lifecycleStatus: row.lifecycle_status ?? null,
+    expectedCompletionDate: row.expected_completion_date ?? null,
     priceRangeMin: row.price_range_min ?? null,
     priceRangeMax: row.price_range_max ?? null,
+    amenities: row.amenities ?? [],
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     contact,
@@ -242,6 +288,7 @@ export async function getProjectById(id: string): Promise<Project | null> {
 
 export async function createProject(input: ProjectInput): Promise<Project> {
   const sb = createClient();
+  const { data: { user } } = await sb.auth.getUser();
 
   const { data: proj, error: projErr } = await sb
     .from("projects")
@@ -251,12 +298,20 @@ export async function createProject(input: ProjectInput): Promise<Project> {
       total_land_area_acres: input.totalLandAreaAcres,
       total_units:           input.totalUnits,
       core_neopolis:         input.coreNeopolis,
+      featured:              input.featured,
       project_logo_url:      input.projectLogoUrl,
+      banner_image_url:      input.bannerImageUrl,
       project_plan_url:      input.projectPlanUrl,
+      brochure_url:          input.brochureUrl,
       project_type:          input.projectType,
       tier:                  input.tier,
-      price_range_min:       input.priceRangeMin,
-      price_range_max:       input.priceRangeMax,
+      locality:              input.locality || null,
+      lifecycle_status:           input.lifecycleStatus,
+      expected_completion_date:   input.expectedCompletionDate || null,
+      price_range_min:            input.priceRangeMin,
+      price_range_max:            input.priceRangeMax,
+      amenities:                  input.amenities,
+      created_by:                 user?.id ?? null,
     })
     .select()
     .single();
@@ -277,12 +332,19 @@ export async function updateProject(id: string, input: ProjectInput): Promise<Pr
       total_land_area_acres: input.totalLandAreaAcres,
       total_units:           input.totalUnits,
       core_neopolis:         input.coreNeopolis,
+      featured:              input.featured,
       project_logo_url:      input.projectLogoUrl,
+      banner_image_url:      input.bannerImageUrl,
       project_plan_url:      input.projectPlanUrl,
+      brochure_url:          input.brochureUrl,
       project_type:          input.projectType,
       tier:                  input.tier,
-      price_range_min:       input.priceRangeMin,
-      price_range_max:       input.priceRangeMax,
+      locality:              input.locality || null,
+      lifecycle_status:           input.lifecycleStatus,
+      expected_completion_date:   input.expectedCompletionDate || null,
+      price_range_min:            input.priceRangeMin,
+      price_range_max:            input.priceRangeMax,
+      amenities:                  input.amenities,
     })
     .eq("id", id);
   if (projErr) throw projErr;
