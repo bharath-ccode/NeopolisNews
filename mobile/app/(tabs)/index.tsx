@@ -254,33 +254,39 @@ export default function HomeScreen() {
         ) : (
           <>
             {/* ── Deals ───────────────────────────────────────────────── */}
-            <SectionHeader title="🛍️ Local Deals" onSeeAll={() => router.push("/(tabs)/deals")} />
-            {deals.length === 0 ? (
-              <EmptyRow text="No active deals right now" />
-            ) : deals.map(d => <DealCard key={d.id} deal={d} />)}
+            {deals.length > 0 && (
+              <>
+                <SectionHeader title="🛍️ Local Deals" onSeeAll={() => router.push("/(tabs)/deals")} />
+                {deals.map(d => <DealCard key={d.id} deal={d} />)}
+              </>
+            )}
 
             {/* ── Events ──────────────────────────────────────────────── */}
-            <SectionHeader title="📅 Upcoming Events" />
-            {events.length === 0 ? (
-              <EmptyRow text="No upcoming events" />
-            ) : events.map(ev => <EventCard key={ev.id} ev={ev} onPress={() => router.push(`/event/${ev.id}`)} />)}
+            {events.length > 0 && (
+              <>
+                <SectionHeader title="📅 Upcoming Events" />
+                {events.map(ev => <EventCard key={ev.id} ev={ev} onPress={() => router.push(`/event/${ev.id}`)} />)}
+              </>
+            )}
 
             {/* ── Announcements ───────────────────────────────────────── */}
-            <SectionHeader title="📢 Announcements" />
-            {announcements.length === 0 ? (
-              <EmptyRow text="No announcements yet" />
-            ) : announcements.map(a => <AnnouncementCard key={a.id} item={a} />)}
+            {announcements.length > 0 && (
+              <>
+                <SectionHeader title="📢 Announcements" />
+                {announcements.map(a => <AnnouncementCard key={a.id} item={a} />)}
+              </>
+            )}
 
             {/* ── News ────────────────────────────────────────────────── */}
-            <SectionHeader title="📰 News" />
-            {news.length === 0 ? (
-              <EmptyRow text="No news articles yet" />
-            ) : (
-              <View style={s.newsListCard}>
-                {news.slice(0, 5).map(n => (
-                  <NewsCard key={n.id} item={n} onPress={() => router.push(`/news/${n.id}`)} />
-                ))}
-              </View>
+            {news.length > 0 && (
+              <>
+                <SectionHeader title="📰 News" />
+                <View style={s.newsListCard}>
+                  {news.slice(0, 5).map(n => (
+                    <NewsCard key={n.id} item={n} onPress={() => router.push(`/news/${n.id}`)} />
+                  ))}
+                </View>
+              </>
             )}
 
             {/* ── Today's Cartoon ──────────────────────────────────────── */}
