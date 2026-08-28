@@ -108,6 +108,7 @@ export default function Footer() {
             <Link href="/privacy"   className="hover:text-white">Privacy Policy</Link>
             <Link href="/terms"     className="hover:text-white">Terms of Use</Link>
             <Link href="/cookies"   className="hover:text-white">Cookies</Link>
+            <Link href="/support"   className="hover:text-white">Support</Link>
             <Link href="/advertise" className="hover:text-white">Advertise</Link>
           </div>
         </div>

@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: "Terms and conditions for using the NeopolisNews platform.",
 };
 
-const EFFECTIVE_DATE = "20 April 2026";
+const EFFECTIVE_DATE = "28 August 2026";
 const CONTACT_EMAIL  = "support@neopolis.news";
 const SITE_NAME      = "NeopolisNews";
 const SITE_URL       = "https://neopolis.news";
