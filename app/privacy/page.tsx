@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: "How NeopolisNews collects, uses, and protects your personal information.",
 };
 
-const EFFECTIVE_DATE = "20 April 2026";
+const EFFECTIVE_DATE = "28 August 2026";
 const CONTACT_EMAIL  = "support@neopolis.news";
 const SITE_NAME      = "NeopolisNews";
 const SITE_URL       = "https://neopolis.news";
@@ -72,6 +72,19 @@ export default function PrivacyPage() {
           <li><strong>Google OAuth</strong> — if you sign in with Google, we receive your name, email address, and profile picture from Google.</li>
         </UL>
 
+        <H3>1.4 Mobile application</H3>
+        <P>
+          The NeopolisNews app (available on iOS and Android) collects the same account and usage information
+          described above. Additionally:
+        </P>
+        <UL>
+          <li><strong>Push notification token</strong> — if you grant notification permission, your device&apos;s push token is stored to deliver news alerts. You can withdraw this permission at any time in your device settings.</li>
+          <li><strong>No precise location data</strong> — the app does not request or collect your device&apos;s GPS location. Weather, air-quality, and traffic data are based on fixed coordinates for the Kokapet / Neopolis area.</li>
+          <li><strong>Traffic data</strong> — estimated drive times are fetched from the Google Routes API using fixed origin and destination addresses; your device location is not used or transmitted.</li>
+          <li><strong>Air-quality data</strong> — sourced from the World Air Quality Index (WAQI) project using fixed area coordinates.</li>
+          <li><strong>Weather data</strong> — sourced from Open-Meteo using fixed area coordinates.</li>
+        </UL>
+
         {/* 2 */}
         <H2>2. How We Use Your Information</H2>
         <UL>
@@ -91,7 +104,7 @@ export default function PrivacyPage() {
         </P>
         <UL>
           <li><strong>With business owners, builders, and brokers</strong> — when you submit an enquiry or contact form, your name, phone number, and message are forwarded to the relevant party by email.</li>
-          <li><strong>With service providers</strong> — we use Supabase (database and authentication), Resend (email delivery), and Google (OAuth) to operate the Platform. Each provider processes data only as necessary to provide their service.</li>
+          <li><strong>With service providers</strong> — we use Supabase (database and authentication), Resend (email delivery), Google (OAuth and Routes API for traffic data), Open-Meteo (weather), and the World Air Quality Index / WAQI project (air quality) to operate the Platform. Each provider processes data only as necessary to provide their service. No personal data is sent to Open-Meteo or WAQI.</li>
           <li><strong>For legal compliance</strong> — if required by law, court order, or governmental authority.</li>
           <li><strong>In a business transfer</strong> — if {SITE_NAME} is acquired or merged, your information may transfer to the new entity under equivalent privacy protections.</li>
         </UL>
