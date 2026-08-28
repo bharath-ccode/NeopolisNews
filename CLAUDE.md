@@ -35,7 +35,9 @@ Create `.env.local` with:
 SUPABASE_SERVICE_ROLE_KEY=...     # bypasses RLS — server/API routes only
 RESEND_API_KEY=...                # email delivery (Resend)
 GOOGLE_TRANSLATE_API_KEY=...      # Cloud Translation API v2 — Telugu article translations
-GOOGLE_AI_API_KEY=...             # Gemini API key (Imagen) — AI editorial illustrations; needs billing
+GOOGLE_AI_API_KEY=...             # Gemini native image generation — AI editorial illustrations + cartoons; needs billing
+GOOGLE_PLACES_API_KEY=...         # Places API (New) — monthly business discovery pipeline; needs billing
+GOOGLE_MAPS_API_KEY=...           # Routes API — homepage live traffic widget; needs billing (can be the same Cloud project as Places, just enable Routes API too)
 OTP_SECRET=...                    # HMAC secret for signing business OTP cookies
 
 # Recommended
@@ -139,9 +141,10 @@ _All DB-backed features require their `supabase/migrations/*.sql` to have been r
 - **AI news digests** — daily 4 AM Vercel cron generates international/national/state/city digests from fetched headlines (Anthropic `claude-sonnet-4-6`); admin review queue at `/admin/ai-digest` (regenerate-with-feedback, approve/publish)
 - **Editor's Desk** — compose articles from editor pointers + headlines (Anthropic); always filed under the **Editorial** category
 - **Telugu edition** — path-based `/news/te/[id]` (old `?lang=te` 308-redirects); Google Cloud Translation API v2, cached in `article_translations`; auto-translate at publish + lazy on first view; admin review/edit at `/admin/news/[id]/telugu`; self-hosted Noto Sans Telugu font; hreflang + sitemap entries
-- **Cover image generation** — in `ArticleForm`, generate a branded headline card (`next/og`) or an AI editorial illustration (Google Imagen), compare candidates and pick; stored in `news-media` bucket
+- **Cover image generation** — in `ArticleForm`, generate a branded headline card (`next/og`) or an AI editorial illustration (Gemini native image generation), compare candidates and pick; stored in `news-media` bucket. The AI illustration is two-step like the cartoon generator: Claude first briefs a concrete scene from the full article body (not just title/excerpt), then Gemini illustrates that scene — avoids the generic abstract-shapes look a template prompt straight from the title produced
 - **News comments + reactions**, **citizen reports** (earn points), **review owner responses**
-- **Daily cartoon** — homepage panel, archive, Friday caption contest (`/cartoon`, `/api/cartoons`)
+- **Daily cartoon** — homepage panel, archive, Friday caption contest (`/cartoon`, `/api/cartoons`); admin can also **generate from today's headlines** (`/api/admin/cartoons/generate`) — optionally paste a specific article link and/or notes on the take *before* the first generate (skips the headline pool and fetches+strips that page's text instead), otherwise Claude picks a local Hyderabad RSS headline; either way it writes a title/caption/scene and Gemini illustrates it (comic-strip prompt, distinct from the editorial-illustration one), replacing the old manual "generate in Gemini, download, upload" step; same link/notes fields double as regenerate-with-feedback, same review-before-publish pattern as the AI digest; every cartoon (AI-generated or manually uploaded via `/api/admin/cartoons/upload`) gets a lightweight logo (no text, 1in × 1in @96dpi) baked into the art's corner at generation/upload time (`lib/watermarkCartoon.tsx`); **publishing** a cartoon additionally extends the image with a white caption strip below the art — the punchline plus a more prominent "https://neopolis.news" text (no logo, bottom-right — `lib/bakeCartoonText.tsx`) — from a clean `artwork_url` kept alongside `image_url` so unpublish/republish re-bakes fresh instead of stacking text twice; both renderers share font/logo-fetching via `lib/cartoonAssets.ts`, rendered via `next/og` like the headline card rather than sharp+SVG text, since Vercel's serverless runtime has no guaranteed system fonts; `daily_cartoons.view_count`/`whatsapp_share_count` and `articles.views` auto-seed to a randomized odd baseline (300/50/400 respectively) the moment a row is first published, via DB triggers (`20260828_cartoon_publish_effects.sql`) since neither counter is live-tracked — supersedes the earlier one-off seed migrations going forward
+- **Daily poll** — admin-created question with 2–6 multiple-choice options (`/admin/polls`), one per `publish_date` like the cartoon; homepage panel + `/polls` archive; sign-in required to vote (one vote per user per poll, changeable via upsert on `(poll_id, user_id)`); results shown as bars once the reader has voted; ⚠️ requires `supabase/migrations/20260826_polls.sql` to be run
 - **Sitewide news ticker** above the navbar; homepage news + cartoon strip
 - **Brochure import** — admin extracts structured project data from an uploaded brochure (Anthropic)
 
@@ -158,7 +161,12 @@ _All DB-backed features require their `supabase/migrations/*.sql` to have been r
 - **Project compare** page with sticky bar; expected completion date; lifecycle timeline
 - **DB-backed price trends** with admin editor
 - **Health directory** + **wellness sessions** (slots, enrollment, attendance); **cinemas / now-showing**; **deals**; **events + spaces**; **business appointments** (booking-link deep-link + request-a-slot)
+- **Per-movie showtimes** — `show_times` (time + optional per-time BookMyShow URL, falls back to the movie's own `bms_url`), managed per movie in My Business's Now Showing tab; `/entertainment/cinemas` (filtered by the selected date via `/api/cinemas?date=`) and a cinema's business-profile Now Showing section both show real showtimes as individual Book buttons when entered, falling back to the existing movie- or cinema-level BookMyShow link otherwise; ⚠️ requires `supabase/migrations/20260823_show_times.sql` to be run
+- **Ticket-intent click tracking** — every "Book Tickets"/"View Showtimes & Book" click-through to BookMyShow (cinemas page, cinema profile, and now per-showtime) logs to `ticket_click_events` via `/api/ticket-clicks` (public, rate-limited, anonymous), including the exact showtime when known; real (non-simulated) totals shown at the top of `/admin/analytics`; ⚠️ requires `supabase/migrations/20260822_ticket_click_events.sql` to be run
+- **Real page-view analytics** — `/admin/analytics` is now fully real (no mock data): a `page_views` row is logged per route change by `PageViewTracker` (mounted in the root layout, skips `/admin/*`) via `/api/track-pageview`, keyed to an anonymous first-party cookie (`nn_vid`, 1-year, not tied to an account); `/api/admin/analytics/page-views` aggregates daily views/visitors, top pages, referrer-bucketed traffic sources (Direct/Search/Social/Referral), and a rough session-duration estimate; ⚠️ requires `supabase/migrations/20260825_page_views.sql` to be run
 - **Weather + AQI widget** — Open-Meteo (weather) + WAQI (air quality), client-side; Kokapet coords
+- **Live traffic widget** — homepage card (`components/HomeTrafficWidget.tsx`) with a Neopolis/Financial District dropdown; `/api/traffic` calls Google's Routes API (`GOOGLE_MAPS_API_KEY`, needs billing) for current vs. typical drive time along one representative stretch per area (`lib/trafficAreas.ts`, address-based waypoints so Google geocodes them — no hardcoded lat/lng), derives a light/moderate/heavy summary; server-cached 5 min via Next's fetch `revalidate` to limit billed calls. A compact version (`components/TopBarTraffic.tsx`) sits in the sitewide top bar next to `WeatherWidget` — same area dropdown, just a colored dot + minutes, no popover — for the same every-page, no-scroll prominence as weather; hidden below `md` since that bar is already tight on mobile
+- **Distance-from-you on business cards** — `businesses.latitude`/`longitude`, populated for free from the Places data already captured at discovery time (`business_discovery_candidates.lat`/`lng`, carried forward by `promoteCandidateToBusiness`); businesses added directly on the site (`/api/businesses/register` — both admin-created and self-register paths — and `/api/admin/businesses/create`) get geocoded from their address via `lib/googleGeocode.ts` (Google Geocoding API, reuses `GOOGLE_PLACES_API_KEY` — best-effort, never blocks creation if it fails); `/health` listing cards show straight-line distance (`lib/distance.ts`'s Haversine calc, no API call) from the browser's geolocation (`lib/useUserLocation.ts`) next to the phone number — ⚠️ requires `supabase/migrations/20260829_business_coordinates.sql` to backfill already-promoted businesses from their candidate row's coordinates; a **"Backfill Coordinates"** button on `/admin/businesses` (`/api/admin/businesses/backfill-coordinates`) geocodes any business still missing them — covers ones created directly before the geocode-on-register fix existed
 
 ### Completed — platform & ops
 - **Admin panel** (`/admin`) — businesses, news, AI digest, cartoons, events, payments, analytics, settings; protected client-side by `AdminAuthContext`
@@ -166,13 +174,16 @@ _All DB-backed features require their `supabase/migrations/*.sql` to have been r
 - **Rate-limiting** on public POST endpoints
 - **SEO** — brand-entity + Organization/NewsArticle/Event JSON-LD, dynamic sitemap, robots, per-page metadata
 - **Ads** (`/api/ads`) and payments records (Razorpay fields; `/admin/payments`)
+- **Business discovery pipeline** (`/admin/business-discovery`) — Google Places search staged for admin review; industry-first config (`lib/businessDiscovery/`, mirrors `TAXONOMY`'s Industry → Type → Subtype shape) with one config file per industry (currently Health & Wellness) sharing a single `business_discovery_candidates` table, run function, and review screen; re-surfaces a candidate on later runs if an already-approved listing's phone/hours/address changed; admin picks industries/types/subtypes (none selected by default; picking an industry selects all its subtypes) plus exactly one locality per run before "Run Discovery Now" enables — capped at 1 locality/run while the feature settles; the monthly cron (`/api/cron/discover-businesses`, full unscoped sweep) is currently **disabled** — removed from `vercel.json`'s `crons`, route left in place to re-enable later; ⚠️ requires `supabase/migrations/20260818_business_discovery.sql` to be run
 
 ### AI & external services
 | Service | Used for | Env var |
 |---|---|---|
 | Anthropic (Claude `claude-sonnet-4-6`) | AI digests, Editor's Desk, brochure import | `ANTHROPIC_API_KEY` |
 | Google Cloud Translation v2 | Telugu article translation | `GOOGLE_TRANSLATE_API_KEY` |
-| Google Imagen (Gemini API) | AI editorial illustrations | `GOOGLE_AI_API_KEY` |
+| Gemini native image generation (`gemini-3.1-flash-image-preview`) | AI editorial illustrations, cartoon generation | `GOOGLE_AI_API_KEY` |
+| Google Places API (New) | Monthly business discovery pipeline (`/admin/business-discovery`) | `GOOGLE_PLACES_API_KEY` |
+| Google Routes API | Homepage live traffic widget (`/api/traffic`) | `GOOGLE_MAPS_API_KEY` |
 | Open-Meteo + WAQI | Weather + AQI widget | none (WAQI uses a demo token) |
 
 All AI usage is **single-call completions** — no agentic loops, tool use, or Managed Agents.
@@ -182,7 +193,6 @@ One `auth.users` record per email/phone, always. `user_profiles` (individual dat
 
 ### Not yet implemented / known gaps
 - **Business dashboard runs on mock data** — `app/dashboard/business/page.tsx` renders hardcoded `MOCK_CLASSIFIEDS` / `MOCK_RECENT_LEADS`; the real `/api/classifieds` and `/api/leads` exist but aren't wired in
-- **Admin analytics partly mock** — `MOCK_PAGE_STATS` / `MOCK_TRAFFIC_SOURCES` in `lib/newsStore.ts`; article view counts are real, page views / traffic sources / bounce are placeholder
 - **Page-level auth guards** — `/api/admin/*` is enforced in middleware, but `/admin`, `/builder`, `/dashboard` **pages** remain client-guarded only (deliberate: sessions live in localStorage)
 - **WAQI demo token** — the AQI widget uses `token=demo`; register a real token for production
 - **AI-generated image labelling** — editorial AI illustrations are not yet visibly badged as AI on the public article

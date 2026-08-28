@@ -15,6 +15,7 @@ import SiteVisitForm from "./SiteVisitForm";
 import ProjectSubscribeBox from "./ProjectSubscribeBox";
 import LifecycleTimeline from "./LifecycleTimeline";
 import MasterPlanModal from "./MasterPlanModal";
+import BrochureDownload from "./BrochureDownload";
 import WhatsAppShare from "@/components/WhatsAppShare";
 import SaveButton from "@/components/SaveButton";
 
@@ -40,10 +41,10 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 const TIER_COLORS: Record<string, string> = {
-  affordable:  "bg-blue-50 text-blue-700",
-  premium:     "bg-purple-50 text-purple-700",
-  luxury:      "bg-amber-50 text-amber-700",
-  uber_luxury: "bg-rose-50 text-rose-800",
+  affordable:  "bg-blue-600 text-white",
+  premium:     "bg-purple-600 text-white",
+  luxury:      "bg-amber-500 text-gray-900",
+  uber_luxury: "bg-rose-600 text-white",
 };
 
 const PROJECT_SELECT = `
@@ -274,16 +275,26 @@ export default async function ProjectDetailPage({
                 {project.projectType && (
                   <span className="text-xs text-brand-300">{TYPE_LABELS[project.projectType] ?? project.projectType}</span>
                 )}
-                {project.coreNeopolis && (
-                  <span className="flex items-center gap-1 text-xs text-green-400 font-medium">
-                    <CheckCircle className="w-3.5 h-3.5" /> Core Neopolis
+                {project.locality && (
+                  <span className="flex items-center gap-1 text-xs text-brand-300 font-medium">
+                    <MapPin className="w-3.5 h-3.5" /> {project.locality}
                   </span>
                 )}
               </div>
               <h1 className="text-2xl md:text-3xl font-extrabold mb-1">{project.projectName}</h1>
               {project.builderName && (
                 <p className="text-brand-300 text-sm flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5" /> By {project.builderName}
+                  <MapPin className="w-3.5 h-3.5" /> By{" "}
+                  {project.builderId ? (
+                    <Link
+                      href={`/builders/${project.builderId}`}
+                      className="underline decoration-brand-500 underline-offset-2 hover:text-white transition-colors"
+                    >
+                      {project.builderName}
+                    </Link>
+                  ) : (
+                    project.builderName
+                  )}
                 </p>
               )}
               {priceLabel && (
@@ -469,24 +480,7 @@ export default async function ProjectDetailPage({
               <MasterPlanModal url={project.projectPlanUrl} />
             )}
             {project.brochureUrl && (
-              <a
-                href={project.brochureUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                download
-                className="card p-5 flex items-center gap-4 hover:border-brand-300 hover:shadow-md transition-all group w-full text-left"
-              >
-                <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center shrink-0">
-                  <Download className="w-6 h-6 text-green-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-gray-900 group-hover:text-brand-700 transition-colors">
-                    Download Brochure
-                  </p>
-                  <p className="text-xs text-gray-400 mt-0.5">PDF · Click to download</p>
-                </div>
-                <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-brand-600 transition-colors shrink-0" />
-              </a>
+              <BrochureDownload url={project.brochureUrl} />
             )}
           </div>
         </SectionWrapper>

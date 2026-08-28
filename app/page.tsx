@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import HomeNewsAndCartoon from "@/components/HomeNewsAndCartoon";
+import HomeTrafficWidget from "@/components/HomeTrafficWidget";
 import LeadForm from "@/components/LeadForm";
 import { createAdminClient } from "@/lib/supabase/server";
 
@@ -27,7 +28,7 @@ export const fetchCache = "force-no-store";
 // ─── Static data ────────────────────────────────────────────────────────────
 
 const STATS = [
-  { label: "Acres of Development", value: "100+", icon: MapPin },
+  { label: "Areas Covered & Growing", value: "5+", icon: MapPin },
   { label: "Residential Units", value: "4,200+", icon: Home },
   { label: "Retail Sq Ft", value: "8 Lakh", icon: ShoppingBag },
   { label: "Registered Users", value: "12,000+", icon: Users },
@@ -164,6 +165,13 @@ export default async function HomePage() {
 
   return (
     <>
+      {/* ── Live traffic ── */}
+      <section className="bg-gray-50 border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <HomeTrafficWidget />
+        </div>
+      </section>
+
       {/* ── Latest headlines + Daily Cartoon ── */}
       <HomeNewsAndCartoon />
 
@@ -201,8 +209,8 @@ export default async function HomePage() {
               </h1>
               <p className="text-lg text-brand-200 mb-8 leading-relaxed max-w-xl">
                 Real estate intelligence, rentals, retail discovery, local news,
-                and resident services — all for one 100-acre urban district.
-                The only platform you need.
+                and resident services — for Kokapet, Narsingi and the growing
+                neighbourhoods of West Hyderabad. The only platform you need.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link href="/real-estate" className="btn-primary">
@@ -320,9 +328,11 @@ export default async function HomePage() {
                 const status = p.lifecycle_status ?? "Under Construction";
                 const statusColor = STATUS_COLORS[status] ?? "tag-blue";
                 const price = p.price_range_min && p.price_range_max
-                  ? `₹${(p.price_range_min / 100).toFixed(0)}L – ₹${(p.price_range_max / 100).toFixed(0)}L`
+                  ? `₹${p.price_range_min.toLocaleString("en-IN")} – ₹${p.price_range_max.toLocaleString("en-IN")} /sft`
                   : p.price_range_min
-                  ? `From ₹${(p.price_range_min / 100).toFixed(0)}L`
+                  ? `From ₹${p.price_range_min.toLocaleString("en-IN")} /sft`
+                  : p.price_range_max
+                  ? `Up to ₹${p.price_range_max.toLocaleString("en-IN")} /sft`
                   : null;
                 return (
                   <Link key={p.id} href={`/real-estate/${p.id}`} className="card p-5 group hover:shadow-md transition-shadow">

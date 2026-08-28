@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 const FIELDS =
-  "id, title, image_url, caption, artist_name, publish_date, is_contest, winner_name, winner_caption";
+  "id, title, image_url, caption, artist_name, publish_date, is_contest, winner_name, winner_caption, view_count, whatsapp_share_count";
 
 /** GET — latest published cartoon plus a paged archive.
  *  ?page=1 (12 per page) for the archive grid. */

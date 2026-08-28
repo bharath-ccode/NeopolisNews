@@ -15,8 +15,12 @@ import {
   AlertCircle,
   FileText,
   Star,
+  Trash2,
+  MapPinned,
+  Loader2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { TAXONOMY } from "@/lib/businessDirectory";
 
 interface Business {
   id: string;
@@ -61,6 +65,12 @@ export default function AdminBusinessesPage() {
   const [search, setSearch] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [featuringId, setFeaturingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [industryFilter, setIndustryFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [subtypeFilter, setSubtypeFilter] = useState("all");
+  const [backfilling, setBackfilling] = useState(false);
+  const [backfillMsg, setBackfillMsg] = useState("");
 
   useEffect(() => {
     const supabase = createClient();
@@ -92,20 +102,56 @@ export default function AdminBusinessesPage() {
     setFeaturingId(null);
   }
 
+  async function handleDelete(id: string, name: string) {
+    if (!confirm(`Delete "${name}"? This also removes its events, offers, news, reviews, wellness sessions, enquiries, updates, appointment requests, and favorites. This can't be undone.`)) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/admin/businesses/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setBusinesses((prev) => prev.filter((b) => b.id !== id));
+    } catch {
+      alert("Failed to delete. Please try again.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  async function backfillCoordinates() {
+    setBackfilling(true);
+    setBackfillMsg("");
+    try {
+      const res = await fetch("/api/admin/businesses/backfill-coordinates", { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Backfill failed");
+      setBackfillMsg(`Geocoded ${json.updated} of ${json.total} businesses missing coordinates${json.failed ? ` (${json.failed} couldn't be resolved)` : ""}.`);
+    } catch (err) {
+      setBackfillMsg(err instanceof Error ? err.message : "Backfill failed");
+    } finally {
+      setBackfilling(false);
+    }
+  }
+
   function copyLink(id: string) {
     navigator.clipboard.writeText(getInviteLink(id));
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
   }
 
+  const industries = Object.keys(TAXONOMY);
+  const typeOptions = industryFilter !== "all" ? Object.keys(TAXONOMY[industryFilter] ?? {}) : [];
+  const subtypeOptions = industryFilter !== "all" && typeFilter !== "all" ? (TAXONOMY[industryFilter]?.[typeFilter] ?? []) : [];
+
   const q = search.toLowerCase();
   const filtered = businesses.filter(
     (b) =>
-      b.name.toLowerCase().includes(q) ||
-      b.industry.toLowerCase().includes(q) ||
-      (b.types ?? []).some((t) => t.toLowerCase().includes(q)) ||
-      (b.subtypes ?? []).some((s) => s.toLowerCase().includes(q)) ||
-      (b.owner_phone ?? "").includes(q)
+      (b.name.toLowerCase().includes(q) ||
+        b.industry.toLowerCase().includes(q) ||
+        (b.types ?? []).some((t) => t.toLowerCase().includes(q)) ||
+        (b.subtypes ?? []).some((s) => s.toLowerCase().includes(q)) ||
+        (b.owner_phone ?? "").includes(q)) &&
+      (industryFilter === "all" || b.industry === industryFilter) &&
+      (typeFilter === "all" || (b.types ?? []).includes(typeFilter)) &&
+      (subtypeFilter === "all" || (b.subtypes ?? []).includes(subtypeFilter))
   );
 
   return (
@@ -123,10 +169,29 @@ export default function AdminBusinessesPage() {
             <span className="ml-2 text-xs text-gray-400">/ Admin / Businesses</span>
           </div>
         </div>
-        <Link href="/admin/businesses/new" className="btn-primary text-sm">
-          <PlusCircle className="w-4 h-4" /> Add Business
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={backfillCoordinates}
+            disabled={backfilling}
+            title="Geocode any business missing coordinates (needed for distance-from-you on listing pages)"
+            className="btn-secondary text-sm disabled:opacity-60"
+          >
+            {backfilling ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPinned className="w-4 h-4" />}
+            Backfill Coordinates
+          </button>
+          <Link href="/admin/businesses/new" className="btn-primary text-sm">
+            <PlusCircle className="w-4 h-4" /> Add Business
+          </Link>
+        </div>
       </header>
+
+      {backfillMsg && (
+        <div className="max-w-5xl mx-auto px-4 md:px-8 pt-4">
+          <p className="text-sm bg-blue-50 border border-blue-200 text-blue-700 rounded-xl px-4 py-2.5">
+            {backfillMsg}
+          </p>
+        </div>
+      )}
 
       <div className="max-w-5xl mx-auto px-4 md:px-8 py-8">
         {/* Stats row */}
@@ -210,6 +275,42 @@ export default function AdminBusinessesPage() {
               placeholder="Search by name, industry, type, or phone…"
               className="flex-1 text-sm outline-none text-gray-700 placeholder-gray-400"
             />
+          </div>
+          <div className="flex flex-wrap items-center gap-2 px-5 py-3 border-b border-gray-100 bg-gray-50/50">
+            <select
+              value={industryFilter}
+              onChange={(e) => { setIndustryFilter(e.target.value); setTypeFilter("all"); setSubtypeFilter("all"); }}
+              className="text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-400"
+            >
+              <option value="all">All industries</option>
+              {industries.map((i) => <option key={i} value={i}>{i}</option>)}
+            </select>
+            <select
+              value={typeFilter}
+              onChange={(e) => { setTypeFilter(e.target.value); setSubtypeFilter("all"); }}
+              disabled={industryFilter === "all"}
+              className="text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-400 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value="all">All types</option>
+              {typeOptions.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+            <select
+              value={subtypeFilter}
+              onChange={(e) => setSubtypeFilter(e.target.value)}
+              disabled={typeFilter === "all"}
+              className="text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-400 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value="all">All subtypes</option>
+              {subtypeOptions.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+            {(industryFilter !== "all" || typeFilter !== "all" || subtypeFilter !== "all") && (
+              <button
+                onClick={() => { setIndustryFilter("all"); setTypeFilter("all"); setSubtypeFilter("all"); }}
+                className="text-xs font-semibold text-brand-600 hover:underline"
+              >
+                Clear filters
+              </button>
+            )}
           </div>
 
           {filtered.length === 0 ? (
@@ -302,6 +403,13 @@ export default function AdminBusinessesPage() {
                         >
                           <Pencil className="w-3.5 h-3.5" /> Edit
                         </Link>
+                        <button
+                          onClick={() => handleDelete(b.id, b.name)}
+                          disabled={deletingId === b.id}
+                          className="flex items-center gap-1.5 text-xs border border-gray-200 text-gray-500 hover:border-red-300 hover:text-red-600 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> {deletingId === b.id ? "Deleting…" : "Delete"}
+                        </button>
                         {b.status !== "active" && (
                           <>
                             <button

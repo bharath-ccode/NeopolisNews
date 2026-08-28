@@ -28,6 +28,8 @@ import ContactButton from "./ContactButton";
 import ReviewSection from "./ReviewSection";
 import BookAppointment from "./BookAppointment";
 import BusinessCarousels from "./BusinessCarousels";
+import BookTicketsLink from "./BookTicketsLink";
+import SaveButton from "@/components/SaveButton";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -68,6 +70,12 @@ interface BusinessEvent {
   ticket_price: number | null;
 }
 
+interface ShowTimeItem {
+  id: string;
+  time: string;
+  bms_url: string | null;
+}
+
 interface NowShowingItem {
   id: string;
   title: string;
@@ -78,6 +86,7 @@ interface NowShowingItem {
   bms_url: string | null;
   running_from: string;
   running_until: string | null;
+  show_times: ShowTimeItem[];
 }
 
 interface BusinessRow {
@@ -89,6 +98,7 @@ interface BusinessRow {
   address: string;
   status: string;
   verified: boolean;
+  owner_id: string | null;
   logo: string | null;
   pictures: string[];
   social_links: SocialLinks;
@@ -170,10 +180,13 @@ export default async function BusinessProfilePage({
   if (b.industry === "Entertainment") {
     const { data: movies } = await supabase
       .from("now_showing")
-      .select("*")
+      .select("*, show_times ( id, time, bms_url )")
       .eq("business_id", params.id)
       .order("running_from", { ascending: false });
-    nowShowing = movies ?? [];
+    nowShowing = (movies ?? []).map((m) => ({
+      ...m,
+      show_times: [...(m.show_times ?? [])].sort((a: ShowTimeItem, b: ShowTimeItem) => a.time.localeCompare(b.time)),
+    })) as NowShowingItem[];
   }
 
   const today = new Date().toISOString().split("T")[0];
@@ -298,10 +311,13 @@ export default async function BusinessProfilePage({
                 )}
               </div>
 
-              {/* Name */}
-              <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-3">
-                {b.name}
-              </h1>
+              {/* Name + favourite */}
+              <div className="flex flex-wrap items-center gap-3 mb-3 justify-center md:justify-start">
+                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
+                  {b.name}
+                </h1>
+                <SaveButton itemType="business" itemId={b.id} variant="dark" />
+              </div>
 
               {/* Inline category breadcrumb */}
               {(b.industry || b.types.length > 0 || b.subtypes.length > 0) && (
@@ -447,16 +463,14 @@ export default async function BusinessProfilePage({
                       Until {new Date(m.running_until).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
                     </p>
                   )}
-                  {m.bms_url && (
-                    <a
-                      href={m.bms_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-[11px] font-bold text-red-600 hover:text-red-700 mt-1.5"
-                    >
-                      <ExternalLink className="w-3 h-3" /> Book Tickets
-                    </a>
-                  )}
+                  <BookTicketsLink
+                    bmsUrl={m.bms_url}
+                    businessId={b.id}
+                    businessName={b.name}
+                    movieId={m.id}
+                    movieTitle={m.title}
+                    showTimes={m.show_times}
+                  />
                 </div>
               ))}
             </div>
@@ -493,6 +507,7 @@ export default async function BusinessProfilePage({
                 businessId={b.id}
                 businessName={b.name}
                 bookingUrl={b.booking_url}
+                claimed={!!b.owner_id}
               />
 
               {((b.phone_numbers && b.phone_numbers.length > 0) || b.contact_phone || hasSocial) && (

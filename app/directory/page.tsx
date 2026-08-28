@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import LeadForm from "@/components/LeadForm";
+import SaveButton from "@/components/SaveButton";
 import DirectorySearchBar from "@/components/DirectorySearchBar";
 import { createAdminClient } from "@/lib/supabase/server";
 
@@ -193,11 +194,18 @@ export default async function DirectoryPage() {
                 <span className="tag-purple mb-2 text-xs">{b.industry}</span>
                 <h3 className="font-bold text-gray-900 text-sm mt-2 mb-1">{b.name}</h3>
                 <p className="text-xs text-gray-500 mb-3 line-clamp-1">{b.address}</p>
+                <span className="absolute bottom-3 right-3">
+                  <SaveButton itemType="business" itemId={b.id} size="sm" />
+                </span>
                 {b.contact_phone && (
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <a
+                    href={`tel:${b.contact_phone.replace(/\s/g, "")}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-2 text-xs text-gray-500 hover:text-brand-600 w-fit"
+                  >
                     <Phone className="w-3.5 h-3.5" />
                     <span>{b.contact_phone}</span>
-                  </div>
+                  </a>
                 )}
               </Link>
             ))}

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rateLimit";
 import { Resend } from "resend";
 import { createAdminClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/apiAuth";
 
 const E164_RE  = /^\+[1-9]\d{6,14}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -12,6 +13,10 @@ export async function POST(
 ) {
   const limited = rateLimit(req, "proj-enquire", { limit: 5 });
   if (limited) return limited;
+
+  // Project pages are public, but sending an enquiry requires an account.
+  const auth = await requireUser(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const body = await req.json().catch(() => null);
   const { senderName, senderPhone, senderEmail, message } = (body ?? {}) as Record<string, string>;

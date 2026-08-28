@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   PenTool, Loader2, Plus, Trash2, ImagePlus, X, Trophy,
-  Eye, EyeOff, ExternalLink, CheckCircle2,
+  Eye, EyeOff, ExternalLink, CheckCircle2, Sparkles, RefreshCw,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -44,6 +44,12 @@ export default function AdminCartoonsPage() {
   const [saving, setSaving]     = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Generate from headlines
+  const [generating, setGenerating]   = useState(false);
+  const [generated, setGenerated]     = useState(false);
+  const [genUrl, setGenUrl]           = useState("");
+  const [genNotes, setGenNotes]       = useState("");
+
   // Winner picking
   const [pickingFor, setPickingFor] = useState<string | null>(null);
   const [entries, setEntries]       = useState<CaptionEntry[]>([]);
@@ -67,9 +73,7 @@ export default function AdminCartoonsPage() {
     try {
       const fd = new FormData();
       fd.append("file", file);
-      fd.append("folder", "cartoons");
-      fd.append("bucket", "news-media");
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const res = await fetch("/api/admin/cartoons/upload", { method: "POST", body: fd });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Upload failed");
       setImageUrl(json.url);
@@ -79,6 +83,29 @@ export default function AdminCartoonsPage() {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
     }
+  }
+
+  async function generateFromHeadlines() {
+    setGenerating(true);
+    setError("");
+    const res = await fetch("/api/admin/cartoons/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: genUrl.trim() || undefined, notes: genNotes.trim() || undefined }),
+    }).catch(() => null);
+    if (!res?.ok) {
+      const j = res ? await res.json().catch(() => ({})) : {};
+      setError((j as { error?: string }).error ?? "Failed to generate.");
+      setGenerating(false);
+      return;
+    }
+    const data = await res.json();
+    setTitle(data.title ?? "");
+    setCaption(data.caption ?? "");
+    setImageUrl(data.image_url ?? "");
+    setIsContest(false);
+    setGenerated(true);
+    setGenerating(false);
   }
 
   async function save(publish: boolean) {
@@ -101,6 +128,7 @@ export default function AdminCartoonsPage() {
       setError((j as { error?: string }).error ?? "Failed to save.");
     } else {
       setTitle(""); setCaption(""); setImageUrl(""); setIsContest(false);
+      setGenerated(false); setGenUrl(""); setGenNotes("");
       load();
     }
     setSaving(false);
@@ -165,6 +193,42 @@ export default function AdminCartoonsPage() {
 
       {/* Create */}
       <div className="card p-5 space-y-3">
+        <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Generate from headlines</p>
+          <input
+            type="url"
+            value={genUrl}
+            onChange={(e) => setGenUrl(e.target.value)}
+            placeholder="Paste a specific article link (optional) — otherwise picks from today's local headlines"
+            className={INPUT}
+          />
+          <input
+            type="text"
+            value={genNotes}
+            onChange={(e) => setGenNotes(e.target.value)}
+            placeholder="Notes for the take (optional) — e.g. 'focus on the metro delay' or 'make it more upbeat'…"
+            className={INPUT}
+          />
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <button
+              type="button"
+              onClick={() => generateFromHeadlines()}
+              disabled={generating}
+              className="flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold px-4 py-2 rounded-xl transition-colors disabled:opacity-60"
+            >
+              {generating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : generated ? (
+                <RefreshCw className="w-4 h-4" />
+              ) : (
+                <Sparkles className="w-4 h-4" />
+              )}
+              {generating ? "Writing & drawing…" : generated ? "Regenerate" : "Generate"}
+            </button>
+            <p className="text-xs text-gray-400">Writes it, illustrates it — review before publishing.</p>
+          </div>
+        </div>
+
         <div className="grid sm:grid-cols-2 gap-3">
           <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={100}
             placeholder="Title * — e.g. The Site Visit" className={INPUT} />
@@ -230,7 +294,7 @@ export default function AdminCartoonsPage() {
             <div key={c.id} className="card p-4">
               <div className="flex items-center gap-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={c.image_url} alt={c.title} className="w-20 h-16 rounded-lg object-cover bg-gray-50 shrink-0" />
+                <img src={c.image_url} alt={c.title} className="w-20 h-16 rounded-lg object-cover object-top bg-gray-50 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-bold text-sm text-gray-900 truncate">{c.title}</p>

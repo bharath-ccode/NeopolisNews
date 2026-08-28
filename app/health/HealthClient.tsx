@@ -10,8 +10,11 @@ import {
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import LeadForm from "@/components/LeadForm";
+import SaveButton from "@/components/SaveButton";
 import { getSubtypes } from "@/lib/businessDirectory";
 import { createClient } from "@/lib/supabase/client";
+import { useUserLocation, type UserLocation } from "@/lib/useUserLocation";
+import { haversineKm, formatDistance } from "@/lib/distance";
 
 type HealthType = "hospitals" | "ambulance" | "clinics" | "diagnostics" | "pharmacies";
 
@@ -30,6 +33,8 @@ interface Business {
   contact_phone: string | null;
   phone_numbers: PhoneEntry[] | null;
   timings: DayTiming[] | null;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 const TYPE_CONFIG: {
@@ -68,9 +73,21 @@ function is24x7(timings: DayTiming[] | null): boolean {
   );
 }
 
-function BusinessCard({ biz, typeId }: { biz: Business; typeId: HealthType }) {
+function BusinessCard({
+  biz,
+  typeId,
+  userLocation,
+}: {
+  biz: Business;
+  typeId: HealthType;
+  userLocation: UserLocation | null;
+}) {
   const cfg = TYPE_MAP[typeId];
   const Icon = cfg.icon;
+  const distanceKm =
+    userLocation && biz.latitude != null && biz.longitude != null
+      ? haversineKm(userLocation.lat, userLocation.lng, biz.latitude, biz.longitude)
+      : null;
   const hasAppointments = biz.phone_numbers?.some((p) =>
     p.purpose.toLowerCase().includes("appointment")
   );
@@ -118,6 +135,7 @@ function BusinessCard({ biz, typeId }: { biz: Business; typeId: HealthType }) {
               24 / 7
             </span>
           )}
+          <SaveButton itemType="business" itemId={biz.id} size="sm" />
         </div>
       </div>
 
@@ -127,6 +145,9 @@ function BusinessCard({ biz, typeId }: { biz: Business; typeId: HealthType }) {
         {biz.address && (
           <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
             <MapPin className="w-3 h-3 shrink-0" /> {biz.address}
+            {distanceKm !== null && (
+              <span className="text-gray-400">· {formatDistance(distanceKm)}</span>
+            )}
           </p>
         )}
       </div>
@@ -147,7 +168,7 @@ function BusinessCard({ biz, typeId }: { biz: Business; typeId: HealthType }) {
         </p>
       )}
 
-      <div className="space-y-2" onClick={(e) => e.preventDefault()}>
+      <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
         {emergencyPhones.map((p) => (
           <a
             key={p.purpose}
@@ -187,6 +208,7 @@ function BusinessCard({ biz, typeId }: { biz: Business; typeId: HealthType }) {
 
 function HealthInner() {
   const router = useRouter();
+  const userLocation = useUserLocation();
   const searchParams = useSearchParams();
   const VALID: HealthType[] = ["hospitals", "ambulance", "clinics", "diagnostics", "pharmacies"];
   const typeParam = searchParams.get("type") as HealthType | null;
@@ -213,7 +235,7 @@ function HealthInner() {
     const sb = createClient();
     const { data } = await sb
       .from("businesses")
-      .select("id, name, types, subtypes, address, verified, logo, contact_phone, phone_numbers, timings")
+      .select("id, name, types, subtypes, address, verified, logo, contact_phone, phone_numbers, timings, latitude, longitude")
       .eq("status", "active")
       .eq("industry", "Health & Wellness")
       .contains("types", [cfg.taxKey]);
@@ -260,16 +282,16 @@ function HealthInner() {
   return (
     <>
       {/* ── Hero ── */}
-      <section className="bg-gradient-to-br from-red-700 to-red-500 text-white py-14 md:py-20">
+      <section className="bg-gradient-to-br from-emerald-700 to-emerald-500 text-white py-14 md:py-20">
         <SectionWrapper tight>
           <div className="max-w-3xl">
-            <span className="inline-flex items-center gap-1.5 bg-red-600 border border-red-400 text-white text-xs font-bold px-3 py-1 rounded-full mb-4">
+            <span className="inline-flex items-center gap-1.5 bg-emerald-600 border border-emerald-400 text-white text-xs font-bold px-3 py-1 rounded-full mb-4">
               Health &amp; Emergency Services
             </span>
             <h1 className="text-3xl md:text-5xl font-extrabold mt-3 mb-4">
-              Neopolis <span className="text-red-200">Health Directory</span>
+              Neopolis <span className="text-emerald-200">Health Directory</span>
             </h1>
-            <p className="text-red-100 text-lg mb-6">
+            <p className="text-emerald-100 text-lg mb-6">
               Hospitals, ambulance services, clinics, diagnostics, and pharmacies — emergency numbers always one tap away.
             </p>
             <div className="flex flex-wrap gap-2">
@@ -280,7 +302,7 @@ function HealthInner() {
                   className={`inline-flex items-center gap-2 font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors ${
                     active === t.id
                       ? "bg-white text-gray-900"
-                      : "bg-red-600 border border-red-400 text-red-100 hover:bg-red-500"
+                      : "bg-emerald-600 border border-emerald-400 text-emerald-100 hover:bg-emerald-500"
                   }`}
                 >
                   <t.icon className="w-4 h-4" /> {t.label}
@@ -386,7 +408,9 @@ function HealthInner() {
             </div>
           ) : filtered.length > 0 ? (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {filtered.map((b) => <BusinessCard key={b.id} biz={b} typeId={active} />)}
+              {filtered.map((b) => (
+                <BusinessCard key={b.id} biz={b} typeId={active} userLocation={userLocation} />
+              ))}
             </div>
           ) : (
             <div className="text-center py-16 text-gray-400">
@@ -398,17 +422,17 @@ function HealthInner() {
       </section>
 
       {/* ── CTA ── */}
-      <section className="bg-red-700 text-white">
+      <section className="bg-emerald-700 text-white">
         <SectionWrapper>
           <div className="grid lg:grid-cols-2 gap-10 items-center">
             <div>
               <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
                 Register Your Health Business
               </h2>
-              <p className="text-red-200 mb-5">
+              <p className="text-emerald-200 mb-5">
                 Get listed in the Neopolis Health Directory. Residents search for hospitals, clinics, and pharmacies here first.
               </p>
-              <ul className="space-y-2 text-sm text-red-100">
+              <ul className="space-y-2 text-sm text-emerald-100">
                 {[
                   "Emergency number shown prominently",
                   "Business hours & location visible",
@@ -416,19 +440,19 @@ function HealthInner() {
                   "Reach 12,000+ district residents",
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-red-300 shrink-0" />
+                    <CheckCircle className="w-4 h-4 text-emerald-300 shrink-0" />
                     {item}
                   </li>
                 ))}
               </ul>
               <Link
                 href="/auth/register"
-                className="inline-flex items-center gap-2 mt-6 bg-white text-red-700 font-bold px-6 py-3 rounded-xl text-sm hover:bg-red-50 transition-colors"
+                className="inline-flex items-center gap-2 mt-6 bg-white text-emerald-700 font-bold px-6 py-3 rounded-xl text-sm hover:bg-emerald-50 transition-colors"
               >
                 Register Now <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
-            <div className="bg-red-800 rounded-2xl border border-red-600 p-6">
+            <div className="bg-emerald-800 rounded-2xl border border-emerald-600 p-6">
               <LeadForm
                 title="List Your Health Service"
                 subtitle="We'll set up your profile with emergency numbers and hours."

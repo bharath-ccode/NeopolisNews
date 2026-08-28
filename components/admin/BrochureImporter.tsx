@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { FileUp, Loader2, Sparkles, CheckCircle, AlertCircle, X } from "lucide-react";
+import { FileUp, Link2, Loader2, Sparkles, CheckCircle, AlertCircle, X } from "lucide-react";
 
 export interface ImportedProjectData {
   projectName?: string;
@@ -44,7 +44,34 @@ export default function BrochureImporter({ onImport }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
   const [dismissed, setDismissed] = useState(false);
+  const [urlInput, setUrlInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Send the PDF's URL to the extraction API and apply the result.
+  // The API responds with brochureUrl = where the PDF now lives (external
+  // brochures get mirrored into our storage server-side).
+  async function extractFromUrl(pdfUrl: string) {
+    const res = await fetch("/api/admin/import-brochure", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: pdfUrl }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error ?? "Import failed.");
+
+    const { brochureUrl, ...data } = json as ImportedProjectData & { brochureUrl?: string };
+    onImport(data, brochureUrl ?? pdfUrl);
+
+    const parts: string[] = [];
+    if (data.projectName)                  parts.push(`Project: ${data.projectName}`);
+    if (data.unitPlans?.length)            parts.push(`${data.unitPlans.length} unit plan${data.unitPlans.length !== 1 ? "s" : ""}`);
+    if (data.towers?.length)               parts.push(`${data.towers.length} tower${data.towers.length !== 1 ? "s" : ""}`);
+    if (data.amenities?.length)            parts.push(`${data.amenities.length} amenities`);
+    if (data.contact?.email || data.contact?.phone) parts.push("contact details");
+
+    setSummary(parts.join(" · "));
+    setStatus("done");
+  }
 
   async function processFile(file: File) {
     if (!file.name.toLowerCase().endsWith(".pdf")) {
@@ -61,28 +88,28 @@ export default function BrochureImporter({ onImport }: Props) {
       // Upload PDF directly to Supabase Storage from the browser (bypasses API size limits)
       const { uploadImage } = await import("@/lib/uploadUtils");
       const pdfUrl = await uploadImage(file, "brochures/temp");
+      await extractFromUrl(pdfUrl);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Import failed.");
+      setStatus("error");
+    }
+  }
 
-      // Send just the URL — no large payload through our API
-      const res = await fetch("/api/admin/import-brochure", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: pdfUrl }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Import failed.");
+  async function processUrl() {
+    const url = urlInput.trim();
+    if (!/^https?:\/\/.+/i.test(url)) {
+      setError("Enter a full URL starting with http:// or https://");
+      setStatus("error");
+      return;
+    }
 
-      const data = json as ImportedProjectData;
-      onImport(data, pdfUrl);
+    setStatus("loading");
+    setError(null);
+    setSummary(null);
 
-      const parts: string[] = [];
-      if (data.projectName)                  parts.push(`Project: ${data.projectName}`);
-      if (data.unitPlans?.length)            parts.push(`${data.unitPlans.length} unit plan${data.unitPlans.length !== 1 ? "s" : ""}`);
-      if (data.towers?.length)               parts.push(`${data.towers.length} tower${data.towers.length !== 1 ? "s" : ""}`);
-      if (data.amenities?.length)            parts.push(`${data.amenities.length} amenities`);
-      if (data.contact?.email || data.contact?.phone) parts.push("contact details");
-
-      setSummary(parts.join(" · "));
-      setStatus("done");
+    try {
+      await extractFromUrl(url);
+      setUrlInput("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Import failed.");
       setStatus("error");
@@ -122,31 +149,61 @@ export default function BrochureImporter({ onImport }: Props) {
         <div className="flex-1 min-w-0">
           <p className="font-bold text-gray-900 text-sm">Import from Brochure</p>
           <p className="text-xs text-gray-500 mt-0.5 mb-3">
-            Upload a PDF brochure — AI will extract project details and pre-fill this form.
+            Upload a PDF brochure or paste a link to one — AI will extract project
+            details and pre-fill this form.
           </p>
 
           {status === "idle" && (
-            <div
-              onDrop={onDrop}
-              onDragOver={(e) => e.preventDefault()}
-              className="flex items-center gap-3"
-            >
-              <button
-                type="button"
-                onClick={() => inputRef.current?.click()}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-lg transition-colors"
+            <div className="space-y-3">
+              <div
+                onDrop={onDrop}
+                onDragOver={(e) => e.preventDefault()}
+                className="flex items-center gap-3"
               >
-                <FileUp className="w-4 h-4" />
-                Upload PDF
-              </button>
-              <span className="text-xs text-gray-400">or drag & drop here</span>
-              <input
-                ref={inputRef}
-                type="file"
-                accept=".pdf,application/pdf"
-                className="hidden"
-                onChange={onFileChange}
-              />
+                <button
+                  type="button"
+                  onClick={() => inputRef.current?.click()}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-lg transition-colors"
+                >
+                  <FileUp className="w-4 h-4" />
+                  Upload PDF
+                </button>
+                <span className="text-xs text-gray-400">or drag & drop here</span>
+                <input
+                  ref={inputRef}
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  className="hidden"
+                  onChange={onFileChange}
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1 max-w-md">
+                  <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                  <input
+                    type="url"
+                    value={urlInput}
+                    onChange={(e) => setUrlInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        processUrl();
+                      }
+                    }}
+                    placeholder="or paste a brochure PDF link — https://…"
+                    className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={processUrl}
+                  disabled={!urlInput.trim()}
+                  className="px-4 py-2 border border-brand-300 text-brand-700 bg-white hover:bg-brand-50 text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Import from URL
+                </button>
+              </div>
             </div>
           )}
 

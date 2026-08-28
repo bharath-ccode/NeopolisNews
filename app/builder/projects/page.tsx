@@ -98,9 +98,9 @@ export default function BuilderProjectsPage() {
                 <p className="font-bold text-gray-900 truncate">{p.projectName}</p>
                 <p className="text-xs text-gray-400 mt-0.5">
                   {[
+                    p.locality,
                     p.totalUnits ? `${p.totalUnits} units` : null,
                     p.totalLandAreaAcres ? `${p.totalLandAreaAcres} acres` : null,
-                    p.coreNeopolis ? "Core Neopolis" : null,
                   ]
                     .filter(Boolean)
                     .join(" · ") || "No details yet"}

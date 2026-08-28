@@ -2,18 +2,21 @@ import Link from "next/link";
 import { PenTool, Trophy, ArrowRight, Newspaper } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import SectionWrapper from "@/components/SectionWrapper";
+import { getHeadlinePrefix, type ArticleCategory } from "@/lib/newsStore";
+import HomePollPanel from "@/components/HomePollPanel";
 
-/** Homepage strip below the hero: latest headlines index (left) and today's
- *  cartoon (right). Each headline links to its article; the cartoon links to
- *  /cartoon. Server component. */
+/** Homepage strip below the hero: latest headlines index, today's cartoon,
+ *  and the daily poll. Each headline links to its article; the cartoon
+ *  links to /cartoon; the poll links to /polls. Server component (the poll
+ *  panel itself is a client island so it can carry the reader's vote). */
 export default async function HomeNewsAndCartoon() {
   const admin = createAdminClient();
   const today = new Date().toISOString().split("T")[0];
 
-  const [{ data: articles }, { data: cartoon }] = await Promise.all([
+  const [{ data: articles }, { data: cartoon }, { data: pollRow }] = await Promise.all([
     admin
       .from("articles")
-      .select("id, title, tag, tag_color, date")
+      .select("id, title, tag, tag_color, date, category, digest_level")
       .eq("status", "published")
       .order("created_at", { ascending: false })
       .limit(6),
@@ -25,18 +28,33 @@ export default async function HomeNewsAndCartoon() {
       .order("publish_date", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    admin
+      .from("polls")
+      .select("id")
+      .eq("status", "published")
+      .lte("publish_date", today)
+      .order("publish_date", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   const headlines = articles ?? [];
-  if (headlines.length === 0 && !cartoon) return null;
+  const hasPoll = Boolean(pollRow);
+  if (headlines.length === 0 && !cartoon && !hasPoll) return null;
 
   const isToday = cartoon?.publish_date === today;
   const openContest = cartoon?.is_contest && !cartoon?.winner_name;
 
+  const panelCount = [headlines.length > 0, Boolean(cartoon), hasPoll].filter(Boolean).length;
+
   return (
     <section className="bg-white border-b border-gray-100">
       <SectionWrapper tight>
-        <div className={`grid gap-5 ${cartoon && headlines.length > 0 ? "lg:grid-cols-2" : ""}`}>
+        <div
+          className={`grid gap-5 ${
+            panelCount === 3 ? "lg:grid-cols-3" : panelCount === 2 ? "lg:grid-cols-2" : ""
+          }`}
+        >
           {/* ── Latest headlines index ── */}
           {headlines.length > 0 && (
             <div className="card p-5 sm:p-6 flex flex-col">
@@ -52,23 +70,27 @@ export default async function HomeNewsAndCartoon() {
                 </Link>
               </div>
               <ol className="space-y-3 flex-1">
-                {headlines.map((a, i) => (
-                  <li key={a.id}>
-                    <Link href={`/news/${a.id}`} className="group flex items-start gap-3">
-                      <span className="shrink-0 w-5 text-sm font-extrabold text-gray-300 group-hover:text-brand-400 transition-colors">
-                        {i + 1}
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block text-sm font-semibold text-gray-800 leading-snug line-clamp-2 group-hover:text-brand-700 transition-colors">
-                          {a.title}
+                {headlines.map((a, i) => {
+                  const prefix = getHeadlinePrefix(a.category as ArticleCategory, a.digest_level);
+                  return (
+                    <li key={a.id}>
+                      <Link href={`/news/${a.id}`} className="group flex items-start gap-3">
+                        <span className="shrink-0 w-5 text-sm font-extrabold text-gray-300 group-hover:text-brand-400 transition-colors">
+                          {i + 1}
                         </span>
-                        <span className="block text-[11px] text-gray-400 mt-0.5">
-                          {a.tag} · {a.date}
+                        <span className="min-w-0">
+                          <span className="block text-sm text-gray-800 leading-snug line-clamp-2 group-hover:text-brand-700 transition-colors">
+                            {prefix && <span className="font-extrabold">{prefix}: </span>}
+                            <span className="font-semibold">{a.title}</span>
+                          </span>
+                          <span className="block text-[11px] text-gray-400 mt-0.5">
+                            {a.tag} · {a.date}
+                          </span>
                         </span>
-                      </span>
-                    </Link>
-                  </li>
-                ))}
+                      </Link>
+                    </li>
+                  );
+                })}
               </ol>
             </div>
           )}
@@ -83,7 +105,7 @@ export default async function HomeNewsAndCartoon() {
               <img
                 src={cartoon.image_url}
                 alt={cartoon.title}
-                className="w-full h-56 object-cover bg-white"
+                className="w-full h-56 object-cover object-top bg-white"
               />
               <div className="p-5 sm:p-6 flex flex-col flex-1 min-w-0">
                 <p className="text-xs font-bold text-brand-600 uppercase tracking-wider flex items-center gap-1.5">
@@ -111,6 +133,9 @@ export default async function HomeNewsAndCartoon() {
               </div>
             </Link>
           )}
+
+          {/* ── Daily poll ── */}
+          {hasPoll && <HomePollPanel />}
         </div>
       </SectionWrapper>
     </section>

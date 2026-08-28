@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Heart, Loader2, Building2, Home, Trash2, ExternalLink, BellRing } from "lucide-react";
+import { Heart, Loader2, Building2, Home, Trash2, ExternalLink, BellRing, Store, Phone, CalendarCheck, HardHat, CalendarDays, Tag } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { authHeaders } from "@/lib/authToken";
 
@@ -24,12 +24,51 @@ interface ClassifiedDetail {
   photos: string[];
   status: string;
 }
+interface BusinessDetail {
+  id: string;
+  name: string;
+  industry: string | null;
+  types: string[] | null;
+  address: string | null;
+  logo: string | null;
+  contact_phone: string | null;
+}
+interface BuilderDetail {
+  id: string;
+  builder_name: string;
+  logo_url: string | null;
+  address: string | null;
+  website: string | null;
+}
+interface EventDetail {
+  id: string;
+  name: string;
+  event_type: string;
+  event_date: string;
+  start_time: string | null;
+  image_url: string | null;
+  business_id: string;
+  businesses: { name: string } | null;
+}
+interface DealDetail {
+  id: string;
+  name: string;
+  discount_label: string | null;
+  discount_percent: number | null;
+  end_date: string;
+  image_url: string | null;
+  business_id: string;
+  businesses: { name: string } | null;
+}
+type SavedItemType = "project" | "classified" | "business" | "builder" | "event" | "deal";
 interface SavedItem {
   id: string;
-  item_type: "project" | "classified";
+  item_type: SavedItemType;
   item_id: string;
   created_at: string;
-  detail: ProjectDetail | ClassifiedDetail | null;
+  detail:
+    | ProjectDetail | ClassifiedDetail | BusinessDetail
+    | BuilderDetail | EventDetail | DealDetail | null;
 }
 interface SearchAlert {
   id: string;
@@ -110,15 +149,30 @@ export default function SavedPropertiesPage() {
 
   const projects    = items.filter((i) => i.item_type === "project");
   const classifieds = items.filter((i) => i.item_type === "classified");
+  const favourites  = items.filter((i) => i.item_type === "business");
+  const builders    = items.filter((i) => i.item_type === "builder");
+  const events      = items.filter((i) => i.item_type === "event");
+  const deals       = items.filter((i) => i.item_type === "deal");
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-          <Heart className="w-4 h-4 text-red-500" /> Saved Properties
+          <Heart className="w-4 h-4 text-red-500" /> Saved & Favourites
         </h2>
         <p className="text-xs text-gray-400 mt-0.5">
-          {items.length} saved · {projects.length} projects · {classifieds.length} listings
+          {items.length} saved
+          {[
+            [favourites.length, "places"],
+            [builders.length, "builders"],
+            [projects.length, "projects"],
+            [classifieds.length, "listings"],
+            [events.length, "events"],
+            [deals.length, "deals"],
+          ]
+            .filter(([n]) => (n as number) > 0)
+            .map(([n, label]) => ` · ${n} ${label}`)
+            .join("")}
         </p>
       </div>
 
@@ -127,15 +181,212 @@ export default function SavedPropertiesPage() {
           <Heart className="w-10 h-10 text-gray-200 mx-auto mb-3" />
           <p className="font-semibold text-gray-500 text-sm">Nothing saved yet</p>
           <p className="text-xs text-gray-400 mt-1 mb-4">
-            Tap the ♥ Save button on any project or listing to shortlist it here.
+            Tap the ♥ Save button on any business, project or listing to shortlist it here.
           </p>
           <div className="flex justify-center gap-2">
-            <Link href="/real-estate" className="btn-primary text-xs py-2">Browse Projects</Link>
-            <Link href="/real-estate/classifieds" className="btn-secondary text-xs py-2">Browse Listings</Link>
+            <Link href="/directory" className="btn-primary text-xs py-2">Browse Businesses</Link>
+            <Link href="/real-estate" className="btn-secondary text-xs py-2">Browse Projects</Link>
           </div>
         </div>
       ) : (
         <>
+          {favourites.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Favourite Places</h3>
+              {favourites.map((item) => {
+                const d = item.detail as BusinessDetail | null;
+                return (
+                  <div key={item.id} className="card p-4 flex items-center gap-3">
+                    {d?.logo ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={d.logo}
+                        alt={d.name}
+                        className="w-10 h-10 rounded-xl object-contain border border-gray-100 bg-white shrink-0"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center shrink-0">
+                        <Store className="w-5 h-5 text-purple-600" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm text-gray-900 truncate">
+                        {d?.name ?? "Business no longer available"}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-0.5 truncate">
+                        {[d?.types?.[0] ?? d?.industry, d?.address].filter(Boolean).join(" · ")}
+                      </p>
+                    </div>
+                    {d?.contact_phone && (
+                      <a
+                        href={`tel:${d.contact_phone}`}
+                        className="shrink-0 flex items-center gap-1 text-xs font-bold text-gray-500 hover:text-gray-700"
+                        title="Call"
+                      >
+                        <Phone className="w-3.5 h-3.5" /> Call
+                      </a>
+                    )}
+                    {d && (
+                      <Link
+                        href={`/businesses/${d.id}`}
+                        className="shrink-0 flex items-center gap-1 text-xs font-bold text-brand-600 hover:text-brand-800"
+                        title="View page — book tickets, appointments or a table"
+                      >
+                        <CalendarCheck className="w-3.5 h-3.5" /> View & Book
+                      </Link>
+                    )}
+                    <button
+                      onClick={() => remove(item)}
+                      disabled={removing === item.id}
+                      className="shrink-0 text-gray-300 hover:text-red-500 transition-colors disabled:opacity-50"
+                      title="Remove"
+                    >
+                      {removing === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {builders.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Builders You Follow</h3>
+              {builders.map((item) => {
+                const d = item.detail as BuilderDetail | null;
+                return (
+                  <div key={item.id} className="card p-4 flex items-center gap-3">
+                    {d?.logo_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={d.logo_url} alt={d.builder_name} className="w-10 h-10 rounded-xl object-contain border border-gray-100 bg-white shrink-0" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
+                        <HardHat className="w-5 h-5 text-orange-600" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm text-gray-900 truncate">
+                        {d?.builder_name ?? "Builder no longer available"}
+                      </p>
+                      {d?.address && <p className="text-xs text-gray-400 mt-0.5 truncate">{d.address}</p>}
+                    </div>
+                    {d && (
+                      <Link
+                        href={`/builders/${d.id}`}
+                        className="shrink-0 flex items-center gap-1 text-xs font-bold text-brand-600 hover:text-brand-800"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" /> Projects
+                      </Link>
+                    )}
+                    <button
+                      onClick={() => remove(item)}
+                      disabled={removing === item.id}
+                      className="shrink-0 text-gray-300 hover:text-red-500 transition-colors disabled:opacity-50"
+                      title="Unfollow"
+                    >
+                      {removing === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {events.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Saved Events</h3>
+              {events.map((item) => {
+                const d = item.detail as EventDetail | null;
+                return (
+                  <div key={item.id} className="card p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
+                      <CalendarDays className="w-5 h-5 text-violet-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm text-gray-900 truncate">
+                        {d?.name ?? "Event no longer available"}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-0.5 truncate">
+                        {d
+                          ? [
+                              new Date(d.event_date).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" }),
+                              d.start_time?.slice(0, 5),
+                              d.businesses?.name,
+                            ].filter(Boolean).join(" · ")
+                          : ""}
+                      </p>
+                    </div>
+                    {d && (
+                      <Link
+                        href={`/events/${d.id}`}
+                        className="shrink-0 flex items-center gap-1 text-xs font-bold text-brand-600 hover:text-brand-800"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" /> View
+                      </Link>
+                    )}
+                    <button
+                      onClick={() => remove(item)}
+                      disabled={removing === item.id}
+                      className="shrink-0 text-gray-300 hover:text-red-500 transition-colors disabled:opacity-50"
+                      title="Remove"
+                    >
+                      {removing === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {deals.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Saved Deals</h3>
+              {deals.map((item) => {
+                const d = item.detail as DealDetail | null;
+                const expired = d ? new Date(d.end_date + "T23:59:59") < new Date() : false;
+                return (
+                  <div key={item.id} className="card p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+                      <Tag className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm text-gray-900 truncate">
+                        {d?.name ?? "Deal no longer available"}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-0.5 truncate">
+                        {d
+                          ? [
+                              d.discount_label ?? (d.discount_percent ? `${d.discount_percent}% off` : null),
+                              d.businesses?.name,
+                              expired
+                                ? "Expired"
+                                : `Ends ${new Date(d.end_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`,
+                            ].filter(Boolean).join(" · ")
+                          : ""}
+                      </p>
+                    </div>
+                    {d && !expired && (
+                      <Link
+                        href={`/businesses/${d.business_id}`}
+                        className="shrink-0 flex items-center gap-1 text-xs font-bold text-brand-600 hover:text-brand-800"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" /> Redeem
+                      </Link>
+                    )}
+                    <button
+                      onClick={() => remove(item)}
+                      disabled={removing === item.id}
+                      className="shrink-0 text-gray-300 hover:text-red-500 transition-colors disabled:opacity-50"
+                      title="Remove"
+                    >
+                      {removing === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {projects.length > 0 && (
             <div className="space-y-3">
               <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Projects</h3>

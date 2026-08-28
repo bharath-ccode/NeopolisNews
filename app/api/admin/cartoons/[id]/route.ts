@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { awardPoints, CAPTION_CONTEST_POINTS } from "@/lib/points";
+import { bakePublishedCartoonImage } from "@/lib/bakeCartoonText";
 
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 30;
 
 /** GET — caption entries for winner picking. */
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
@@ -27,7 +30,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const { data: cartoon } = await admin
     .from("daily_cartoons")
-    .select("id, title, is_contest, winner_user_id")
+    .select("id, title, caption, is_contest, winner_user_id, status, artwork_url, image_url")
     .eq("id", params.id)
     .single();
   if (!cartoon) return NextResponse.json({ error: "Cartoon not found" }, { status: 404 });
@@ -67,9 +70,24 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   if (status === "published" || status === "draft") {
+    const patch: Record<string, unknown> = { status };
+    const artworkUrl = cartoon.artwork_url || cartoon.image_url;
+
+    if (status === "published" && cartoon.status !== "published") {
+      // Fresh transition into published — bake from the clean artwork so
+      // re-publishing never stacks text on top of a previous bake.
+      try {
+        patch.image_url = await bakePublishedCartoonImage(artworkUrl, cartoon.title, cartoon.caption);
+      } catch (err) {
+        console.error("cartoon publish (patch): baking failed:", err);
+      }
+    } else if (status === "draft" && cartoon.artwork_url) {
+      patch.image_url = cartoon.artwork_url; // revert to the clean, unbaked art
+    }
+
     const { error } = await admin
       .from("daily_cartoons")
-      .update({ status })
+      .update(patch)
       .eq("id", params.id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ ok: true, status });

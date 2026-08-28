@@ -12,8 +12,8 @@ import { getBuilders, type Builder } from "@/lib/buildersStore";
 import { AMENITY_CATEGORIES } from "@/lib/amenitiesData";
 import {
   createProject, updateProject,
-  type Project, type ProjectInput, type ProjectType, type ProjectTier, type LifecycleStatus,
-  LIFECYCLE_STAGES,
+  type Project, type ProjectInput, type ProjectType, type ProjectTier, type LifecycleStatus, type Locality,
+  LIFECYCLE_STAGES, LOCALITIES,
   type UnitFacing, type UnitPlan, type ContactPhone, type Tower, type TowerFloorPlan,
 } from "@/lib/projectsStore";
 
@@ -61,7 +61,6 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
   const [builderId, setBuilderId]       = useState(lockedBuilderId ?? initialData?.builderId ?? "");
   const [totalLandArea, setTotalLandArea] = useState(initialData?.totalLandAreaAcres?.toString() ?? "");
   const [totalUnits, setTotalUnits]     = useState(initialData?.totalUnits?.toString() ?? "");
-  const [coreNeopolis, setCoreNeopolis] = useState(initialData?.coreNeopolis ?? false);
   const [featured, setFeatured]         = useState(initialData?.featured ?? false);
   const [projectLogoUrl, setProjectLogoUrl] = useState<string | null>(initialData?.projectLogoUrl ?? null);
   const [bannerImageUrl, setBannerImageUrl] = useState<string | null>(initialData?.bannerImageUrl ?? null);
@@ -69,6 +68,7 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
   const [brochureUrl, setBrochureUrl]       = useState(initialData?.brochureUrl ?? "");
   const [projectType, setProjectType]   = useState<ProjectType | "">(initialData?.projectType ?? "");
   const [tier, setTier]                 = useState<ProjectTier | "">(initialData?.tier ?? "");
+  const [locality, setLocality]         = useState<Locality | "">(initialData?.locality ?? "");
   const [lifecycleStatus, setLifecycleStatus] = useState<LifecycleStatus | "">(initialData?.lifecycleStatus ?? "");
   const [expectedCompletionDate, setExpectedCompletionDate] = useState(initialData?.expectedCompletionDate ?? "");
   const [maxFloors, setMaxFloors]       = useState(initialData?.projectDetail?.maxFloors?.toString() ?? "");
@@ -219,7 +219,9 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
       builderId:             builderId || null,
       totalLandAreaAcres:    totalLandArea ? parseFloat(totalLandArea) : null,
       totalUnits:            totalUnits    ? parseInt(totalUnits, 10)  : null,
-      coreNeopolis,
+      // No longer settable — Locality supersedes it. Preserve whatever an
+      // existing project already had rather than resetting it on edit.
+      coreNeopolis:          initialData?.coreNeopolis ?? false,
       featured,
       projectLogoUrl,
       bannerImageUrl,
@@ -227,6 +229,7 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
       brochureUrl:           brochureUrl || null,
       projectType:           projectType   || null,
       tier:                  tier          || null,
+      locality:              locality      || null,
       lifecycleStatus:         lifecycleStatus || null,
       expectedCompletionDate:  expectedCompletionDate || null,
       priceRangeMin:           priceRangeMin ? parseFloat(priceRangeMin) : null,
@@ -263,7 +266,14 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
       router.refresh();
     } catch (err) {
       console.error(err);
-      setError("Failed to save project. Please try again.");
+      // Supabase/PostgREST errors carry the exact rejection reason — show it.
+      const e = err as { message?: string; details?: string; hint?: string; code?: string };
+      const detail = [e.message, e.details, e.hint].filter(Boolean).join(" — ");
+      setError(
+        detail
+          ? `Save failed${e.code ? ` (${e.code})` : ""}: ${detail}`
+          : "Failed to save project. Please try again."
+      );
     } finally {
       setSaving(false);
     }
@@ -373,6 +383,16 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
             </div>
           )}
 
+          <div>
+            <label className="label">Locality</label>
+            <select className="input" value={locality} onChange={e => setLocality(e.target.value as Locality | "")}>
+              <option value="">— Select locality —</option>
+              {LOCALITIES.map(l => (
+                <option key={l} value={l}>{l}</option>
+              ))}
+            </select>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="label">Project Type</label>
@@ -457,15 +477,6 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
             </div>
             <p className="text-xs text-gray-400 mt-1">Leave blank to keep pricing off the public page.</p>
           </div>
-
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input type="checkbox" checked={coreNeopolis} onChange={e => setCoreNeopolis(e.target.checked)}
-              className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
-            <div>
-              <span className="text-sm font-medium text-gray-900">Core Neopolis</span>
-              <p className="text-xs text-gray-400">Mark if this is a core/flagship Neopolis project</p>
-            </div>
-          </label>
 
           <label className="flex items-center gap-3 cursor-pointer">
             <input type="checkbox" checked={featured} onChange={e => setFeatured(e.target.checked)}

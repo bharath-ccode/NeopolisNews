@@ -241,7 +241,7 @@ export default async function ArticleView(
         </div>
       </div>
 
-      {/* Cover image */}
+      {/* Cover image — shown in full (no crop); section height follows the image */}
       {article.imageUrl && (
         <div className="bg-gray-900">
           <div className="max-w-3xl mx-auto">
@@ -249,7 +249,7 @@ export default async function ArticleView(
             <img
               src={article.imageUrl}
               alt={article.title}
-              className="w-full max-h-80 object-cover"
+              className="w-full h-auto max-h-[80vh] object-contain mx-auto"
             />
           </div>
         </div>
