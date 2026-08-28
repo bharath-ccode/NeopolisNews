@@ -165,6 +165,13 @@ export default async function HomePage() {
 
   return (
     <>
+      {/* ── Live traffic ── */}
+      <section className="bg-gray-50 border-b border-gray-100">
+        <SectionWrapper tight>
+          <HomeTrafficWidget />
+        </SectionWrapper>
+      </section>
+
       {/* ── Latest headlines + Daily Cartoon ── */}
       <HomeNewsAndCartoon />
 
@@ -242,13 +249,6 @@ export default async function HomePage() {
             </div>
           </div>
         </div>
-      </section>
-
-      {/* ── Live traffic ── */}
-      <section className="bg-gray-50 border-b border-gray-100">
-        <SectionWrapper tight>
-          <HomeTrafficWidget />
-        </SectionWrapper>
       </section>
 
       {/* ── Stats ── */}
