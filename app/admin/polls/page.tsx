@@ -18,8 +18,17 @@ interface Poll {
   options: PollOption[];
 }
 
+interface OptionDraft {
+  label: string;
+  seedVotes: string;
+}
+
 function todayIso() {
   return new Date().toISOString().split("T")[0];
+}
+
+function emptyOption(): OptionDraft {
+  return { label: "", seedVotes: "" };
 }
 
 export default function AdminPollsPage() {
@@ -29,7 +38,7 @@ export default function AdminPollsPage() {
 
   const [question, setQuestion] = useState("");
   const [publishDate, setPublishDate] = useState(todayIso());
-  const [options, setOptions] = useState(["", ""]);
+  const [options, setOptions] = useState<OptionDraft[]>([emptyOption(), emptyOption()]);
   const [saving, setSaving]   = useState(false);
 
   const [acting, setActing] = useState<string | null>(null);
@@ -46,12 +55,12 @@ export default function AdminPollsPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  function updateOption(i: number, value: string) {
-    setOptions((prev) => prev.map((o, idx) => (idx === i ? value : o)));
+  function updateOption(i: number, patch: Partial<OptionDraft>) {
+    setOptions((prev) => prev.map((o, idx) => (idx === i ? { ...o, ...patch } : o)));
   }
   function addOption() {
     if (options.length >= 6) return;
-    setOptions((prev) => [...prev, ""]);
+    setOptions((prev) => [...prev, emptyOption()]);
   }
   function removeOption(i: number) {
     if (options.length <= 2) return;
@@ -61,7 +70,9 @@ export default function AdminPollsPage() {
   async function save(publish: boolean) {
     setError("");
     if (!question.trim()) { setError("Question is required."); return; }
-    const cleanOptions = options.map((o) => o.trim()).filter(Boolean);
+    const cleanOptions = options
+      .filter((o) => o.label.trim())
+      .map((o) => ({ label: o.label.trim(), seedVotes: Math.max(0, parseInt(o.seedVotes, 10) || 0) }));
     if (cleanOptions.length < 2) { setError("At least 2 options are required."); return; }
     if (!publishDate) { setError("Publish date is required."); return; }
 
@@ -83,7 +94,7 @@ export default function AdminPollsPage() {
       return;
     }
     setQuestion("");
-    setOptions(["", ""]);
+    setOptions([emptyOption(), emptyOption()]);
     setPublishDate(todayIso());
     setSaving(false);
     load();
@@ -115,7 +126,7 @@ export default function AdminPollsPage() {
           <BarChart3 className="w-4 h-4 text-brand-500" /> Homepage Poll
         </h2>
         <p className="text-xs text-gray-400 mt-0.5">
-          One question, multiple choice. Readers vote once and see live results.
+          One question, multiple choice — anyone can vote, no sign-in required. Live results shown after voting.
         </p>
       </div>
 
@@ -135,16 +146,27 @@ export default function AdminPollsPage() {
 
         <div>
           <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Options</label>
-          <div className="mt-1.5 space-y-2">
+          <p className="text-[11px] text-gray-400 mt-0.5 mb-1.5">
+            Seed votes (optional) give an option a starting count — real votes add on top.
+          </p>
+          <div className="space-y-2">
             {options.map((opt, i) => (
               <div key={i} className="flex gap-2">
                 <input
                   type="text"
-                  value={opt}
-                  onChange={(e) => updateOption(i, e.target.value)}
+                  value={opt.label}
+                  onChange={(e) => updateOption(i, { label: e.target.value })}
                   maxLength={100}
                   placeholder={`Option ${i + 1}`}
                   className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
+                />
+                <input
+                  type="number"
+                  min={0}
+                  value={opt.seedVotes}
+                  onChange={(e) => updateOption(i, { seedVotes: e.target.value })}
+                  placeholder="Seed votes"
+                  className="w-28 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
                 />
                 {options.length > 2 && (
                   <button
