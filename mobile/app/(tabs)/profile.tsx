@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform,
+  StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Alert, Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
@@ -260,6 +260,37 @@ export default function ProfileScreen() {
             <Text style={s.signOutText}>Sign Out</Text>
           </TouchableOpacity>
 
+          {/* ── Delete Account ────────────────────────────────────── */}
+          <View style={s.deleteSection}>
+            <Text style={s.deleteHeading}>Delete Account</Text>
+            <Text style={s.deleteSub}>
+              Permanently deletes your account and all personal data within 30 days.
+            </Text>
+            <TouchableOpacity
+              style={s.deleteBtn}
+              activeOpacity={0.8}
+              onPress={() =>
+                Alert.alert(
+                  "Delete your account?",
+                  "This will permanently remove your account and all personal data. Business listings and reviews will also be deleted. This cannot be undone.",
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                      text: "Request Deletion",
+                      style: "destructive",
+                      onPress: () =>
+                        Linking.openURL(
+                          "mailto:support@neopolis.news?subject=Delete%20my%20account&body=Please%20delete%20my%20account%20and%20all%20associated%20personal%20data."
+                        ),
+                    },
+                  ]
+                )
+              }
+            >
+              <Text style={s.deleteBtnText}>Request Account Deletion</Text>
+            </TouchableOpacity>
+          </View>
+
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -338,4 +369,16 @@ const s = StyleSheet.create({
     paddingVertical: 14, borderRadius: 14, alignItems: "center", marginTop: 8,
   },
   signOutText: { color: "#dc2626", fontWeight: "700", fontSize: 15 },
+
+  deleteSection: {
+    borderTopWidth: 1, borderTopColor: colors.gray[200],
+    marginTop: 24, paddingTop: 20, paddingBottom: 8,
+  },
+  deleteHeading: { fontSize: 13, fontWeight: "700", color: colors.gray[500], marginBottom: 4 },
+  deleteSub:     { fontSize: 12, color: colors.gray[400], marginBottom: 12, lineHeight: 17 },
+  deleteBtn:     {
+    borderWidth: 1, borderColor: "#fecaca", borderRadius: 12,
+    paddingVertical: 12, alignItems: "center",
+  },
+  deleteBtnText: { color: "#dc2626", fontWeight: "600", fontSize: 14 },
 });
