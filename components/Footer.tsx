@@ -67,11 +67,11 @@ export default function Footer() {
                   support@neopolis.news
                 </a>
                 <a
-                  href="tel:+919900000000"
+                  href="tel:+918978949484"
                   className="flex items-center gap-2 hover:text-white transition-colors"
                 >
                   <Phone className="w-4 h-4 shrink-0" />
-                  +91 99000 00000
+                  +91 89789 49484
                 </a>
                 <span className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 shrink-0" />
