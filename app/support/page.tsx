@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 const CONTACT_EMAIL = "support@neopolis.news";
-const CONTACT_PHONE = "+91 99000 00000";
+const CONTACT_PHONE = "+91 89789 49484";
 const SITE_NAME      = "NeopolisNews";
 
 function H2({ children }: { children: React.ReactNode }) {
