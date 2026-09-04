@@ -22,7 +22,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0f2544"
       },
-      "package": "news.neopolis.app"
+      "package": "com.hhlife.neopolisnews"
     },
     "web": {
       "favicon": "./assets/favicon.png",
