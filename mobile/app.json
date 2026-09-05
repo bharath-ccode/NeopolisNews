@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "news.neopolis.app"
+      "bundleIdentifier": "com.hhlife.neopolisnews"
     },
     "android": {
       "adaptiveIcon": {
