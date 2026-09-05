@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { optionalUser } from "@/lib/apiAuth";
 import { getPollWithResults } from "@/lib/pollResults";
+import { getTodayIST } from "@/lib/dateIST";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +10,7 @@ export const dynamic = "force-dynamic";
  *  archive list of past published polls (question + date only; fetch
  *  /api/polls/[id] for a given archive entry's full results). */
 export async function GET(req: NextRequest) {
-  const today = new Date().toISOString().split("T")[0];
+  const today = getTodayIST();
   const admin = createAdminClient();
   const user = await optionalUser(req);
 

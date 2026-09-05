@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import SectionWrapper from "@/components/SectionWrapper";
 import { getHeadlinePrefix, type ArticleCategory } from "@/lib/newsStore";
 import HomePollPanel from "@/components/HomePollPanel";
+import { getTodayIST } from "@/lib/dateIST";
 
 /** Homepage strip below the hero: latest headlines index, today's cartoon,
  *  and the daily poll. Each headline links to its article; the cartoon
@@ -11,7 +12,7 @@ import HomePollPanel from "@/components/HomePollPanel";
  *  panel itself is a client island so it can carry the reader's vote). */
 export default async function HomeNewsAndCartoon() {
   const admin = createAdminClient();
-  const today = new Date().toISOString().split("T")[0];
+  const today = getTodayIST();
 
   const [{ data: articles }, { data: cartoon }, { data: pollRow }] = await Promise.all([
     admin

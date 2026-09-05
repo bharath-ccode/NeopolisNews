@@ -70,10 +70,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [loadProfile]);
 
   async function signUp(email: string, password: string, name: string): Promise<string | null> {
+    // No emailRedirectTo would fall back to the Supabase project's Site URL
+    // setting (often a local dev value) — point it at the web app instead,
+    // since the app has no deep-link callback screen to land on yet; the
+    // confirmation link just needs to verify the email, then the user comes
+    // back to sign in in the app.
+    const siteUrl = process.env.EXPO_PUBLIC_API_URL ?? "https://neopolis.news";
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { name } },
+      options: { data: { name }, emailRedirectTo: `${siteUrl}/auth/callback` },
     });
     return error?.message ?? null;
   }

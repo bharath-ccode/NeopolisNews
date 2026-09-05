@@ -67,11 +67,11 @@ export default function Footer() {
                   support@neopolis.news
                 </a>
                 <a
-                  href="tel:+919900000000"
+                  href="tel:+918978949484"
                   className="flex items-center gap-2 hover:text-white transition-colors"
                 >
                   <Phone className="w-4 h-4 shrink-0" />
-                  +91 99000 00000
+                  +91 89789 49484
                 </a>
                 <span className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 shrink-0" />
@@ -106,6 +106,7 @@ export default function Footer() {
         <div className="border-t border-brand-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-brand-400">
           <p>© 2026 Neopolis News. All rights reserved.</p>
           <div className="flex gap-4">
+            <Link href="/support"   className="hover:text-white">Support</Link>
             <Link href="/privacy"   className="hover:text-white">Privacy Policy</Link>
             <Link href="/terms"     className="hover:text-white">Terms of Use</Link>
             <Link href="/cookies"   className="hover:text-white">Cookies</Link>

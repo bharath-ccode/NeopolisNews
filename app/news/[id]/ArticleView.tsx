@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Clock, Eye, Languages, Newspaper } from "lucide-react";
+import { ArrowLeft, ArrowRight, Clock, Eye, Languages, Newspaper } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 import { toArticle, extractYouTubeId } from "@/lib/newsStore";
 import { getTranslation } from "@/lib/translate";
@@ -129,6 +129,19 @@ export default async function ArticleView(
     ? `More from ${LEVEL_LABELS[digestLevel] ?? digestLevel} Digest`
     : `More in ${article.tag}`;
 
+  // Same order as the admin articles list (created_at desc, all categories) —
+  // "next" is whichever published article comes right after this one in that order.
+  const { data: nextArticleData } = await admin
+    .from("articles")
+    .select("id, title")
+    .eq("status", "published")
+    .lt("created_at", articleData.created_at)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const nextArticle = nextArticleData as { id: string; title: string } | null;
+  const nextArticleHref = nextArticle ? `${articlePath}${nextArticle.id}` : null;
+
   const articleJsonLd = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
@@ -197,6 +210,16 @@ export default async function ArticleView(
               </Link>
             </div>
           </div>
+          {nextArticleHref && (
+            <div className="mt-3 flex justify-end">
+              <Link
+                href={nextArticleHref}
+                className="inline-flex items-center gap-1.5 text-gray-400 hover:text-white text-sm transition-colors"
+              >
+                Next Article <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          )}
           <div className="mt-5 mb-4">
             <span className={article.tagColor}>{article.tag}</span>
           </div>
@@ -350,12 +373,22 @@ export default async function ArticleView(
           </div>
         )}
 
-        <Link
-          href="/news"
-          className="inline-flex items-center gap-2 text-brand-600 hover:text-brand-800 text-sm mt-8"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back to all news
-        </Link>
+        <div className="flex items-center justify-between mt-8">
+          <Link
+            href="/news"
+            className="inline-flex items-center gap-2 text-brand-600 hover:text-brand-800 text-sm"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back to all news
+          </Link>
+          {nextArticleHref && (
+            <Link
+              href={nextArticleHref}
+              className="inline-flex items-center gap-2 text-brand-600 hover:text-brand-800 text-sm font-semibold"
+            >
+              Next Article <ArrowRight className="w-4 h-4" />
+            </Link>
+          )}
+        </div>
       </div>
     </div>
   );

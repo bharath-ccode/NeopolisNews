@@ -28,11 +28,13 @@ export async function GET() {
   return NextResponse.json((polls ?? []).map((p) => ({ ...p, options: byPoll[p.id] ?? [] })));
 }
 
-/** POST { question, publish_date, options: string[], status? }
+/** POST { question, publish_date, options: {label, seedVotes?}[], status? }
  *  Upserts by publish_date (one poll/day, like the daily cartoon). Options
  *  are replaced wholesale on each save — fine pre-publish, but re-saving a
  *  poll that already has votes resets its results since option rows (and
- *  their cascaded votes) are recreated. */
+ *  their cascaded votes) are recreated. seedVotes is an admin-set starting
+ *  count per option (real votes add on top) — same "decorative baseline"
+ *  treatment as cartoon view/share counts. */
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const { question, publish_date, options, status } = body ?? {};
@@ -40,8 +42,13 @@ export async function POST(req: NextRequest) {
   if (!question?.trim()) return NextResponse.json({ error: "question required" }, { status: 400 });
   if (!publish_date) return NextResponse.json({ error: "publish_date required" }, { status: 400 });
 
-  const cleanOptions: string[] = Array.isArray(options)
-    ? options.map((o: string) => (o ?? "").trim()).filter(Boolean)
+  const cleanOptions: { label: string; seedVotes: number }[] = Array.isArray(options)
+    ? options
+        .map((o: { label?: string; seedVotes?: number }) => ({
+          label: (o?.label ?? "").trim(),
+          seedVotes: Math.max(0, Math.floor(Number(o?.seedVotes) || 0)),
+        }))
+        .filter((o) => o.label)
     : [];
   if (cleanOptions.length < 2)
     return NextResponse.json({ error: "At least 2 options required" }, { status: 400 });
@@ -65,7 +72,9 @@ export async function POST(req: NextRequest) {
   await admin.from("poll_options").delete().eq("poll_id", poll.id);
   const { error: optErr } = await admin
     .from("poll_options")
-    .insert(cleanOptions.map((label, i) => ({ poll_id: poll.id, label, position: i })));
+    .insert(
+      cleanOptions.map((o, i) => ({ poll_id: poll.id, label: o.label, position: i, seed_votes: o.seedVotes }))
+    );
   if (optErr) return NextResponse.json({ error: optErr.message }, { status: 500 });
 
   return NextResponse.json({ id: poll.id }, { status: 201 });

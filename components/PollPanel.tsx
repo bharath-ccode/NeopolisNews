@@ -1,10 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { CheckCircle2, LogIn } from "lucide-react";
+import { useEffect, useState } from "react";
+import { CheckCircle2 } from "lucide-react";
 import clsx from "clsx";
-import { useAuth } from "@/context/AuthContext";
 import { authHeaders } from "@/lib/authToken";
 
 export interface PollOptionResult {
@@ -22,9 +20,16 @@ export interface PollResult {
   myVote: string | null;
 }
 
-/** Vote UI for one poll: sign-in prompt → clickable choices → live result
- *  bars once the caller has voted. Shared by the homepage panel and the
- *  /polls archive page. */
+function localVoteKey(pollId: string) {
+  return `nn_poll_vote_${pollId}`;
+}
+
+/** Vote UI for one poll: clickable choices → live result bars once voted.
+ *  No sign-in required — a signed-in reader's vote is tied to their account
+ *  (myVote comes back from the server), a signed-out reader's choice is
+ *  remembered in localStorage instead, since the server has no stable
+ *  identity to key it to. Shared by the homepage panel and the /polls
+ *  archive page. */
 export default function PollPanel({
   poll,
   onUpdate,
@@ -32,12 +37,20 @@ export default function PollPanel({
   poll: PollResult;
   onUpdate?: (p: PollResult) => void;
 }) {
-  const { user } = useAuth();
   const [local, setLocal] = useState(poll);
+  const [localVote, setLocalVote] = useState<string | null>(null);
   const [voting, setVoting] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   if (poll.id !== local.id) setLocal(poll);
+
+  useEffect(() => {
+    try {
+      setLocalVote(localStorage.getItem(localVoteKey(poll.id)));
+    } catch {
+      setLocalVote(null);
+    }
+  }, [poll.id]);
 
   async function vote(optionId: string) {
     setVoting(optionId);
@@ -56,63 +69,55 @@ export default function PollPanel({
     const updated = await res.json();
     setLocal(updated);
     onUpdate?.(updated);
+    try {
+      localStorage.setItem(localVoteKey(local.id), optionId);
+    } catch {/* private browsing etc — fine, just won't persist */}
+    setLocalVote(optionId);
     setVoting(null);
   }
 
-  const showResults = Boolean(local.myVote);
+  const myVote = local.myVote ?? localVote;
+  const showResults = Boolean(myVote);
 
   return (
     <div className="space-y-3">
       <p className="font-extrabold text-gray-900">{local.question}</p>
 
-      {!user ? (
-        <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-2.5">
-          <LogIn className="w-4 h-4 text-gray-400 shrink-0" />
-          <p className="text-xs text-gray-600 flex-1">Sign in to vote and see results.</p>
-          <Link
-            href="/auth/login?next=/polls"
-            className="shrink-0 text-xs font-bold bg-brand-600 hover:bg-brand-700 text-white px-3 py-1.5 rounded-lg transition-colors"
-          >
-            Sign in
-          </Link>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {local.options.map((o) => {
-            const pct = local.totalVotes > 0 ? Math.round((o.votes / local.totalVotes) * 100) : 0;
-            const isMine = local.myVote === o.id;
+      <div className="space-y-2">
+        {local.options.map((o) => {
+          const pct = local.totalVotes > 0 ? Math.round((o.votes / local.totalVotes) * 100) : 0;
+          const isMine = myVote === o.id;
 
-            if (showResults) {
-              return (
-                <div key={o.id} className="relative overflow-hidden rounded-lg border border-gray-100">
-                  <div
-                    className={clsx("absolute inset-y-0 left-0", isMine ? "bg-brand-100" : "bg-gray-50")}
-                    style={{ width: `${pct}%` }}
-                  />
-                  <div className="relative flex items-center justify-between px-3 py-2 text-sm">
-                    <span className={clsx("font-semibold flex items-center gap-1.5", isMine ? "text-brand-700" : "text-gray-700")}>
-                      {isMine && <CheckCircle2 className="w-3.5 h-3.5" />}
-                      {o.label}
-                    </span>
-                    <span className="text-xs text-gray-500 font-bold">{pct}%</span>
-                  </div>
-                </div>
-              );
-            }
-
+          if (showResults) {
             return (
-              <button
-                key={o.id}
-                onClick={() => vote(o.id)}
-                disabled={voting !== null}
-                className="w-full text-left px-3 py-2 text-sm font-semibold text-gray-700 border border-gray-200 rounded-lg hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700 transition-colors disabled:opacity-60"
-              >
-                {voting === o.id ? "Voting…" : o.label}
-              </button>
+              <div key={o.id} className="relative overflow-hidden rounded-lg border border-gray-100">
+                <div
+                  className={clsx("absolute inset-y-0 left-0", isMine ? "bg-brand-100" : "bg-gray-50")}
+                  style={{ width: `${pct}%` }}
+                />
+                <div className="relative flex items-center justify-between px-3 py-2 text-sm">
+                  <span className={clsx("font-semibold flex items-center gap-1.5", isMine ? "text-brand-700" : "text-gray-700")}>
+                    {isMine && <CheckCircle2 className="w-3.5 h-3.5" />}
+                    {o.label}
+                  </span>
+                  <span className="text-xs text-gray-500 font-bold">{pct}%</span>
+                </div>
+              </div>
             );
-          })}
-        </div>
-      )}
+          }
+
+          return (
+            <button
+              key={o.id}
+              onClick={() => vote(o.id)}
+              disabled={voting !== null}
+              className="w-full text-left px-3 py-2 text-sm font-semibold text-gray-700 border border-gray-200 rounded-lg hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700 transition-colors disabled:opacity-60"
+            >
+              {voting === o.id ? "Voting…" : o.label}
+            </button>
+          );
+        })}
+      </div>
 
       {error && <p className="text-red-500 text-xs">{error}</p>}
 

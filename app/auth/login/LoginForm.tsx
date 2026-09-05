@@ -6,64 +6,37 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   Mail,
-  Phone,
   Lock,
   Eye,
   EyeOff,
   ArrowRight,
   Loader2,
-  MessageSquare,
 } from "lucide-react";
 import { useAuth, UserType } from "@/context/AuthContext";
-
-type Method = "google" | "email" | "phone";
-type EmailMode = "password" | "otp";
 
 export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") ?? "/dashboard";
 
-  const { loginWithGoogle, loginWithEmail, loginWithOtp, sendOtp } = useAuth();
+  const { loginWithGoogle, loginWithEmail } = useAuth();
 
-  const [method, setMethod] = useState<Method>("email");
-  const [emailMode, setEmailMode] = useState<EmailMode>("password");
   const [userType, setUserType] = useState<UserType>("individual");
 
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [otp, setOtp] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleSendOtp() {
-    const contact = method === "email" ? email : phone;
-    if (!contact) { setError("Please enter your email / phone first."); return; }
-    setError("");
-    setLoading(true);
-    await sendOtp(contact);
-    setOtpSent(true);
-    setLoading(false);
-  }
-
+  // Phone/OTP sign-in is disabled for now — that route isn't fully built yet.
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      if (method === "email") {
-        if (emailMode === "password") {
-          await loginWithEmail(email, password, userType);
-        } else {
-          await loginWithOtp(email, otp, userType);
-        }
-      } else {
-        await loginWithOtp(phone, otp, userType);
-      }
+      await loginWithEmail(email, password, userType);
       router.push(redirectTo);
     } catch {
       setError("Invalid credentials. Please try again.");
@@ -77,10 +50,6 @@ export default function LoginForm() {
     await loginWithGoogle(userType);
     router.push(redirectTo);
   }
-
-  const TAB = "flex-1 py-2.5 text-sm font-semibold rounded-lg transition-colors";
-  const TAB_ACTIVE = `${TAB} bg-white text-brand-700 shadow-sm`;
-  const TAB_IDLE = `${TAB} text-gray-500 hover:text-gray-700`;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-12">
@@ -136,90 +105,37 @@ export default function LoginForm() {
           <div className="flex-1 h-px bg-gray-100" />
         </div>
 
-        {/* Method tabs */}
-        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-5">
-          <button onClick={() => { setMethod("email"); setOtpSent(false); }} className={method === "email" ? TAB_ACTIVE : TAB_IDLE}>
-            <Mail className="w-4 h-4 inline mr-1.5 -mt-0.5" /> Email
-          </button>
-          <button onClick={() => { setMethod("phone"); setOtpSent(false); }} className={method === "phone" ? TAB_ACTIVE : TAB_IDLE}>
-            <Phone className="w-4 h-4 inline mr-1.5 -mt-0.5" /> Phone
-          </button>
-        </div>
-
         {error && (
           <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-4">{error}</p>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {method === "email" && (
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Email address</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
-              </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5">Email address</label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
             </div>
-          )}
+          </div>
 
-          {method === "phone" && (
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Mobile number</label>
-              <div className="relative flex">
-                <span className="flex items-center px-3 border border-r-0 border-gray-200 rounded-l-lg bg-gray-50 text-sm text-gray-500">+91</span>
-                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="9900000000" maxLength={10} required className="flex-1 px-3 py-2.5 border border-gray-200 rounded-r-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
-              </div>
+          <div>
+            <div className="flex justify-between mb-1.5">
+              <label className="text-xs font-semibold text-gray-500">Password</label>
+              <Link href="/auth/forgot-password" className="text-xs text-brand-600 hover:underline">Forgot password?</Link>
             </div>
-          )}
-
-          {method === "email" && (
-            <div className="flex gap-3">
-              {(["password", "otp"] as EmailMode[]).map((m) => (
-                <button type="button" key={m} onClick={() => { setEmailMode(m); setOtpSent(false); setOtp(""); }}
-                  className={`flex-1 py-2 rounded-lg border text-xs font-semibold transition-colors ${emailMode === m ? "bg-brand-50 border-brand-400 text-brand-700" : "border-gray-200 text-gray-400 hover:border-gray-300"}`}>
-                  {m === "password" ? <><Lock className="w-3.5 h-3.5 inline mr-1" />Use password</> : <><MessageSquare className="w-3.5 h-3.5 inline mr-1" />Use OTP</>}
-                </button>
-              ))}
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
-          )}
+          </div>
 
-          {method === "email" && emailMode === "password" && (
-            <div>
-              <div className="flex justify-between mb-1.5">
-                <label className="text-xs font-semibold text-gray-500">Password</label>
-                <Link href="/auth/forgot-password" className="text-xs text-brand-600 hover:underline">Forgot password?</Link>
-              </div>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {(method === "phone" || (method === "email" && emailMode === "otp")) && (
-            <div>
-              {!otpSent ? (
-                <button type="button" onClick={handleSendOtp} disabled={loading} className="w-full btn-secondary justify-center text-sm">
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null} Send OTP
-                </button>
-              ) : (
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">OTP sent to {method === "phone" ? `+91 ${phone}` : email}</label>
-                  <input type="text" value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="6-digit OTP" maxLength={6} required className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-center tracking-widest font-mono focus:outline-none focus:ring-2 focus:ring-brand-500" />
-                  <button type="button" onClick={handleSendOtp} className="text-xs text-brand-600 hover:underline mt-1.5 block">Resend OTP</button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {((method === "email" && emailMode === "password") || otpSent) && (
-            <button type="submit" disabled={loading} className="btn-primary w-full justify-center">
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
-              {loading ? "Signing in…" : "Sign In"}
-            </button>
-          )}
+          <button type="submit" disabled={loading} className="btn-primary w-full justify-center">
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+            {loading ? "Signing in…" : "Sign In"}
+          </button>
         </form>
 
         <p className="text-xs text-gray-400 text-center mt-5">
