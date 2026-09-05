@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { getTodayIST } from "@/lib/dateIST";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,7 @@ const FIELDS =
 export async function GET(req: NextRequest) {
   const page = Math.max(1, parseInt(req.nextUrl.searchParams.get("page") ?? "1"));
   const perPage = 12;
-  const today = new Date().toISOString().split("T")[0];
+  const today = getTodayIST();
 
   const admin = createAdminClient();
 

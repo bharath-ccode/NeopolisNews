@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { PenTool, Loader2, Send, AtSign, LogIn, Trophy, Clock, Eye, Share2 } from "lucide-react";
+import clsx from "clsx";
 import { useAuth } from "@/context/AuthContext";
 import { authHeaders } from "@/lib/authToken";
 import WhatsAppShare from "@/components/WhatsAppShare";
+import { parseCartoonDialogue } from "@/lib/cartoonCaption";
 
 interface Cartoon {
   id: string;
@@ -143,10 +145,46 @@ export default function CartoonPage() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={cartoon.image_url} alt={cartoon.title} className="w-full bg-white" />
               <div className="px-6 py-5">
-                <h2 className="font-extrabold text-gray-900">{cartoon.title}</h2>
-                {cartoon.caption && (
-                  <p className="text-gray-600 italic mt-1.5">&ldquo;{cartoon.caption}&rdquo;</p>
-                )}
+                {/* Title and caption are baked into the art itself at publish
+                    time (see bakeCartoonText) — showing them again here would
+                    just repeat what's already on the image. The one exception
+                    is a caption-contest cartoon after a winner is picked: the
+                    winning caption replaces `caption` in the DB but the
+                    already-published image is never re-baked, so it's the
+                    only place that text appears. */}
+                {cartoon.is_contest && cartoon.winner_name && cartoon.caption && (() => {
+                  const turns = parseCartoonDialogue(cartoon.caption);
+                  if (turns) {
+                    const firstSpeaker = turns[0].speaker;
+                    return (
+                      <div className="mt-1 space-y-2">
+                        {turns.map((t, i) => {
+                          const isFirst = t.speaker === firstSpeaker;
+                          return (
+                            <div key={i} className={clsx("flex", isFirst ? "justify-start" : "justify-end")}>
+                              <div
+                                className={clsx(
+                                  "max-w-[85%] rounded-2xl px-3.5 py-2 text-sm",
+                                  isFirst
+                                    ? "bg-gray-100 text-gray-700 rounded-bl-sm"
+                                    : "bg-brand-50 text-brand-900 rounded-br-sm"
+                                )}
+                              >
+                                <span className="block text-[10px] font-bold uppercase tracking-wide opacity-60 mb-0.5">
+                                  {t.speaker}
+                                </span>
+                                {t.line}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  }
+                  return (
+                    <p className="text-gray-600 italic">&ldquo;{cartoon.caption}&rdquo;</p>
+                  );
+                })()}
                 {cartoon.winner_name && (
                   <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mt-3 inline-flex items-center gap-1.5">
                     <Trophy className="w-3.5 h-3.5" />

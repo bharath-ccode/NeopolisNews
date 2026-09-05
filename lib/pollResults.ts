@@ -25,16 +25,17 @@ export async function getPollWithResults(
   const [{ data: options }, { data: votes }] = await Promise.all([
     admin
       .from("poll_options")
-      .select("id, label, seed_votes")
+      .select("id, label, seed_votes, anon_votes")
       .eq("poll_id", poll.id)
       .order("position", { ascending: true }),
     admin.from("poll_votes").select("option_id, user_id").eq("poll_id", poll.id),
   ]);
 
-  // seed_votes is a cosmetic baseline (see 20260827_seed_poll_votes.sql) blended
-  // in with real votes so counts and percentages read as one number.
+  // seed_votes (admin-entered at creation) and anon_votes (signed-out voters,
+  // tallied as a plain counter since there's no stable identity to key a
+  // unique constraint on) blend with real signed-in votes into one number.
   const counts: Record<string, number> = {};
-  for (const o of options ?? []) counts[o.id] = o.seed_votes ?? 0;
+  for (const o of options ?? []) counts[o.id] = (o.seed_votes ?? 0) + (o.anon_votes ?? 0);
   for (const v of votes ?? []) counts[v.option_id] = (counts[v.option_id] ?? 0) + 1;
 
   const myVote = userId

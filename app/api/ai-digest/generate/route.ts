@@ -10,6 +10,7 @@ import {
   type DigestLevel,
   type HeadlineItem,
 } from "@/lib/digestSources";
+import { getTodayIST } from "@/lib/dateIST";
 
 export const maxDuration = 60;
 
@@ -157,12 +158,6 @@ async function runGenerate(onlyLevel: DigestLevel | null) {
   }
 
   return NextResponse.json({ date: todayIST, results });
-}
-
-function getTodayIST(): string {
-  const now = new Date();
-  const ist = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
-  return ist.toISOString().slice(0, 10);
 }
 
 function formatDisplayDate(isoDate: string): string {
