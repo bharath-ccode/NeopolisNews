@@ -75,10 +75,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ url });
   } catch (err) {
     console.error("generate-image:", err);
+    // Admin-only route — safe to surface the real reason (usually a Gemini
+    // safety/policy refusal) instead of a generic message.
     const message = err instanceof Error ? err.message : "Image generation failed";
-    if (message.includes("not configured")) {
-      return NextResponse.json({ error: message }, { status: 500 });
-    }
-    return NextResponse.json({ error: "Image generation failed" }, { status: 502 });
+    return NextResponse.json({ error: message }, { status: 502 });
   }
 }

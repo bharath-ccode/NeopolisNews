@@ -36,11 +36,26 @@ export async function generateAiImage(
   }
 
   const json = (await res.json()) as {
-    candidates?: { content?: { parts?: { inlineData?: { data?: string; mimeType?: string } }[] } }[];
+    candidates?: {
+      finishReason?: string;
+      content?: { parts?: { text?: string; inlineData?: { data?: string; mimeType?: string } }[] };
+    }[];
+    promptFeedback?: { blockReason?: string };
   };
-  const part = json.candidates?.[0]?.content?.parts?.find((p) => p.inlineData?.data);
+  const candidate = json.candidates?.[0];
+  const part = candidate?.content?.parts?.find((p) => p.inlineData?.data);
   const inline = part?.inlineData;
-  if (!inline?.data) throw new Error("No image returned");
+  if (!inline?.data) {
+    // Most commonly a safety/policy refusal — Gemini returns no image part but
+    // does return a reason and/or a text explanation instead. Surface that
+    // instead of a bare "No image returned" so it's actionable from the logs
+    // alone (this call has no retry — the admin regenerate-with-feedback flow
+    // is the retry path).
+    const reason = json.promptFeedback?.blockReason || candidate?.finishReason;
+    const textPart = candidate?.content?.parts?.find((p) => p.text)?.text;
+    const detail = [reason, textPart].filter(Boolean).join(": ");
+    throw new Error(detail ? `No image returned (${detail})` : "No image returned");
+  }
 
   return { buffer: Buffer.from(inline.data, "base64"), mimeType: inline.mimeType || "image/png" };
 }

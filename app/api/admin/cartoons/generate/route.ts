@@ -147,10 +147,10 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     console.error("cartoon generate: image step failed:", err);
+    // Admin-only route — safe to surface the real reason (usually a Gemini
+    // safety/policy refusal) instead of a generic message, so the admin knows
+    // whether to just retry or adjust the notes/take before regenerating.
     const message = err instanceof Error ? err.message : "Image generation failed";
-    if (message.includes("not configured")) {
-      return NextResponse.json({ error: message }, { status: 500 });
-    }
-    return NextResponse.json({ error: "Image generation failed." }, { status: 502 });
+    return NextResponse.json({ error: message }, { status: 502 });
   }
 }
