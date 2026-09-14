@@ -5,14 +5,16 @@ interface Props {
   url?: string;
   message?: string;
   size?: "sm" | "md";
+  onShare?: () => void;
 }
 
-export default function WhatsAppShare({ title, url, message, size = "md" }: Props) {
+export default function WhatsAppShare({ title, url, message, size = "md", onShare }: Props) {
   function handleShare() {
     const shareUrl = url ?? window.location.href;
     const text = message ?? title;
     const waUrl = `https://wa.me/?text=${encodeURIComponent(`${text}\n\n${shareUrl}`)}`;
     window.open(waUrl, "_blank", "noopener,noreferrer");
+    onShare?.();
   }
 
   const isSmall = size === "sm";

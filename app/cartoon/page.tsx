@@ -74,6 +74,11 @@ export default function CartoonPage() {
       .catch(() => {});
   }, [cartoon?.id, cartoon?.is_contest]);
 
+  useEffect(() => {
+    if (!cartoon?.id) return;
+    fetch(`/api/cartoons/${cartoon.id}/view`, { method: "POST" }).catch(() => {});
+  }, [cartoon?.id]);
+
   async function submitCaption(e: React.FormEvent) {
     e.preventDefault();
     if (!draft.trim() || !cartoon) return;
@@ -201,7 +206,13 @@ export default function CartoonPage() {
                       <Share2 className="w-3.5 h-3.5" /> {fmtCount(cartoon.whatsapp_share_count)}
                     </span>
                   </div>
-                  <WhatsAppShare title={`😄 ${cartoon.title} — Today in Neopolis`} size="sm" />
+                  <WhatsAppShare
+                    title={`😄 ${cartoon.title} — Today in Neopolis`}
+                    size="sm"
+                    onShare={() => {
+                      fetch(`/api/cartoons/${cartoon.id}/share`, { method: "POST" }).catch(() => {});
+                    }}
+                  />
                 </div>
               </div>
             </div>
