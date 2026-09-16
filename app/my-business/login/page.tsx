@@ -192,6 +192,10 @@ export default function MyBusinessLoginPage() {
                     Register your business
                   </Link>
                 </p>
+                <p className="text-xs text-gray-400 text-center mt-3 leading-relaxed">
+                  Already a NeopolisNews member?{" "}
+                  Use the same email and password here — your resident and business accounts are linked.
+                </p>
               </>
             )}
           </div>
