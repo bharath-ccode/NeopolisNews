@@ -16,6 +16,12 @@
 # misc
 .DS_Store
 *.pem
+id_rsa
+id_ed25519
+id_ecdsa
+*.ppk
+neopolisgit
+neopolisgit.pub
 
 # debug
 npm-debug.log*
