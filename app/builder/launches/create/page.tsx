@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useBuilderAuth } from "@/context/BuilderAuthContext";
 import { getProjectsByBuilderId, Project } from "@/lib/projectsStore";
-import { createArticle, ArticleStatus } from "@/lib/newsStore";
+import { CATEGORY_META } from "@/lib/newsStore";
 
 function formatDisplayDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-IN", {
@@ -45,35 +45,41 @@ export default function BuilderNewLaunchPage() {
   const inputCls =
     "w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition";
 
-  async function handleSubmit(e: FormEvent, status: ArticleStatus) {
+  async function handleSubmit(e: FormEvent, status: "draft" | "published") {
     e.preventDefault();
     setError("");
-    if (!title.trim()) { setError("Title is required."); return; }
-    if (!excerpt.trim()) { setError("Summary is required."); return; }
-    if (!content.trim()) { setError("Content is required."); return; }
+    if (!title.trim())   { setError("Headline is required.");   return; }
+    if (!excerpt.trim()) { setError("Summary is required.");    return; }
+    if (!content.trim()) { setError("Content is required.");    return; }
 
     setSaving(true);
     try {
-      await createArticle({
-        title:    title.trim(),
-        excerpt:  excerpt.trim(),
-        content:  content.trim(),
-        category: "launches",
-        tag:      "New Launch",
-        tagColor: "tag-green",
-        author:   builder!.builderName,
-        date:     formatDisplayDate(new Date().toISOString()),
-        readTime: readTime.trim(),
-        imageUrl: imageUrl.trim() || undefined,
-        sponsored: false,
-        status,
-        views:    0,
-        projectId: projectId || null,
-        builderId: builder!.id,
+      const meta = CATEGORY_META["launches"];
+      const res = await fetch("/api/articles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title:     title.trim(),
+          excerpt:   excerpt.trim(),
+          content:   content.trim(),
+          category:  "launches",
+          tag:       meta.tag,
+          tagColor:  meta.tagColor,
+          author:    builder!.builderName,
+          date:      formatDisplayDate(new Date().toISOString()),
+          readTime:  readTime.trim(),
+          imageUrl:  imageUrl.trim() || null,
+          sponsored: false,
+          status,
+          projectId: projectId || null,
+          builderId: builder!.id,
+        }),
       });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Failed to save");
       router.push("/builder");
-    } catch {
-      setError("Failed to save. Please try again.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save. Please try again.");
     } finally {
       setSaving(false);
     }
