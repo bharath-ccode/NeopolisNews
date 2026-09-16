@@ -222,7 +222,7 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
       // No longer settable — Locality supersedes it. Preserve whatever an
       // existing project already had rather than resetting it on edit.
       coreNeopolis:          initialData?.coreNeopolis ?? false,
-      featured,
+      featured:              lockedBuilderId ? false : featured,
       projectLogoUrl,
       bannerImageUrl,
       projectPlanUrl:        projectPlanUrl || null,
@@ -478,14 +478,16 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
             <p className="text-xs text-gray-400 mt-1">Leave blank to keep pricing off the public page.</p>
           </div>
 
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input type="checkbox" checked={featured} onChange={e => setFeatured(e.target.checked)}
-              className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
-            <div>
-              <span className="text-sm font-medium text-gray-900">Featured on Homepage</span>
-              <p className="text-xs text-gray-400">Show this project in the Featured Projects section on the homepage</p>
-            </div>
-          </label>
+          {!lockedBuilderId && (
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" checked={featured} onChange={e => setFeatured(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
+              <div>
+                <span className="text-sm font-medium text-gray-900">Featured on Homepage</span>
+                <p className="text-xs text-gray-400">Show this project in the Featured Projects section on the homepage</p>
+              </div>
+            </label>
+          )}
         </div>
       )}
 
