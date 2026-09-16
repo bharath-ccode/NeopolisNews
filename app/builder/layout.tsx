@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -10,16 +10,19 @@ import {
   HardHat,
   Megaphone,
   CalendarCheck,
+  MessageSquare,
   LogOut,
 } from "lucide-react";
 import clsx from "clsx";
 import { BuilderAuthProvider, useBuilderAuth } from "@/context/BuilderAuthContext";
+import { createClient } from "@/lib/supabase/client";
 
 // ─── Nav items ────────────────────────────────────────────────────────────────
 
 const NAV = [
   { href: "/builder",                  label: "Dashboard",             icon: LayoutDashboard },
   { href: "/builder/projects",         label: "My Projects",           icon: FolderKanban    },
+  { href: "/builder/enquiries",        label: "Enquiries",             icon: MessageSquare   },
   { href: "/builder/updates",          label: "Construction Updates",  icon: HardHat         },
   { href: "/builder/site-visits",      label: "Site Visits",           icon: CalendarCheck   },
   { href: "/builder/launches/create",  label: "Announce Launch",       icon: Megaphone       },
@@ -31,12 +34,31 @@ function BuilderShell({ children }: { children: React.ReactNode }) {
   const { builder, loading, logout } = useBuilderAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [unreadEnquiries, setUnreadEnquiries] = useState(0);
 
   useEffect(() => {
     if (!loading && !builder && pathname !== "/builder/login") {
       router.replace("/builder/login");
     }
   }, [loading, builder, pathname, router]);
+
+  useEffect(() => {
+    if (!builder) return;
+    const sb = createClient();
+    sb.from("projects")
+      .select("id")
+      .eq("builder_id", builder.id)
+      .then(async ({ data: projects }) => {
+        const ids = (projects ?? []).map((p: { id: string }) => p.id);
+        if (ids.length === 0) return;
+        const { count } = await sb
+          .from("project_enquiries")
+          .select("id", { count: "exact", head: true })
+          .in("project_id", ids)
+          .eq("is_read", false);
+        setUnreadEnquiries(count ?? 0);
+      });
+  }, [builder, pathname]);
 
   // Show nothing while redirecting
   if (!loading && !builder && pathname !== "/builder/login") return null;
@@ -96,6 +118,11 @@ function BuilderShell({ children }: { children: React.ReactNode }) {
               >
                 <item.icon className="w-4 h-4 shrink-0" />
                 {item.label}
+                {item.href === "/builder/enquiries" && unreadEnquiries > 0 && (
+                  <span className="ml-auto bg-brand-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center shrink-0">
+                    {unreadEnquiries}
+                  </span>
+                )}
               </Link>
             );
           })}
