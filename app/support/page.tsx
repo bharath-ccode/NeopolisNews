@@ -4,7 +4,7 @@ import { Mail, Phone, MapPin, Clock } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Support — NeopolisNews",
-  description: "Get help with your NeopolisNews account, listings, or the app — contact our support team or browse common questions.",
+  description: "Get help with the NeopolisNews app and website — contact our support team or browse common questions.",
 };
 
 const CONTACT_EMAIL = "support@neopolis.news";
@@ -16,6 +16,13 @@ function H2({ children }: { children: React.ReactNode }) {
 }
 function P({ children }: { children: React.ReactNode }) {
   return <p className="text-gray-600 leading-relaxed mb-3">{children}</p>;
+}
+function Card({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+      {children}
+    </div>
+  );
 }
 
 const FAQS: { q: string; a: React.ReactNode }[] = [
@@ -42,28 +49,27 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
   },
   {
     q: "How do notifications and the daily digest work?",
-    a: "Push notifications and the email digest are opt-in, managed from your account settings. Every digest email includes an unsubscribe link that takes effect immediately.",
+    a: "Push notifications and the email digest are opt-in, managed from your account settings. Every digest email includes an unsubscribe link that takes effect immediately. On the mobile app you can also turn push notifications off entirely from your device Settings → NeopolisNews → Notifications.",
   },
   {
-    q: "Something in an article, cartoon, or listing looks wrong — how do I report it?",
+    q: "Something in an article, cartoon, or business listing looks wrong — how do I report it?",
     a: (
       <>
         Email us at{" "}
         <a href={`mailto:${CONTACT_EMAIL}`} className="text-brand-600 hover:underline">{CONTACT_EMAIL}</a>{" "}
-        with a link to the page and what looks off — we review and correct these quickly.
+        with a link to the page and what looks off — we review and correct these quickly. Verified business
+        owners can also correct their own listing at{" "}
+        <Link href="/my-business" className="text-brand-600 hover:underline">/my-business</Link>.
       </>
     ),
   },
   {
-    q: "How do I delete my account or personal data?",
-    a: (
-      <>
-        Email {CONTACT_EMAIL} from your registered address asking to delete your account — we&apos;ll confirm
-        and process it within 30 days. See our{" "}
-        <Link href="/privacy" className="text-brand-600 hover:underline">Privacy Policy</Link> for details on
-        what we collect and retain.
-      </>
-    ),
+    q: "The weather or traffic data looks wrong.",
+    a: "Weather is sourced from Open-Meteo and air quality from WAQI — both use sensor readings near Kokapet. Traffic uses the Google Routes API for a representative route and is cached for 5 minutes. Minor differences from other apps are normal due to different measurement stations and update intervals.",
+  },
+  {
+    q: "I am a builder or developer — how do I list my project?",
+    a: "Visit neopolis.news/builder and register for a builder account. After approval you can create project listings, post construction updates, and manage availability.",
   },
   {
     q: "The app or website isn't working properly — what should I try first?",
@@ -107,6 +113,23 @@ export default function SupportPage() {
             Replies within 24 hours, every day
           </span>
         </div>
+
+        {/* Account deletion — required by Apple/Google app store review */}
+        <H2>Delete your account</H2>
+        <Card>
+          <p className="text-gray-600 text-sm leading-relaxed mb-3">
+            You have the right to delete your {SITE_NAME} account and all associated personal data at any time.
+          </p>
+          <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600 ml-1">
+            <li>Email <a href={`mailto:${CONTACT_EMAIL}?subject=Delete%20my%20account`} className="text-brand-600 hover:underline">{CONTACT_EMAIL}</a> with the subject <strong>Delete my account</strong>.</li>
+            <li>Include the mobile number or email address linked to your account so we can identify it.</li>
+            <li>We will delete your account and personal data within <strong>30 days</strong> and send a confirmation email.</li>
+          </ol>
+          <p className="text-xs text-gray-400 mt-3">
+            Business listings and public reviews associated with your account will also be removed.
+            Property enquiry records may be retained for up to 12 months for legal compliance.
+          </p>
+        </Card>
 
         <H2>Frequently Asked Questions</H2>
         <div className="divide-y divide-gray-100">

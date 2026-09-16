@@ -47,6 +47,20 @@ function aqiInfo(aqi: number) {
   return           { color: "#450a0a", label: "Hazardous",                            advice: "Stay indoors — air is hazardous." };
 }
 function aqiBg(aqi: number) { return aqiInfo(aqi).color; }
+
+type TrafficLevel = "light" | "moderate" | "heavy";
+interface TrafficData {
+  level: TrafficLevel;
+  currentMinutes: number;
+  typicalMinutes: number;
+  delayMinutes: number;
+}
+function trafficInfo(level: TrafficLevel) {
+  if (level === "light")    return { color: "#16a34a", label: "Light traffic",    advice: "Roads are clear — good time to travel." };
+  if (level === "moderate") return { color: "#d97706", label: "Moderate traffic", advice: "Some congestion on main roads." };
+  return                           { color: "#dc2626", label: "Heavy traffic",    advice: "Avoid peak routes — expect delays." };
+}
+
 function fmt12(iso: string) {
   const h = parseInt(iso.split("T")[1], 10);
   if (h === 0) return "12 AM";
@@ -83,7 +97,11 @@ interface Announcement {
 }
 interface NewsItem {
   id: string; title: string; excerpt: string | null;
-  date: string | null; tag: string | null; tag_color: string | null; image: string | null;
+  date: string | null; tag: string | null; tag_color: string | null; image_url: string | null;
+}
+interface Cartoon {
+  id: string; title: string; image_url: string | null; caption: string | null;
+  artist_name: string | null; publish_date: string; is_contest: boolean; winner_name: string | null;
 }
 interface BusinessEvent {
   id: string; name: string; event_type: string;
@@ -109,14 +127,17 @@ export default function HomeScreen() {
   const [deals, setDeals]                 = useState<Deal[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [news, setNews]                   = useState<NewsItem[]>([]);
+  const [cartoon, setCartoon]             = useState<Cartoon | null>(null);
   const [events, setEvents]               = useState<BusinessEvent[]>([]);
   const [loading, setLoading]             = useState(true);
   const [refreshing, setRefreshing]       = useState(false);
 
-  const [wx, setWx]       = useState<WxState>({ temp: null, feelsLike: null, emoji: "🌤️", label: "Kokapet", humidity: null, wind: null, aqi: null });
-  const [hourly, setHourly] = useState<HourItem[]>([]);
-  const [daily, setDaily]   = useState<DayItem[]>([]);
-  const [wxOpen, setWxOpen] = useState(false);
+  const [wx, setWx]           = useState<WxState>({ temp: null, feelsLike: null, emoji: "🌤️", label: "Kokapet", humidity: null, wind: null, aqi: null });
+  const [hourly, setHourly]   = useState<HourItem[]>([]);
+  const [daily, setDaily]     = useState<DayItem[]>([]);
+  const [wxOpen, setWxOpen]       = useState(false);
+  const [traffic, setTraffic]     = useState<TrafficData | null>(null);
+  const [trafficArea, setTrafficArea] = useState<"neopolis" | "financial-district">("neopolis");
   const hourListRef         = useRef<FlatList<HourItem>>(null);
 
   // Prefer @screen_name, fall back to first name from profile/metadata
@@ -126,21 +147,24 @@ export default function HomeScreen() {
 
   const loadData = useCallback(async () => {
     const today = new Date().toISOString().split("T")[0];
-    const [dealsRes, buzzRes, newsRes, eventsRes] = await Promise.allSettled([
+    const [dealsRes, buzzRes, newsRes, eventsRes, cartoonsRes] = await Promise.allSettled([
       fetch(`${API}/api/deals`).then(r => r.json()),
       fetch(`${API}/api/announcements`).then(r => r.json()),
-      fetch(`${API}/api/news?limit=5`).then(r => r.json()),
+      fetch(`${API}/api/articles?status=published`).then(r => r.json()),
       fetch(`${API}/api/events/upcoming?limit=5&from=${today}`).then(r => r.json()),
+      fetch(`${API}/api/cartoons`).then(r => r.json()),
     ]);
-    const dealsData  = dealsRes.status  === "fulfilled" ? dealsRes.value  : [];
-    const buzzData   = buzzRes.status   === "fulfilled" ? buzzRes.value   : [];
-    const newsData   = newsRes.status   === "fulfilled" ? newsRes.value   : [];
-    const eventsData = eventsRes.status === "fulfilled" ? eventsRes.value : [];
+    const dealsData    = dealsRes.status    === "fulfilled" ? dealsRes.value    : [];
+    const buzzData     = buzzRes.status     === "fulfilled" ? buzzRes.value     : [];
+    const newsData     = newsRes.status     === "fulfilled" ? newsRes.value     : [];
+    const eventsData   = eventsRes.status   === "fulfilled" ? eventsRes.value   : [];
+    const cartoonsData = cartoonsRes.status === "fulfilled" ? cartoonsRes.value : {};
     setDeals(Array.isArray(dealsData) ? dealsData.slice(0, 2) : []);
     setAnnouncements(Array.isArray(buzzData) ? buzzData.slice(0, 2) : []);
     const articles = Array.isArray(newsData) ? newsData : (newsData?.articles ?? []);
-    setNews(articles.slice(0, 2));
+    setNews(articles.slice(0, 6));
     setEvents(Array.isArray(eventsData) ? eventsData.slice(0, 5) : []);
+    if (cartoonsData?.latest) setCartoon(cartoonsData.latest);
     setLoading(false);
     setRefreshing(false);
   }, []);
@@ -191,14 +215,20 @@ export default function HomeScreen() {
       }
     }).catch(() => {});
 
-    fetch(
-      "https://air-quality-api.open-meteo.com/v1/air-quality" +
-      "?latitude=17.4126&longitude=78.3338&current=us_aqi&timezone=Asia%2FKolkata"
-    )
+    fetch("https://api.waqi.info/feed/geo:17.4126;78.3338/?token=demo")
       .then(r => r.json())
-      .then(j => { if (j?.current?.us_aqi != null) setWx(prev => ({ ...prev, aqi: Number(j.current.us_aqi) })); })
+      .then(j => { if (j?.status === "ok" && j?.data?.aqi != null) setWx(prev => ({ ...prev, aqi: Number(j.data.aqi) })); })
       .catch(() => {});
+
   }, []);
+
+  useEffect(() => {
+    setTraffic(null);
+    fetch(`${API}/api/traffic?area=${trafficArea}`)
+      .then(r => { if (!r.ok) throw new Error("bad"); return r.json(); })
+      .then(j => { if (j?.level) setTraffic(j as TrafficData); })
+      .catch(() => {});
+  }, [trafficArea]);
 
   return (
     <SafeAreaView style={s.root}>
@@ -209,16 +239,27 @@ export default function HomeScreen() {
             <Image source={require("../../assets/logo.png")} style={s.headerLogo} resizeMode="contain" />
             <Text style={s.greeting}>Hi {displayHandle} 👋</Text>
           </View>
-          <TouchableOpacity style={s.weatherBadge} onPress={() => setWxOpen(true)} activeOpacity={0.75}>
-            <Text style={s.weatherEmoji}>{wx.emoji}</Text>
-            <Text style={s.weatherTemp}>{wx.temp !== null ? `${wx.temp}°` : "—"}</Text>
-            {wx.feelsLike !== null && (
-              <Text style={s.feelsLike}>Feels {wx.feelsLike}°</Text>
-            )}
+          <TouchableOpacity onPress={() => router.push("/(tabs)/profile")} activeOpacity={0.75} style={s.profileBtn}>
+            <Text style={s.profileIcon}>👤</Text>
           </TouchableOpacity>
         </View>
 
-        {/* AQI + walking advice strip */}
+        {/* Weather strip */}
+        <TouchableOpacity style={s.weatherStrip} onPress={() => setWxOpen(true)} activeOpacity={0.8}>
+          <Text style={s.weatherStripEmoji}>{wx.emoji}</Text>
+          <View style={s.weatherStripText}>
+            <Text style={s.weatherStripMain}>
+              {wx.temp !== null ? `${wx.temp}°C` : "—"} · {wx.label}
+              {wx.feelsLike !== null ? `  Feels ${wx.feelsLike}°` : ""}
+            </Text>
+            {wx.humidity !== null && (
+              <Text style={s.weatherStripSub}>💧 {wx.humidity}%  💨 {wx.wind} km/h · Kokapet</Text>
+            )}
+          </View>
+          <Text style={s.aqiTap}>Details →</Text>
+        </TouchableOpacity>
+
+        {/* AQI strip */}
         {wx.aqi !== null && (() => {
           const info = aqiInfo(wx.aqi!);
           return (
@@ -232,6 +273,34 @@ export default function HomeScreen() {
               </View>
               <Text style={s.aqiTap}>Details →</Text>
             </TouchableOpacity>
+          );
+        })()}
+
+        {/* Traffic strip */}
+        {traffic && (() => {
+          const t = trafficInfo(traffic.level);
+          const areas = [
+            { id: "neopolis", routeLabel: "Kokapet → Gandipet" },
+            { id: "financial-district", routeLabel: "Nanakramguda → ISB Rd" },
+          ];
+          const currentArea = areas.find(a => a.id === trafficArea) ?? areas[0];
+          const nextArea = areas.find(a => a.id !== trafficArea) ?? areas[1];
+          return (
+            <View style={[s.trafficStrip, { backgroundColor: t.color + "18" }]}>
+              <View style={[s.trafficDot, { backgroundColor: t.color }]}>
+                <Text style={s.trafficDotText}>🚗</Text>
+              </View>
+              <View style={s.trafficText}>
+                <Text style={[s.trafficLabel, { color: t.color }]}>Traffic · {t.label}</Text>
+                <Text style={s.trafficAdvice} numberOfLines={1}>
+                  {traffic.currentMinutes} min · {currentArea.routeLabel}
+                  {traffic.delayMinutes > 0 ? ` (+${traffic.delayMinutes} min)` : ""}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setTrafficArea(nextArea.id as "neopolis" | "financial-district")} activeOpacity={0.7} style={s.areaToggle}>
+                <Text style={s.areaToggleText}>{trafficArea === "neopolis" ? "FD" : "Neo"} →</Text>
+              </TouchableOpacity>
+            </View>
           );
         })()}
       </View>
@@ -249,28 +318,48 @@ export default function HomeScreen() {
         ) : (
           <>
             {/* ── Deals ───────────────────────────────────────────────── */}
-            <SectionHeader title="🛍️ Local Deals" onSeeAll={() => router.push("/(tabs)/deals")} />
-            {deals.length === 0 ? (
-              <EmptyRow text="No active deals right now" />
-            ) : deals.map(d => <DealCard key={d.id} deal={d} />)}
+            {deals.length > 0 && (
+              <>
+                <SectionHeader title="🛍️ Local Deals" onSeeAll={() => router.push("/(tabs)/deals")} />
+                {deals.map(d => <DealCard key={d.id} deal={d} />)}
+              </>
+            )}
 
             {/* ── Events ──────────────────────────────────────────────── */}
-            <SectionHeader title="📅 Upcoming Events" />
-            {events.length === 0 ? (
-              <EmptyRow text="No upcoming events" />
-            ) : events.map(ev => <EventCard key={ev.id} ev={ev} onPress={() => router.push(`/event/${ev.id}`)} />)}
+            {events.length > 0 && (
+              <>
+                <SectionHeader title="📅 Upcoming Events" />
+                {events.map(ev => <EventCard key={ev.id} ev={ev} onPress={() => router.push(`/event/${ev.id}`)} />)}
+              </>
+            )}
 
             {/* ── Announcements ───────────────────────────────────────── */}
-            <SectionHeader title="📢 Announcements" />
-            {announcements.length === 0 ? (
-              <EmptyRow text="No announcements yet" />
-            ) : announcements.map(a => <AnnouncementCard key={a.id} item={a} />)}
+            {announcements.length > 0 && (
+              <>
+                <SectionHeader title="📢 Announcements" />
+                {announcements.map(a => <AnnouncementCard key={a.id} item={a} />)}
+              </>
+            )}
 
             {/* ── News ────────────────────────────────────────────────── */}
-            <SectionHeader title="📰 News" />
-            {news.length === 0 ? (
-              <EmptyRow text="No news articles yet" />
-            ) : news.map(n => <NewsCard key={n.id} item={n} />)}
+            {news.length > 0 && (
+              <>
+                <SectionHeader title="📰 News" />
+                <View style={s.newsListCard}>
+                  {news.slice(0, 5).map((n, i) => (
+                    <NewsCard key={n.id} item={n} index={i} onPress={() => router.push(`/news/${n.id}`)} />
+                  ))}
+                </View>
+              </>
+            )}
+
+            {/* ── Today's Cartoon ──────────────────────────────────────── */}
+            {cartoon && (
+              <>
+                <SectionHeader title="✏️ Today's Cartoon" />
+                <CartoonCard cartoon={cartoon} onPress={() => router.push(`/cartoon/${cartoon.id}`)} />
+              </>
+            )}
           </>
         )}
         <View style={{ height: 32 }} />
@@ -512,21 +601,36 @@ function AnnouncementCard({ item }: { item: Announcement }) {
   );
 }
 
-function NewsCard({ item }: { item: NewsItem }) {
+function NewsCard({ item, onPress, index }: { item: NewsItem; onPress: () => void; index: number }) {
   return (
-    <TouchableOpacity style={s.card} activeOpacity={0.8}>
-      {item.image && <Image source={{ uri: item.image }} style={s.cardImg} resizeMode="cover" />}
+    <TouchableOpacity style={s.newsCard} activeOpacity={0.75} onPress={onPress}>
+      <Text style={s.newsNum}>{index + 1}</Text>
+      <View style={s.newsCardInner}>
+        <Text style={s.newsTitle} numberOfLines={1}>{item.title}</Text>
+        <Text style={s.newsMeta} numberOfLines={1}>
+          {[item.tag, item.date].filter(Boolean).join(" · ")}
+        </Text>
+      </View>
+      <Text style={s.newsArrow}>›</Text>
+    </TouchableOpacity>
+  );
+}
+
+function CartoonCard({ cartoon, onPress }: { cartoon: Cartoon; onPress: () => void }) {
+  const openContest = cartoon.is_contest && !cartoon.winner_name;
+  return (
+    <TouchableOpacity style={s.card} activeOpacity={0.8} onPress={onPress}>
+      {cartoon.image_url && <Image source={{ uri: cartoon.image_url }} style={s.cartoonImg} resizeMode="cover" />}
       <View style={s.cardBody}>
-        <View style={s.cardTopRow}>
-          {item.tag && (
-            <View style={[s.badge, { backgroundColor: item.tag_color ?? colors.gray[700] }]}>
-              <Text style={s.badgeText}>{item.tag}</Text>
-            </View>
-          )}
-          {item.date && <Text style={s.cardMeta}>{new Date(item.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</Text>}
-        </View>
-        <Text style={s.cardTitle} numberOfLines={2}>{item.title}</Text>
-        {item.excerpt ? <Text style={s.cardSub} numberOfLines={2}>{item.excerpt}</Text> : null}
+        <Text style={s.cardTitle} numberOfLines={2}>{cartoon.title}</Text>
+        {cartoon.caption ? (
+          <Text style={s.cardSub} numberOfLines={2}>"{cartoon.caption}"</Text>
+        ) : openContest ? (
+          <Text style={[s.cardSub, { color: "#b45309" }]}>🏆 Caption contest open — win 25 points</Text>
+        ) : null}
+        {cartoon.artist_name && (
+          <Text style={[s.cardMeta, { marginTop: 8 }]}>✏️ {cartoon.artist_name}</Text>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -556,11 +660,21 @@ const s = StyleSheet.create({
   greeting:    { color: colors.white, fontSize: 16, fontWeight: "700" },
   location:    { color: colors.brand[400], fontSize: 12, marginTop: 2 },
 
-  weatherBadge: {
-    flexDirection: "row", alignItems: "center", gap: 6,
-    backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 100,
-    paddingHorizontal: 10, paddingVertical: 5,
+  profileBtn:   { padding: 6, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 100 },
+  profileIcon:  { fontSize: 18, lineHeight: 22 },
+
+  weatherStrip: {
+    flexDirection: "row", alignItems: "center", gap: 10,
+    paddingHorizontal: 16, paddingVertical: 8,
+    borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.06)",
+    backgroundColor: "rgba(255,255,255,0.05)",
   },
+  weatherStripEmoji: { fontSize: 20 },
+  weatherStripText:  { flex: 1 },
+  weatherStripMain:  { fontSize: 12, fontWeight: "800", color: colors.white },
+  weatherStripSub:   { fontSize: 11, color: "rgba(255,255,255,0.5)", marginTop: 1 },
+
+  // keep old names referenced elsewhere (feelsLike no longer used in topBar)
   weatherEmoji: { fontSize: 14 },
   weatherTemp:  { color: colors.white, fontSize: 13, fontWeight: "700" },
   feelsLike:    { color: "rgba(255,255,255,0.5)", fontSize: 11 },
@@ -580,6 +694,24 @@ const s = StyleSheet.create({
   aqiLabel:      { fontSize: 12, fontWeight: "800" },
   aqiAdvice:     { fontSize: 11, color: "rgba(255,255,255,0.55)", marginTop: 1 },
   aqiTap:        { fontSize: 11, color: "rgba(255,255,255,0.35)", fontWeight: "600" },
+
+  // Traffic strip
+  trafficStrip: {
+    flexDirection: "row", alignItems: "center", gap: 10,
+    paddingHorizontal: 16, paddingVertical: 8,
+    borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.06)",
+  },
+  trafficDot: {
+    width: 36, height: 36, borderRadius: 10,
+    alignItems: "center", justifyContent: "center",
+  },
+  trafficDotText: { fontSize: 16 },
+  trafficText:    { flex: 1 },
+  trafficLabel:   { fontSize: 12, fontWeight: "800" },
+  trafficAdvice:  { fontSize: 11, color: "rgba(255,255,255,0.55)", marginTop: 1 },
+  trafficTypical: { fontSize: 10, color: "rgba(255,255,255,0.35)", fontWeight: "600" },
+  areaToggle:     { paddingHorizontal: 8, paddingVertical: 4, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 8 },
+  areaToggleText: { fontSize: 10, fontWeight: "800", color: colors.white },
 
   loadingWrap: { paddingTop: 80, alignItems: "center" },
 
@@ -602,6 +734,25 @@ const s = StyleSheet.create({
     shadowOpacity: 0.07, shadowRadius: 6, elevation: 3,
   },
   cardImg:    { width: "100%", height: 160 },
+  cartoonImg: { width: "100%", height: 220 },
+
+  // Compact news list
+  newsListCard: {
+    marginHorizontal: 16, marginBottom: 10,
+    backgroundColor: colors.white, borderRadius: 16, overflow: "hidden",
+    shadowColor: colors.black, shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07, shadowRadius: 6, elevation: 3,
+  },
+  newsCard: {
+    flexDirection: "row", alignItems: "center",
+    paddingHorizontal: 14, paddingVertical: 12,
+    borderBottomWidth: 1, borderBottomColor: colors.gray[100],
+  },
+  newsNum:       { width: 20, fontSize: 13, fontWeight: "900", color: colors.gray[300], textAlign: "center" },
+  newsCardInner: { flex: 1, marginRight: 4 },
+  newsTitle:     { fontSize: 13, fontWeight: "600", color: colors.gray[800] },
+  newsMeta:      { fontSize: 10, color: colors.gray[400], marginTop: 2 },
+  newsArrow:     { fontSize: 18, color: colors.gray[300], lineHeight: 20 },
   cardBody:   { padding: 12 },
   cardTopRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 7 },
   badge:      { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
