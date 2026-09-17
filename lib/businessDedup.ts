@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase/server";
 
 export interface PlaceMatch {
   placeId: string;
+  placeName: string;
+  placeAddress: string | null;
   existingBusiness: { id: string; name: string; owner_id: string | null } | null;
 }
 
@@ -26,7 +28,7 @@ export async function findPlaceMatch(name: string, address: string): Promise<Pla
       .eq("place_id", top.placeId)
       .maybeSingle();
 
-    return { placeId: top.placeId, existingBusiness: data ?? null };
+    return { placeId: top.placeId, placeName: top.name, placeAddress: top.address, existingBusiness: data ?? null };
   } catch (err) {
     console.error("findPlaceMatch:", err);
     return null;

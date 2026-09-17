@@ -7,7 +7,7 @@ import { findPlaceMatch } from "@/lib/businessDedup";
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
-  const { name, industry, types, subtypes, address, ownerEmail, ownerPhone } = body ?? {};
+  const { name, industry, types, subtypes, address, ownerEmail, ownerPhone, declinedPlaceId } = body ?? {};
 
   if (!name || !industry || !types?.length || !address || !ownerEmail || !ownerPhone) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
@@ -40,6 +40,12 @@ export async function POST(req: NextRequest) {
   const id = Math.random().toString(36).slice(2, 10).toUpperCase();
   const coords = await geocodeAddress(address);
 
+  // The owner already saw this exact Google match at the info step and said
+  // "that's not us" — respect it instead of silently re-adopting the same
+  // guess. (The existingBusiness block above still runs regardless, since
+  // that's a real conflict to flag no matter what they said about identity.)
+  const placeId = match?.placeId && match.placeId !== declinedPlaceId ? match.placeId : null;
+
   const supabase = createAdminClient();
   const { error: insertError } = await supabase.from("businesses").insert({
     id,
@@ -55,7 +61,7 @@ export async function POST(req: NextRequest) {
     owner_phone: ownerPhone,
     latitude: coords?.lat ?? null,
     longitude: coords?.lng ?? null,
-    place_id: match?.placeId ?? null,
+    place_id: placeId,
   });
 
   if (insertError) {

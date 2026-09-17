@@ -116,6 +116,12 @@ export default function RegisterBusinessPage() {
   const [loading, setLoading] = useState(false);
   const [duplicateBiz, setDuplicateBiz] = useState<{ id: string; name: string } | null>(null);
 
+  // Google-match confirmation, shown once per (name, address) pair before
+  // advancing past the info step.
+  const [checkingMatch, setCheckingMatch] = useState(false);
+  const [placeMatch, setPlaceMatch] = useState<{ placeId: string; placeName: string; placeAddress: string | null } | null>(null);
+  const [matchDecision, setMatchDecision] = useState<"confirmed" | "declined" | null>(null);
+
   // Step 1 — business info
   const [name, setName] = useState("");
   const [industry, setIndustry] = useState("");
@@ -162,12 +168,49 @@ export default function RegisterBusinessPage() {
     setSelectedSubtypes((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]);
   }
 
-  function goToOwner() {
+  async function goToOwner() {
     if (!name.trim()) return setError("Please enter the business name.");
     if (!industry) return setError("Please select an industry.");
     if (!selectedTypes.length) return setError("Please select at least one type.");
     if (!address.trim()) return setError("Please enter the address.");
-    setError(""); setStep("owner");
+    setError(""); setDuplicateBiz(null);
+
+    // Already resolved this (name, address) pair — don't re-check.
+    if (placeMatch || matchDecision) { setStep("owner"); return; }
+
+    setCheckingMatch(true);
+    try {
+      const res = await fetch("/api/businesses/check-place-match", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, address }),
+      });
+      const data = await res.json().catch(() => null);
+      if (data?.existingBusiness) {
+        const existing = data.existingBusiness as { id: string; name: string; claimed: boolean };
+        if (!existing.claimed) {
+          setDuplicateBiz({ id: existing.id, name: existing.name });
+          setError(`${existing.name} is already listed on NeopolisNews — claim it instead of creating a new listing.`);
+        } else {
+          setError(`${existing.name} already appears to be listed and claimed on NeopolisNews. If this is your business, contact support@neopolis.news.`);
+        }
+        return; // stay on the info step either way
+      }
+      if (data?.placeId) {
+        setPlaceMatch({ placeId: data.placeId, placeName: data.placeName, placeAddress: data.placeAddress });
+        return; // show the confirm card, stay on the info step
+      }
+      setStep("owner");
+    } catch {
+      setStep("owner"); // best-effort — a lookup failure never blocks registration
+    } finally {
+      setCheckingMatch(false);
+    }
+  }
+
+  function confirmMatch(confirmed: boolean) {
+    setMatchDecision(confirmed ? "confirmed" : "declined");
+    setStep("owner");
   }
 
   async function submitOwner() {
@@ -181,6 +224,7 @@ export default function RegisterBusinessPage() {
         body: JSON.stringify({
           name, industry, types: selectedTypes, subtypes: selectedSubtypes,
           address, ownerEmail, ownerPhone: `+91${ownerPhone}`,
+          declinedPlaceId: matchDecision === "declined" ? placeMatch?.placeId : undefined,
         }),
       });
       const data = await res.json();
@@ -287,7 +331,7 @@ export default function RegisterBusinessPage() {
             <div className="space-y-5">
               <div>
                 <label className={LABEL}>Business Name</label>
-                <input type="text" value={name} onChange={(e) => setName(e.target.value)}
+                <input type="text" value={name} onChange={(e) => { setName(e.target.value); setPlaceMatch(null); setMatchDecision(null); }}
                   placeholder="e.g. Chapter Coffee" className={INPUT} />
               </div>
               <div>
@@ -323,14 +367,32 @@ export default function RegisterBusinessPage() {
               ))}
               <div>
                 <label className={LABEL}><MapPin className="w-3.5 h-3.5 inline mr-1" />Address</label>
-                <textarea value={address} onChange={(e) => setAddress(e.target.value)}
+                <textarea value={address} onChange={(e) => { setAddress(e.target.value); setPlaceMatch(null); setMatchDecision(null); }}
                   placeholder="Shop / unit, building, street, area, city — PIN"
                   rows={3} className={INPUT + " resize-none"} />
               </div>
             </div>
-            <button onClick={goToOwner} className="btn-primary w-full justify-center mt-6">
-              Continue <ArrowRight className="w-4 h-4" />
-            </button>
+
+            {placeMatch ? (
+              <div className="mt-6 bg-brand-50 border border-brand-200 rounded-xl p-4">
+                <p className="text-sm text-gray-700 mb-1">We found this listed on Google:</p>
+                <p className="font-bold text-gray-900">{placeMatch.placeName}</p>
+                {placeMatch.placeAddress && <p className="text-xs text-gray-500 mb-3">{placeMatch.placeAddress}</p>}
+                <p className="text-sm text-gray-700 mb-3">Is this your business?</p>
+                <div className="flex gap-3">
+                  <button onClick={() => confirmMatch(true)} className="btn-primary text-sm flex-1 justify-center">
+                    Yes, that&apos;s us
+                  </button>
+                  <button onClick={() => confirmMatch(false)} className="btn-secondary text-sm flex-1 justify-center">
+                    No, skip
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button onClick={goToOwner} disabled={checkingMatch} className="btn-primary w-full justify-center mt-6 disabled:opacity-60">
+                {checkingMatch ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Continue <ArrowRight className="w-4 h-4" /></>}
+              </button>
+            )}
           </div>
         )}
 
