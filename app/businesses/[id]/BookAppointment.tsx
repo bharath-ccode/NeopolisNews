@@ -33,16 +33,24 @@ const INPUT =
  *   a business with no owner logged in yet, so a submitted request would
  *   silently go nowhere — point the visitor at the call button instead.
  */
+interface PractitionerOption {
+  id: string;
+  name: string;
+  title: string | null;
+}
+
 export default function BookAppointment({
   businessId,
   businessName,
   bookingUrl,
   claimed,
+  practitioners = [],
 }: {
   businessId: string;
   businessName: string;
   bookingUrl: string | null;
   claimed: boolean;
+  practitioners?: PractitionerOption[];
 }) {
   const { user } = useAuth();
   const [open, setOpen]       = useState(false);
@@ -51,6 +59,7 @@ export default function BookAppointment({
   const [date, setDate]       = useState("");
   const [slot, setSlot]       = useState<string>("morning");
   const [note, setNote]       = useState("");
+  const [practitionerId, setPractitionerId] = useState<string>(practitioners[0]?.id ?? "");
   const [sending, setSending] = useState(false);
   const [error, setError]     = useState("");
   const [done, setDone]       = useState(false);
@@ -105,11 +114,12 @@ export default function BookAppointment({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        customer_name:  name.trim(),
-        customer_phone: phone.trim(),
-        preferred_date: date,
-        preferred_slot: slot,
-        note:           note.trim() || undefined,
+        customer_name:   name.trim(),
+        customer_phone:  phone.trim(),
+        preferred_date:  date,
+        preferred_slot:  slot,
+        note:            note.trim() || undefined,
+        practitioner_id: practitionerId || undefined,
       }),
     }).catch(() => null);
     if (!res?.ok) {
@@ -161,6 +171,13 @@ export default function BookAppointment({
         </>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-3">
+          {practitioners.length > 1 && (
+            <select value={practitionerId} onChange={(e) => setPractitionerId(e.target.value)} className={INPUT}>
+              {practitioners.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}{p.title ? ` — ${p.title}` : ""}</option>
+              ))}
+            </select>
+          )}
           <input
             type="text" value={name} onChange={(e) => setName(e.target.value)}
             placeholder="Your name *" maxLength={80} className={INPUT}

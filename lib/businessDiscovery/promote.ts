@@ -51,6 +51,7 @@ export async function promoteCandidateToBusiness(
   if (businessId) {
     await sb.from("businesses").update({
       name, address, contact_phone: phone, email, website, timings, latitude, longitude,
+      place_id: candidate.place_id,
     }).eq("id", businessId);
   } else {
     businessId = randomBusinessId();
@@ -69,6 +70,7 @@ export async function promoteCandidateToBusiness(
       timings,
       latitude,
       longitude,
+      place_id: candidate.place_id,
       created_at: new Date().toISOString(),
     });
   }

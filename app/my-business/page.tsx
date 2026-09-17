@@ -7,7 +7,7 @@ import {
   Building2, Phone, Instagram, Facebook, Youtube, Globe,
   Clock, Loader2, CheckCircle, LogOut, ExternalLink,
   Image as ImageIcon, Upload, X, ShieldCheck,
-  CalendarDays, Tag, Newspaper, Eye, MessageSquare, Film, Video, Bell, Star,
+  CalendarDays, Tag, Newspaper, Eye, MessageSquare, Film, Video, Bell, Star, Stethoscope,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { DayTiming } from "@/lib/businessStore";
@@ -21,6 +21,7 @@ import NowShowingTab from "./_tabs/NowShowingTab";
 import WellnessSessionsTab from "./_tabs/WellnessSessionsTab";
 import ReviewsTab from "./_tabs/ReviewsTab";
 import BookingsTab from "./_tabs/BookingsTab";
+import PractitionersTab from "./_tabs/PractitionersTab";
 
 interface SocialLinks { instagram?: string; facebook?: string; youtube?: string; }
 
@@ -46,7 +47,7 @@ interface Business {
 const INPUT = "w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 text-gray-800";
 const LABEL = "block text-xs font-semibold text-gray-500 mb-1.5";
 
-type Tab = "profile" | "events" | "offers" | "updates" | "news" | "enquiries" | "now-showing" | "sessions" | "reviews" | "bookings";
+type Tab = "profile" | "events" | "offers" | "updates" | "news" | "enquiries" | "now-showing" | "sessions" | "reviews" | "bookings" | "practitioners";
 
 function TimingsEditor({ timings, onChange }: { timings: DayTiming[]; onChange: (t: DayTiming[]) => void }) {
   function update(idx: number, patch: Partial<DayTiming>) {
@@ -292,6 +293,7 @@ export default function MyBusinessPage() {
     { id: "profile",      label: "Profile",      icon: Building2     },
     ...(biz?.industry === "Entertainment" ? [{ id: "now-showing" as Tab, label: "Now Showing", icon: Film }] : []),
     ...(biz?.industry === "Health & Wellness" ? [{ id: "sessions" as Tab, label: "Sessions", icon: Video }] : []),
+    ...(biz?.industry === "Health & Wellness" ? [{ id: "practitioners" as Tab, label: "Practitioners", icon: Stethoscope }] : []),
     { id: "events",       label: "Events",       icon: CalendarDays  },
     { id: "offers",       label: "Deals",        icon: Tag           },
     { id: "updates",      label: "Announce",     icon: Bell          },
@@ -401,6 +403,11 @@ export default function MyBusinessPage() {
         {/* ── Sessions tab ─────────────────────────────────────────────────────── */}
         {activeTab === "sessions" && biz && token && (
           <WellnessSessionsTab businessId={biz.id} token={token} />
+        )}
+
+        {/* ── Practitioners tab ────────────────────────────────────────────────── */}
+        {activeTab === "practitioners" && biz && token && (
+          <PractitionersTab businessId={biz.id} token={token} />
         )}
 
         {/* ── Events tab ──────────────────────────────────────────────────────── */}

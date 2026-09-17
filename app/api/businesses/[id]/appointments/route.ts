@@ -15,7 +15,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const user = await optionalUser(req);
 
   const body = await req.json().catch(() => null);
-  const { customer_name, customer_phone, preferred_date, preferred_slot, note } = body ?? {};
+  const { customer_name, customer_phone, preferred_date, preferred_slot, note, practitioner_id } = body ?? {};
 
   if (!customer_name?.trim())  return NextResponse.json({ error: "Please enter your name." },         { status: 400 });
   if (!customer_phone?.trim()) return NextResponse.json({ error: "Please enter your phone number." }, { status: 400 });
@@ -39,16 +39,29 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!biz || biz.status !== "active")
     return NextResponse.json({ error: "Business not found." }, { status: 404 });
 
+  let practitionerId: string | null = null;
+  if (practitioner_id) {
+    const { data: prac } = await admin
+      .from("practitioners")
+      .select("id")
+      .eq("id", practitioner_id)
+      .eq("business_id", params.id)
+      .maybeSingle();
+    if (!prac) return NextResponse.json({ error: "Invalid practitioner." }, { status: 400 });
+    practitionerId = prac.id;
+  }
+
   const { data, error } = await admin
     .from("appointment_requests")
     .insert({
-      business_id:    params.id,
-      user_id:        user?.id ?? null,
-      customer_name:  customer_name.trim(),
-      customer_phone: customer_phone.trim(),
+      business_id:     params.id,
+      user_id:         user?.id ?? null,
+      customer_name:   customer_name.trim(),
+      customer_phone:  customer_phone.trim(),
       preferred_date,
       preferred_slot,
-      note:           note?.trim() || null,
+      note:            note?.trim() || null,
+      practitioner_id: practitionerId,
     })
     .select("id, preferred_date, preferred_slot, status")
     .single();

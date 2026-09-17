@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import { createAdminClient } from "@/lib/supabase/server";
 import { generateOtp, setOtpCookie, otpEmailHtml } from "@/lib/otp";
 import { geocodeAddress } from "@/lib/googleGeocode";
+import { findPlaceMatch } from "@/lib/businessDedup";
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
@@ -10,6 +11,30 @@ export async function POST(req: NextRequest) {
 
   if (!name || !industry || !types?.length || !address || !ownerEmail || !ownerPhone) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
+  }
+
+  // Same physical place may already be listed via Google-sourced discovery
+  // (unclaimed) — don't create a second row for it, point the submitter at
+  // claiming the existing one instead.
+  const match = await findPlaceMatch(name, address);
+  if (match?.existingBusiness) {
+    const existing = match.existingBusiness;
+    if (!existing.owner_id) {
+      return NextResponse.json(
+        {
+          error: `${existing.name} is already listed on NeopolisNews — claim it instead of creating a new listing.`,
+          duplicate: { businessId: existing.id, businessName: existing.name, claimed: false },
+        },
+        { status: 409 }
+      );
+    }
+    return NextResponse.json(
+      {
+        error: `${existing.name} already appears to be listed and claimed on NeopolisNews. If this is your business, contact support@neopolis.news.`,
+        duplicate: { businessId: existing.id, businessName: existing.name, claimed: true },
+      },
+      { status: 409 }
+    );
   }
 
   const id = Math.random().toString(36).slice(2, 10).toUpperCase();
@@ -30,6 +55,7 @@ export async function POST(req: NextRequest) {
     owner_phone: ownerPhone,
     latitude: coords?.lat ?? null,
     longitude: coords?.lng ?? null,
+    place_id: match?.placeId ?? null,
   });
 
   if (insertError) {

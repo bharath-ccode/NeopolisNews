@@ -46,6 +46,16 @@ interface SocialLinks {
   youtube?: string;
 }
 
+interface Practitioner {
+  id: string;
+  name: string;
+  title: string | null;
+  qualifications: string | null;
+  years_experience: number | null;
+  consultation_fee: number | null;
+  bio: string | null;
+}
+
 interface BusinessOffer {
   id: string;
   name: string;
@@ -190,7 +200,7 @@ export default async function BusinessProfilePage({
   }
 
   const today = new Date().toISOString().split("T")[0];
-  const [{ data: activeOffers }, { count: enquiryCount }, { data: upcomingEvents }] = await Promise.all([
+  const [{ data: activeOffers }, { count: enquiryCount }, { data: upcomingEvents }, { data: practitionerRows }] = await Promise.all([
     supabase
       .from("business_offers")
       .select("id, name, description, discount_percent, discount_label, start_date, end_date, image_url")
@@ -210,10 +220,16 @@ export default async function BusinessProfilePage({
       .gte("event_date", today)
       .order("event_date", { ascending: true })
       .limit(10),
+    supabase
+      .from("practitioners")
+      .select("id, name, title, qualifications, years_experience, consultation_fee, bio")
+      .eq("business_id", params.id)
+      .order("position", { ascending: true }),
   ]);
   const offers: BusinessOffer[] = activeOffers ?? [];
   const events: BusinessEvent[] = (upcomingEvents ?? []) as BusinessEvent[];
   const enquiries = enquiryCount ?? 0;
+  const practitioners: Practitioner[] = practitionerRows ?? [];
 
   const social = b.social_links ?? {};
   const pictures = (b.pictures ?? []).slice(0, 2);
@@ -499,6 +515,28 @@ export default async function BusinessProfilePage({
               {/* Offers + Events carousels */}
               <BusinessCarousels offers={offers} events={events} businessId={b.id} />
 
+              {/* Practitioners */}
+              {practitioners.length > 0 && (
+                <div className="card p-6">
+                  <h2 className="font-bold text-gray-900 text-base mb-4">
+                    {practitioners.length > 1 ? "Our Doctors" : "Your Doctor"}
+                  </h2>
+                  <div className="space-y-4">
+                    {practitioners.map((p) => (
+                      <div key={p.id} className={practitioners.length > 1 ? "pb-4 border-b border-gray-50 last:border-0 last:pb-0" : ""}>
+                        <p className="font-bold text-sm text-gray-900">{p.name}</p>
+                        {p.title && <p className="text-xs text-brand-600 font-semibold mt-0.5">{p.title}</p>}
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {[p.qualifications, p.years_experience ? `${p.years_experience} yrs experience` : null, p.consultation_fee ? `₹${p.consultation_fee} consultation` : null]
+                            .filter(Boolean).join(" · ")}
+                        </p>
+                        {p.bio && <p className="text-sm text-gray-600 mt-1.5 leading-relaxed">{p.bio}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Reviews */}
               <ReviewSection businessId={b.id} />
 
@@ -508,6 +546,7 @@ export default async function BusinessProfilePage({
                 businessName={b.name}
                 bookingUrl={b.booking_url}
                 claimed={!!b.owner_id}
+                practitioners={practitioners.map((p) => ({ id: p.id, name: p.name, title: p.title }))}
               />
 
               {((b.phone_numbers && b.phone_numbers.length > 0) || b.contact_phone || hasSocial) && (

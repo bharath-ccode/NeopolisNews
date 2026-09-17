@@ -114,6 +114,7 @@ export default function RegisterBusinessPage() {
   const [step, setStep] = useState<Step>("info");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [duplicateBiz, setDuplicateBiz] = useState<{ id: string; name: string } | null>(null);
 
   // Step 1 — business info
   const [name, setName] = useState("");
@@ -172,7 +173,7 @@ export default function RegisterBusinessPage() {
   async function submitOwner() {
     if (!ownerEmail.includes("@")) return setError("Please enter a valid email address.");
     if (ownerPhone.length < 10) return setError("Please enter a valid 10-digit phone number.");
-    setError(""); setLoading(true);
+    setError(""); setDuplicateBiz(null); setLoading(true);
     try {
       const res = await fetch("/api/businesses/register", {
         method: "POST",
@@ -183,7 +184,12 @@ export default function RegisterBusinessPage() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) return setError(data.error ?? "Registration failed.");
+      if (!res.ok) {
+        if (data.duplicate && !data.duplicate.claimed) {
+          setDuplicateBiz({ id: data.duplicate.businessId, name: data.duplicate.businessName });
+        }
+        return setError(data.error ?? "Registration failed.");
+      }
       setBusinessId(data.id);
       setStep("verify");
     } catch {
@@ -263,6 +269,13 @@ export default function RegisterBusinessPage() {
         {error && (
           <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl">
             {error}
+          </div>
+        )}
+        {duplicateBiz && (
+          <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-xl">
+            <Link href={`/businesses/${duplicateBiz.id}/claim`} className="font-semibold underline hover:no-underline">
+              Claim &ldquo;{duplicateBiz.name}&rdquo; →
+            </Link>
           </div>
         )}
 

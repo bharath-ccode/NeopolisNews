@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("appointment_requests")
-    .select("id, customer_name, customer_phone, preferred_date, preferred_slot, note, status, created_at")
+    .select("id, customer_name, customer_phone, preferred_date, preferred_slot, note, status, created_at, practitioner:practitioners(id, name)")
     .eq("business_id", businessId)
     .order("preferred_date", { ascending: true })
     .order("created_at", { ascending: false });

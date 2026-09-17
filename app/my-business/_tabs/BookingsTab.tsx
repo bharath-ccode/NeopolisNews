@@ -15,6 +15,7 @@ interface Booking {
   note: string | null;
   status: "pending" | "confirmed" | "completed" | "cancelled";
   created_at: string;
+  practitioner: { id: string; name: string } | null;
 }
 
 const SLOT_LABELS = { morning: "Morning (9–12)", afternoon: "Afternoon (12–4)", evening: "Evening (4–8)" };
@@ -111,6 +112,7 @@ export default function BookingsTab({
                         weekday: "short", day: "numeric", month: "short",
                       })}{" "}
                       · {SLOT_LABELS[b.preferred_slot]}
+                      {b.practitioner && <> · for <span className="font-semibold text-gray-700">{b.practitioner.name}</span></>}
                     </p>
                     {b.note && <p className="text-xs text-gray-400 mt-1">&ldquo;{b.note}&rdquo;</p>}
                   </div>
