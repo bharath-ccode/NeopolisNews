@@ -11,31 +11,47 @@ export async function GET(req: NextRequest) {
 
   const admin = createAdminClient();
   const { data, error } = await admin
-    .from("business_enquiries")
-    .select("id, sender_name, sender_phone, message, is_read, created_at, grade_applying_for, child_age")
+    .from("school_achievements")
+    .select("*")
     .eq("business_id", businessId)
-    .order("created_at", { ascending: false });
+    .order("position", { ascending: true });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data ?? []);
 }
 
-export async function PATCH(req: NextRequest) {
+export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
-  const { businessId, enquiryId } = body ?? {};
-  if (!businessId || !enquiryId)
-    return NextResponse.json({ error: "businessId and enquiryId required." }, { status: 400 });
+  const { businessId, student_name, class_grade, title, category, achieved_date, image_url } = body ?? {};
+
+  if (!businessId || !title?.trim())
+    return NextResponse.json({ error: "businessId and title are required." }, { status: 400 });
 
   const auth = await resolveBusinessAuth(req, businessId);
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const admin = createAdminClient();
-  const { error } = await admin
-    .from("business_enquiries")
-    .update({ is_read: true })
-    .eq("id", enquiryId)
+
+  const { count } = await admin
+    .from("school_achievements")
+    .select("id", { count: "exact", head: true })
     .eq("business_id", businessId);
 
+  const { data, error } = await admin
+    .from("school_achievements")
+    .insert({
+      business_id: businessId,
+      student_name: student_name?.trim() || null,
+      class_grade: class_grade?.trim() || null,
+      title: title.trim(),
+      category: category?.trim() || null,
+      achieved_date: achieved_date || null,
+      image_url: image_url || null,
+      position: count ?? 0,
+    })
+    .select()
+    .single();
+
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true });
+  return NextResponse.json(data, { status: 201 });
 }

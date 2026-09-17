@@ -56,6 +56,16 @@ interface Practitioner {
   bio: string | null;
 }
 
+interface Achievement {
+  id: string;
+  student_name: string | null;
+  class_grade: string | null;
+  title: string;
+  category: string | null;
+  achieved_date: string | null;
+  image_url: string | null;
+}
+
 interface BusinessOffer {
   id: string;
   name: string;
@@ -120,6 +130,10 @@ interface BusinessRow {
   timings: DayTiming[];
   completed_at: string | null;
   view_count: number;
+  fee_min: number | null;
+  fee_max: number | null;
+  grade_from: string | null;
+  grade_to: string | null;
 }
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
@@ -200,7 +214,7 @@ export default async function BusinessProfilePage({
   }
 
   const today = new Date().toISOString().split("T")[0];
-  const [{ data: activeOffers }, { count: enquiryCount }, { data: upcomingEvents }, { data: practitionerRows }] = await Promise.all([
+  const [{ data: activeOffers }, { count: enquiryCount }, { data: upcomingEvents }, { data: practitionerRows }, { data: achievementRows }] = await Promise.all([
     supabase
       .from("business_offers")
       .select("id, name, description, discount_percent, discount_label, start_date, end_date, image_url")
@@ -225,12 +239,19 @@ export default async function BusinessProfilePage({
       .select("id, name, title, qualifications, years_experience, consultation_fee, bio")
       .eq("business_id", params.id)
       .order("position", { ascending: true }),
+    supabase
+      .from("school_achievements")
+      .select("id, student_name, class_grade, title, category, achieved_date, image_url")
+      .eq("business_id", params.id)
+      .order("position", { ascending: true }),
   ]);
   const offers: BusinessOffer[] = activeOffers ?? [];
   const events: BusinessEvent[] = (upcomingEvents ?? []) as BusinessEvent[];
   const enquiries = enquiryCount ?? 0;
   const practitioners: Practitioner[] = practitionerRows ?? [];
+  const achievements: Achievement[] = achievementRows ?? [];
 
+  const isSchool = b.types?.includes("Schools") ?? false;
   const social = b.social_links ?? {};
   const pictures = (b.pictures ?? []).slice(0, 2);
   const timings: DayTiming[] = b.timings ?? [];
@@ -400,7 +421,7 @@ export default async function BusinessProfilePage({
                     <Phone className="w-4 h-4" /> {p.purpose}
                   </a>
                 ))}
-                <ContactButton businessId={b.id} businessName={b.name} />
+                <ContactButton businessId={b.id} businessName={b.name} isSchool={isSchool} />
                 {social.instagram && (
                   <a
                     href={social.instagram}
@@ -502,6 +523,26 @@ export default async function BusinessProfilePage({
             {/* Left col — About + Contact + Social */}
             <div className="md:col-span-3 space-y-5">
 
+              {/* Fee & grade range — schools */}
+              {(b.fee_min || b.grade_from) && (
+                <div className="card p-6 grid grid-cols-2 gap-4">
+                  {(b.grade_from || b.grade_to) && (
+                    <div>
+                      <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold mb-1">Grades</p>
+                      <p className="font-bold text-gray-900 text-sm">{[b.grade_from, b.grade_to].filter(Boolean).join(" – ")}</p>
+                    </div>
+                  )}
+                  {b.fee_min && (
+                    <div>
+                      <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold mb-1">Fees / year</p>
+                      <p className="font-bold text-gray-900 text-sm">
+                        ₹{b.fee_min.toLocaleString("en-IN")}{b.fee_max ? ` – ₹${b.fee_max.toLocaleString("en-IN")}` : "+"}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* About */}
               {b.description && (
                 <div className="card p-6">
@@ -537,6 +578,35 @@ export default async function BusinessProfilePage({
                 </div>
               )}
 
+              {/* Achievements */}
+              {achievements.length > 0 && (
+                <div className="card p-6">
+                  <h2 className="font-bold text-gray-900 text-base mb-4">Student Achievements</h2>
+                  <div className="space-y-4">
+                    {achievements.map((a) => (
+                      <div key={a.id} className="flex gap-4">
+                        {a.image_url && (
+                          <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-gray-100">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={a.image_url} alt={a.title} className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-bold text-sm text-gray-900">{a.title}</p>
+                            {a.category && <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">{a.category}</span>}
+                          </div>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {[a.student_name, a.class_grade].filter(Boolean).join(" · ")}
+                            {a.achieved_date && ` · ${new Date(a.achieved_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Reviews */}
               <ReviewSection businessId={b.id} />
 
@@ -547,6 +617,7 @@ export default async function BusinessProfilePage({
                 bookingUrl={b.booking_url}
                 claimed={!!b.owner_id}
                 practitioners={practitioners.map((p) => ({ id: p.id, name: p.name, title: p.title }))}
+                isSchool={isSchool}
               />
 
               {((b.phone_numbers && b.phone_numbers.length > 0) || b.contact_phone || hasSocial) && (

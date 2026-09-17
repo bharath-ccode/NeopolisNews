@@ -7,7 +7,7 @@ import { Resend } from "resend";
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const resend = new Resend(process.env.RESEND_API_KEY);
   const body = await req.json().catch(() => null);
-  const { senderName, senderPhone, message } = body ?? {};
+  const { senderName, senderPhone, message, gradeApplyingFor, childAge } = body ?? {};
 
   if (!senderName?.trim() || !senderPhone?.trim() || !message?.trim()) {
     return NextResponse.json({ error: "Name, phone, and message are required." }, { status: 400 });
@@ -32,12 +32,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       sender_name: senderName.trim(),
       sender_phone: senderPhone.trim(),
       message: message.trim(),
+      grade_applying_for: gradeApplyingFor?.trim() || null,
+      child_age: childAge ? Number(childAge) : null,
     }),
     resend.emails.send({
       from: "NeopolisNews <no-reply@neopolis.news>",
       to: toEmail,
       subject: `New message for ${biz.name} — NeopolisNews`,
-      html: buildContactEmail({ businessName: biz.name, senderName, senderPhone, message }),
+      html: buildContactEmail({ businessName: biz.name, senderName, senderPhone, message, gradeApplyingFor, childAge }),
     }),
   ]);
 
@@ -49,7 +51,20 @@ function buildContactEmail(p: {
   senderName: string;
   senderPhone: string;
   message: string;
+  gradeApplyingFor?: string;
+  childAge?: number | string;
 }) {
+  const admissionsRows = p.gradeApplyingFor || p.childAge
+    ? `
+      <tr>
+        <td style="padding:10px 14px;background:#fafafa;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Grade applying for</td>
+        <td style="padding:10px 14px;background:#fafafa;font-size:14px;color:#111827">${p.gradeApplyingFor || "—"}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 14px;background:#f3f4f6;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Child&#39;s age</td>
+        <td style="padding:10px 14px;background:#f3f4f6;font-size:14px;color:#111827">${p.childAge || "—"}</td>
+      </tr>`
+    : "";
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"></head>
 <body style="font-family:sans-serif;background:#f9fafb;margin:0;padding:0;">
@@ -70,7 +85,7 @@ function buildContactEmail(p: {
       <tr>
         <td style="padding:10px 14px;background:#fafafa;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Phone</td>
         <td style="padding:10px 14px;background:#fafafa;font-size:14px;color:#111827">${p.senderPhone}</td>
-      </tr>
+      </tr>${admissionsRows}
       <tr>
         <td style="padding:10px 14px;background:#f3f4f6;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;vertical-align:top">Message</td>
         <td style="padding:10px 14px;background:#f3f4f6;font-size:14px;color:#111827;line-height:1.6">${p.message.replace(/\n/g, "<br>")}</td>

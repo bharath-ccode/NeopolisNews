@@ -7,7 +7,7 @@ import {
   Building2, Phone, Instagram, Facebook, Youtube, Globe,
   Clock, Loader2, CheckCircle, LogOut, ExternalLink,
   Image as ImageIcon, Upload, X, ShieldCheck,
-  CalendarDays, Tag, Newspaper, Eye, MessageSquare, Film, Video, Bell, Star, Stethoscope,
+  CalendarDays, Tag, Newspaper, Eye, MessageSquare, Film, Video, Bell, Star, Stethoscope, Trophy,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { DayTiming } from "@/lib/businessStore";
@@ -22,6 +22,7 @@ import WellnessSessionsTab from "./_tabs/WellnessSessionsTab";
 import ReviewsTab from "./_tabs/ReviewsTab";
 import BookingsTab from "./_tabs/BookingsTab";
 import PractitionersTab from "./_tabs/PractitionersTab";
+import AchievementsTab from "./_tabs/AchievementsTab";
 
 interface SocialLinks { instagram?: string; facebook?: string; youtube?: string; }
 
@@ -42,12 +43,16 @@ interface Business {
   description: string | null;
   timings: DayTiming[];
   view_count: number;
+  fee_min: number | null;
+  fee_max: number | null;
+  grade_from: string | null;
+  grade_to: string | null;
 }
 
 const INPUT = "w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 text-gray-800";
 const LABEL = "block text-xs font-semibold text-gray-500 mb-1.5";
 
-type Tab = "profile" | "events" | "offers" | "updates" | "news" | "enquiries" | "now-showing" | "sessions" | "reviews" | "bookings" | "practitioners";
+type Tab = "profile" | "events" | "offers" | "updates" | "news" | "enquiries" | "now-showing" | "sessions" | "reviews" | "bookings" | "practitioners" | "achievements";
 
 function TimingsEditor({ timings, onChange }: { timings: DayTiming[]; onChange: (t: DayTiming[]) => void }) {
   function update(idx: number, patch: Partial<DayTiming>) {
@@ -109,6 +114,10 @@ function loadFields(
     setYoutube: (v: string) => void;
     setLogo: (v: string | null) => void;
     setPictures: (v: string[]) => void;
+    setFeeMin: (v: string) => void;
+    setFeeMax: (v: string) => void;
+    setGradeFrom: (v: string) => void;
+    setGradeTo: (v: string) => void;
   }
 ) {
   setters.setPhoneNumbers(data.phone_numbers ?? []);
@@ -121,6 +130,10 @@ function loadFields(
   setters.setYoutube(data.social_links?.youtube ?? "");
   setters.setLogo(data.logo);
   setters.setPictures(data.pictures ?? []);
+  setters.setFeeMin(data.fee_min?.toString() ?? "");
+  setters.setFeeMax(data.fee_max?.toString() ?? "");
+  setters.setGradeFrom(data.grade_from ?? "");
+  setters.setGradeTo(data.grade_to ?? "");
 }
 
 export default function MyBusinessPage() {
@@ -145,6 +158,10 @@ export default function MyBusinessPage() {
   const [instagram, setInstagram] = useState("");
   const [facebook, setFacebook] = useState("");
   const [youtube, setYoutube] = useState("");
+  const [feeMin, setFeeMin] = useState("");
+  const [feeMax, setFeeMax] = useState("");
+  const [gradeFrom, setGradeFrom] = useState("");
+  const [gradeTo, setGradeTo] = useState("");
 
   // Media
   const [logo, setLogo] = useState<string | null>(null);
@@ -153,7 +170,7 @@ export default function MyBusinessPage() {
   const logoRef = useRef<HTMLInputElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
 
-  const fieldSetters = { setPhoneNumbers, setWebsite, setBookingUrl, setDescription, setTimings, setInstagram, setFacebook, setYoutube, setLogo, setPictures };
+  const fieldSetters = { setPhoneNumbers, setWebsite, setBookingUrl, setDescription, setTimings, setInstagram, setFacebook, setYoutube, setLogo, setPictures, setFeeMin, setFeeMax, setGradeFrom, setGradeTo };
 
   function switchBusiness(b: Business) {
     setBiz(b);
@@ -214,6 +231,10 @@ export default function MyBusinessPage() {
             facebook: facebook.trim() || undefined,
             youtube: youtube.trim() || undefined,
           },
+          feeMin: feeMin ? Number(feeMin) : null,
+          feeMax: feeMax ? Number(feeMax) : null,
+          gradeFrom: gradeFrom.trim() || null,
+          gradeTo: gradeTo.trim() || null,
         }),
       });
       const data = await res.json();
@@ -294,6 +315,7 @@ export default function MyBusinessPage() {
     ...(biz?.industry === "Entertainment" ? [{ id: "now-showing" as Tab, label: "Now Showing", icon: Film }] : []),
     ...(biz?.industry === "Health & Wellness" ? [{ id: "sessions" as Tab, label: "Sessions", icon: Video }] : []),
     ...(biz?.industry === "Health & Wellness" ? [{ id: "practitioners" as Tab, label: "Practitioners", icon: Stethoscope }] : []),
+    ...(biz?.industry === "Education" ? [{ id: "achievements" as Tab, label: "Achievements", icon: Trophy }] : []),
     { id: "events",       label: "Events",       icon: CalendarDays  },
     { id: "offers",       label: "Deals",        icon: Tag           },
     { id: "updates",      label: "Announce",     icon: Bell          },
@@ -408,6 +430,11 @@ export default function MyBusinessPage() {
         {/* ── Practitioners tab ────────────────────────────────────────────────── */}
         {activeTab === "practitioners" && biz && token && (
           <PractitionersTab businessId={biz.id} token={token} />
+        )}
+
+        {/* ── Achievements tab ─────────────────────────────────────────────────── */}
+        {activeTab === "achievements" && biz && token && (
+          <AchievementsTab businessId={biz.id} token={token} />
         )}
 
         {/* ── Events tab ──────────────────────────────────────────────────────── */}
@@ -582,6 +609,36 @@ export default function MyBusinessPage() {
               />
               <p className="text-xs text-gray-400 mt-1 text-right">{description.length}/300</p>
             </div>
+
+            {/* Fee & grade range — Education only */}
+            {biz?.industry === "Education" && (
+              <div className="card p-6">
+                <h2 className="font-bold text-gray-900 text-base mb-1">Fee &amp; Grade Range</h2>
+                <p className="text-xs text-gray-400 mb-4">
+                  Shown on your public profile — one of the first things parents screen on.
+                </p>
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <label className={LABEL}>Fee from (₹/year)</label>
+                    <input type="number" min="0" className={INPUT} value={feeMin} onChange={(e) => setFeeMin(e.target.value)} placeholder="80000" />
+                  </div>
+                  <div>
+                    <label className={LABEL}>Fee to (₹/year)</label>
+                    <input type="number" min="0" className={INPUT} value={feeMax} onChange={(e) => setFeeMax(e.target.value)} placeholder="150000" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={LABEL}>Grade from</label>
+                    <input className={INPUT} value={gradeFrom} onChange={(e) => setGradeFrom(e.target.value)} placeholder="Pre-K" />
+                  </div>
+                  <div>
+                    <label className={LABEL}>Grade to</label>
+                    <input className={INPUT} value={gradeTo} onChange={(e) => setGradeTo(e.target.value)} placeholder="Grade 12" />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Hours */}
             {timings.length > 0 && (

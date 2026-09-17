@@ -8,14 +8,18 @@ const INPUT = "w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focu
 export default function ContactButton({
   businessId,
   businessName,
+  isSchool = false,
 }: {
   businessId: string;
   businessName: string;
+  isSchool?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
+  const [gradeApplyingFor, setGradeApplyingFor] = useState("");
+  const [childAge, setChildAge] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
@@ -27,7 +31,13 @@ export default function ContactButton({
     const res = await fetch(`/api/businesses/${businessId}/contact`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ senderName: name, senderPhone: phone, message }),
+      body: JSON.stringify({
+        senderName: name,
+        senderPhone: phone,
+        message,
+        gradeApplyingFor: isSchool ? gradeApplyingFor.trim() || undefined : undefined,
+        childAge: isSchool && childAge ? Number(childAge) : undefined,
+      }),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -40,7 +50,10 @@ export default function ContactButton({
 
   function handleClose() {
     setOpen(false);
-    setTimeout(() => { setSent(false); setError(""); setName(""); setPhone(""); setMessage(""); }, 300);
+    setTimeout(() => {
+      setSent(false); setError(""); setName(""); setPhone(""); setMessage("");
+      setGradeApplyingFor(""); setChildAge("");
+    }, 300);
   }
 
   return (
@@ -49,7 +62,7 @@ export default function ContactButton({
         onClick={() => setOpen(true)}
         className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold px-5 py-2.5 rounded-xl transition-colors text-sm"
       >
-        <MessageSquare className="w-4 h-4" /> Send Message
+        <MessageSquare className="w-4 h-4" /> {isSchool ? "Admissions Enquiry" : "Send Message"}
       </button>
 
       {open && (
@@ -57,7 +70,7 @@ export default function ContactButton({
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <div>
-                <p className="font-bold text-gray-900">Send a Message</p>
+                <p className="font-bold text-gray-900">{isSchool ? "Admissions Enquiry" : "Send a Message"}</p>
                 <p className="text-xs text-gray-400 mt-0.5">{businessName}</p>
               </div>
               <button onClick={handleClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
@@ -95,6 +108,18 @@ export default function ContactButton({
                       />
                     </div>
                   </div>
+                  {isSchool && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 mb-1.5">Grade applying for</label>
+                        <input className={INPUT} value={gradeApplyingFor} onChange={(e) => setGradeApplyingFor(e.target.value)} placeholder="Grade 3" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 mb-1.5">Child&apos;s age</label>
+                        <input type="number" min="0" max="25" className={INPUT} value={childAge} onChange={(e) => setChildAge(e.target.value)} placeholder="8" />
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <label className="block text-xs font-semibold text-gray-500 mb-1.5">Message *</label>
                     <textarea

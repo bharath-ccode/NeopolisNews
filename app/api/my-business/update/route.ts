@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => null);
-  const { businessId, phoneNumbers, website, bookingUrl, description, timings, socialLinks } = body ?? {};
+  const { businessId, phoneNumbers, website, bookingUrl, description, timings, socialLinks, feeMin, feeMax, gradeFrom, gradeTo } = body ?? {};
 
   if (!businessId) {
     return NextResponse.json({ error: "businessId is required." }, { status: 400 });
@@ -45,6 +45,10 @@ export async function POST(req: NextRequest) {
       description:   description ?? null,
       timings:       timings ?? [],
       social_links:  socialLinks ?? {},
+      fee_min:       feeMin ?? null,
+      fee_max:       feeMax ?? null,
+      grade_from:    gradeFrom ?? null,
+      grade_to:      gradeTo ?? null,
     })
     .eq("id", biz.id);
 

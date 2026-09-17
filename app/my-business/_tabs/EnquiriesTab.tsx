@@ -10,6 +10,8 @@ interface Enquiry {
   message: string;
   is_read: boolean;
   created_at: string;
+  grade_applying_for: string | null;
+  child_age: number | null;
 }
 
 function relativeTime(iso: string) {
@@ -108,7 +110,12 @@ export default function EnquiriesTab({
                         <Clock className="w-3 h-3" /> {relativeTime(e.created_at)}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500">{e.sender_phone}</p>
+                    <p className="text-xs text-gray-500">
+                      {e.sender_phone}
+                      {(e.grade_applying_for || e.child_age) && (
+                        <> · {[e.grade_applying_for, e.child_age ? `age ${e.child_age}` : null].filter(Boolean).join(", ")}</>
+                      )}
+                    </p>
                     <p className="text-sm text-gray-500 mt-1.5 line-clamp-1">{e.message}</p>
                   </div>
                 </div>

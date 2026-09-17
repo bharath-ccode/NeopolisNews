@@ -45,14 +45,19 @@ export default function BookAppointment({
   bookingUrl,
   claimed,
   practitioners = [],
+  isSchool = false,
 }: {
   businessId: string;
   businessName: string;
   bookingUrl: string | null;
   claimed: boolean;
   practitioners?: PractitionerOption[];
+  isSchool?: boolean;
 }) {
   const { user } = useAuth();
+  const heading = isSchool ? "Campus Visit" : "Appointments";
+  const ctaLabel = isSchool ? "Book a Campus Tour" : "Request Appointment";
+  const eventNoun = isSchool ? "tour" : "appointment";
   const [open, setOpen]       = useState(false);
   const [name, setName]       = useState("");
   const [phone, setPhone]     = useState("");
@@ -69,7 +74,7 @@ export default function BookAppointment({
     return (
       <div className="card p-6">
         <h2 className="font-bold text-gray-900 text-base mb-1 flex items-center gap-2">
-          <CalendarCheck className="w-4 h-4 text-brand-600" /> Appointments
+          <CalendarCheck className="w-4 h-4 text-brand-600" /> {heading}
         </h2>
         <p className="text-xs text-gray-400 mb-4">
           {businessName} takes bookings through their own system.
@@ -91,11 +96,11 @@ export default function BookAppointment({
     return (
       <div className="card p-6">
         <h2 className="font-bold text-gray-900 text-base mb-1 flex items-center gap-2">
-          <CalendarCheck className="w-4 h-4 text-brand-600" /> Appointments
+          <CalendarCheck className="w-4 h-4 text-brand-600" /> {heading}
         </h2>
         <p className="text-xs text-gray-500 flex items-start gap-1.5">
           <PhoneCall className="w-3.5 h-3.5 text-gray-400 shrink-0 mt-0.5" />
-          This listing hasn&apos;t been claimed by {businessName} yet, so appointment
+          This listing hasn&apos;t been claimed by {businessName} yet, so {eventNoun}
           requests aren&apos;t being monitored. Use the call button above to book directly.
         </p>
       </div>
@@ -139,7 +144,7 @@ export default function BookAppointment({
         <p className="font-bold text-gray-900 text-sm mb-1">Request sent!</p>
         <p className="text-xs text-gray-500">
           {businessName} will call you to confirm your{" "}
-          {SLOTS.find((s) => s.id === slot)?.label.toLowerCase()} appointment on{" "}
+          {SLOTS.find((s) => s.id === slot)?.label.toLowerCase()} {eventNoun} on{" "}
           {new Date(date).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}.
         </p>
       </div>
@@ -149,7 +154,7 @@ export default function BookAppointment({
   return (
     <div className="card p-6">
       <h2 className="font-bold text-gray-900 text-base mb-1 flex items-center gap-2">
-        <CalendarCheck className="w-4 h-4 text-brand-600" /> Appointments
+        <CalendarCheck className="w-4 h-4 text-brand-600" /> {heading}
       </h2>
       <p className="text-xs text-gray-400 mb-4">
         Pick a day and time — {businessName} confirms by phone.
@@ -158,7 +163,7 @@ export default function BookAppointment({
       {!open ? (
         <>
           <button onClick={() => setOpen(true)} className="btn-primary text-sm w-full justify-center">
-            <CalendarCheck className="w-4 h-4" /> Request Appointment
+            <CalendarCheck className="w-4 h-4" /> {ctaLabel}
           </button>
           <p className="text-[11px] text-gray-400 mt-2 flex items-center gap-1">
             <Trophy className="w-3 h-3 text-amber-400 shrink-0" />
