@@ -21,7 +21,17 @@ export interface PromoteOverrides {
  *  the candidate approved + linked. Lands as status "active" (not the
  *  "invited"/claim-pending status Path A/B onboarding uses) so it's
  *  publicly searchable immediately; nobody owns it yet, so the business
- *  profile shows a "Claim this business" prompt until an owner does. */
+ *  profile shows a "Claim this business" prompt until an owner does.
+ *
+ *  Cross-channel dedupe: a business can reach place_id equality two ways —
+ *  either this exact candidate was promoted before (promoted_business_id
+ *  already set), or a *different* business row already exists with this
+ *  place_id because it was onboarded directly (self-register or
+ *  admin-created) before Google ever surfaced it in discovery. Either way,
+ *  link to that existing row instead of inserting a duplicate. In the
+ *  second case the existing row may already carry real, owner-entered
+ *  content (it could even be claimed), so only blank fields are filled in
+ *  from the candidate — nothing already set gets overwritten. */
 export async function promoteCandidateToBusiness(
   candidateId: string,
   overrides: PromoteOverrides,
@@ -48,11 +58,35 @@ export async function promoteCandidateToBusiness(
 
   let businessId = candidate.promoted_business_id as string | null;
 
+  // Not linked via this candidate before — check whether a directly
+  // onboarded business already claimed this place_id first.
+  let existingByPlaceId: Record<string, unknown> | null = null;
+  if (!businessId && candidate.place_id) {
+    const { data } = await sb
+      .from("businesses")
+      .select("*")
+      .eq("place_id", candidate.place_id)
+      .maybeSingle();
+    existingByPlaceId = data;
+  }
+
   if (businessId) {
     await sb.from("businesses").update({
       name, address, contact_phone: phone, email, website, timings, latitude, longitude,
       place_id: candidate.place_id,
     }).eq("id", businessId);
+  } else if (existingByPlaceId) {
+    businessId = existingByPlaceId.id as string;
+    const fill: Record<string, unknown> = {};
+    if (!existingByPlaceId.contact_phone) fill.contact_phone = phone;
+    if (!existingByPlaceId.email)         fill.email = email;
+    if (!existingByPlaceId.website)       fill.website = website;
+    if (!existingByPlaceId.latitude)      fill.latitude = latitude;
+    if (!existingByPlaceId.longitude)     fill.longitude = longitude;
+    if (!existingByPlaceId.timings || (existingByPlaceId.timings as unknown[]).length === 0) fill.timings = timings;
+    if (Object.keys(fill).length > 0) {
+      await sb.from("businesses").update(fill).eq("id", businessId);
+    }
   } else {
     businessId = randomBusinessId();
     await sb.from("businesses").insert({
