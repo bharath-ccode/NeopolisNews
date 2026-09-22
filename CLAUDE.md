@@ -201,6 +201,12 @@ One `auth.users` record per email/phone, always. `user_profiles` (individual dat
 - **AI-generated image labelling** — editorial AI illustrations are not yet visibly badged as AI on the public article
 - **Mobile app** — Expo Router app (`mobile/`: auth, tabs, business/event/news/cartoon detail) but far from web parity (no classifieds, forum, clubs, dashboards); native `android`/`ios` projects are `expo prebuild` output, not source
 
+### Proposed future agents (named, not yet built)
+Three agentic (multi-step, tool-using) opportunities identified against the current single-call-completions AI usage, ranked by leverage. Names are settled so future work can refer to them without re-explaining scope; none of the three has any code yet.
+- **Scout** — supply-side agent for `/admin/business-discovery`. Runs the Google Places search → dedupe (via `businesses.place_id`) → classify → accept/reject loop across localities/industries instead of the current one-locality-per-run, human-reviews-every-candidate flow; auto-accepts high-confidence matches (rating count, address completeness, phone format) and surfaces only ambiguous ones for admin review. Highest-leverage — every other feature needs businesses in the system first.
+- **Concierge** — resident-facing assistant with real tool access into the site (find a business matching live criteria, check a project's price trend, book an appointment slot) rather than a chatbot that just talks about content. Biggest "why open the app today" upside, also the riskiest (tool-calling reliability, not hallucinating business info) — treat as a later, bigger bet.
+- **Aide** — assistant for the business owner's side of `/my-business`: drafting review replies, answering routine enquiries from the business's own profile data (hours, insurance, etc.), summarizing the week's bookings/enquiries. Lower glamour than Concierge but directly lowers the cost of running a listing, which compounds with the onboarding-ease work already done for clinics/schools.
+
 ---
 
 ## Known Gotchas
