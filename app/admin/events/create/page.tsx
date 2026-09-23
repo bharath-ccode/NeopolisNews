@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Upload, X, CalendarDays } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 const EVENT_TYPES = [
   { value: "music_concert",  label: "Music Concert"   },
@@ -44,9 +45,17 @@ export default function AdminCreateEventPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/api/businesses?limit=100")
-      .then((r) => r.json())
-      .then((data) => { setBusinesses(Array.isArray(data) ? data : []); setBizLoading(false); });
+    // Admin tool — needs every business regardless of claim status (an
+    // event is often created before the owner claims their listing), so
+    // this queries Supabase directly like /admin/businesses does, rather
+    // than the public /api/businesses endpoint (status="active" only).
+    const supabase = createClient();
+    supabase
+      .from("businesses")
+      .select("id, name, industry")
+      .in("status", ["active", "invited", "incomplete", "pending", "verified"])
+      .order("name", { ascending: true })
+      .then(({ data }) => { setBusinesses((data as Business[]) ?? []); setBizLoading(false); });
   }, []);
 
   const filteredBiz = businesses.filter((b) =>
