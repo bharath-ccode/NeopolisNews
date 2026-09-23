@@ -168,13 +168,17 @@ export default async function EventDetailPage({ params }: { params: { id: string
         </div>
       </section>
 
-      {/* Event image */}
+      {/* Event image — letterboxed, never cropped: a vertical flyer needs
+          just as much to stay fully visible as a landscape banner does. */}
       {ev.image_url && (
         <div className="bg-violet-950">
           <div className="max-w-3xl mx-auto">
-            <div className="aspect-video overflow-hidden">
+            <div
+              className="flex items-center justify-center overflow-hidden"
+              style={{ height: "clamp(240px, 45vw, 560px)" }}
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={ev.image_url} alt={ev.name} className="w-full h-full object-cover" />
+              <img src={ev.image_url} alt={ev.name} className="max-w-full max-h-full object-contain" />
             </div>
           </div>
         </div>
