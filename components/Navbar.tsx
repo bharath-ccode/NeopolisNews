@@ -58,6 +58,7 @@ import {
 } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "@/context/AuthContext";
+import { useMobileMenu } from "@/context/MobileMenuContext";
 import WeatherWidget from "@/components/WeatherWidget";
 import TopBarTraffic from "@/components/TopBarTraffic";
 
@@ -315,7 +316,7 @@ function UserMenu() {
 // ─── Navbar ───────────────────────────────────────────────────────────────────
 
 export default function Navbar() {
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const { open: mobileOpen, setOpen: setMobileOpen } = useMobileMenu();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");

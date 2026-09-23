@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Noto_Sans_Telugu } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
@@ -56,6 +56,14 @@ export const metadata: Metadata = {
     ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } }
     : {}),
   alternates: { canonical: SITE_URL },
+  icons: { icon: "/logo.png", apple: "/logo.png" },
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "Neopolis News" },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#0464c7",
 };
 
 // Social profiles (comma-separated URLs) strengthen the brand-entity signal.
