@@ -256,7 +256,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
               )}
 
               {/* Claim button (client component) */}
-              <ClaimButton eventId={ev.id} soldOut={soldOut} hasSlots={ev.total_slots != null} />
+              <ClaimButton eventId={ev.id} soldOut={soldOut} isFree={ev.is_free} />
             </div>
 
             {/* Date reminder */}
