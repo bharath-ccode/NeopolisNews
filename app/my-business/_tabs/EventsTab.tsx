@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { CalendarDays, Plus, Trash2, Loader2, Clock, Upload, X } from "lucide-react";
+import { CalendarDays, Plus, Trash2, Loader2, Clock, Upload, X, Users, ChevronDown, ChevronUp, Phone, Mail } from "lucide-react";
 
 const EVENT_TYPES = [
   { value: "music_concert",  label: "Music Concert"   },
@@ -20,6 +20,17 @@ interface BusinessEvent {
   end_time: string;
   description: string | null;
   image_url: string | null;
+  is_free: boolean;
+  ticket_price: number | null;
+}
+
+interface Interest {
+  id: string;
+  event_id: string;
+  sender_name: string;
+  sender_phone: string;
+  sender_email: string | null;
+  created_at: string;
 }
 
 const INPUT = "w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 text-gray-800";
@@ -34,6 +45,9 @@ export default function EventsTab({ businessId, token }: { businessId: string; t
   const [uploading, setUploading] = useState(false);
   const imageRef = useRef<HTMLInputElement>(null);
 
+  const [interests, setInterests] = useState<Interest[]>([]);
+  const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
+
   const [name, setName] = useState("");
   const [eventType, setEventType] = useState("exhibition");
   const [eventDate, setEventDate] = useState("");
@@ -47,11 +61,18 @@ export default function EventsTab({ businessId, token }: { businessId: string; t
   const [totalSlots, setTotalSlots] = useState("");
 
   useEffect(() => {
-    fetch(`/api/my-business/events?businessId=${businessId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.json())
-      .then((data) => { setEvents(Array.isArray(data) ? data : []); setLoading(false); });
+    Promise.all([
+      fetch(`/api/my-business/events?businessId=${businessId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }).then((r) => r.json()),
+      fetch(`/api/my-business/events/interests?businessId=${businessId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }).then((r) => r.json()),
+    ]).then(([eventsData, interestsData]) => {
+      setEvents(Array.isArray(eventsData) ? eventsData : []);
+      setInterests(Array.isArray(interestsData) ? interestsData : []);
+      setLoading(false);
+    });
   }, [businessId, token]);
 
   async function uploadImage(file: File): Promise<string | null> {
@@ -227,32 +248,78 @@ export default function EventsTab({ businessId, token }: { businessId: string; t
         </div>
       ) : (
         <div className="space-y-3">
-          {events.map((ev) => (
-            <div key={ev.id} className="card p-4 flex gap-4">
-              {ev.image_url && (
-                <div className="w-20 h-16 rounded-xl overflow-hidden shrink-0 border border-gray-100">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={ev.image_url} alt={ev.name} className="w-full h-full object-cover" />
+          {events.map((ev) => {
+            const evInterests = interests.filter((i) => i.event_id === ev.id);
+            const expanded = expandedEventId === ev.id;
+            return (
+              <div key={ev.id} className="card p-4">
+                <div className="flex gap-4">
+                  {ev.image_url && (
+                    <div className="w-20 h-16 rounded-xl overflow-hidden shrink-0 border border-gray-100">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={ev.image_url} alt={ev.name} className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm text-gray-900 truncate">{ev.name}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{EVENT_TYPES.find((t) => t.value === ev.event_type)?.label ?? ev.event_type}</p>
+                    <p className="text-xs text-brand-600 font-semibold mt-0.5">
+                      {new Date(ev.event_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    </p>
+                    <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                      <Clock className="w-3 h-3" />
+                      {ev.start_time.slice(0, 5)} – {ev.end_time.slice(0, 5)}
+                    </p>
+                    {ev.description && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{ev.description}</p>}
+                  </div>
+                  <button onClick={() => handleDelete(ev.id)} disabled={deletingId === ev.id}
+                    className="p-2 rounded-lg text-gray-300 hover:bg-red-50 hover:text-red-500 transition-colors shrink-0 self-start">
+                    {deletingId === ev.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  </button>
                 </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-sm text-gray-900 truncate">{ev.name}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{EVENT_TYPES.find((t) => t.value === ev.event_type)?.label ?? ev.event_type}</p>
-                <p className="text-xs text-brand-600 font-semibold mt-0.5">
-                  {new Date(ev.event_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                </p>
-                <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
-                  <Clock className="w-3 h-3" />
-                  {ev.start_time.slice(0, 5)} – {ev.end_time.slice(0, 5)}
-                </p>
-                {ev.description && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{ev.description}</p>}
+
+                {/* Paid events have no payment integration yet — "I'm
+                    Interested" collects contact details here instead of
+                    claiming a slot. Free events aren't tracked this way. */}
+                {!ev.is_free && (
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <button
+                      onClick={() => setExpandedEventId(expanded ? null : ev.id)}
+                      className="flex items-center gap-1.5 text-xs font-semibold text-violet-600 hover:text-violet-700"
+                    >
+                      <Users className="w-3.5 h-3.5" />
+                      Interested ({evInterests.length})
+                      {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    </button>
+                    {expanded && (
+                      evInterests.length === 0 ? (
+                        <p className="text-xs text-gray-400 mt-2">No one has expressed interest yet.</p>
+                      ) : (
+                        <div className="mt-2 space-y-2">
+                          {evInterests.map((i) => (
+                            <div key={i.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 bg-gray-50 rounded-lg px-3 py-2 text-xs">
+                              <span className="font-semibold text-gray-900">{i.sender_name}</span>
+                              <span className="flex items-center gap-1 text-gray-500">
+                                <Phone className="w-3 h-3" /> {i.sender_phone}
+                              </span>
+                              {i.sender_email && (
+                                <span className="flex items-center gap-1 text-gray-500">
+                                  <Mail className="w-3 h-3" /> {i.sender_email}
+                                </span>
+                              )}
+                              <span className="text-gray-300 ml-auto">
+                                {new Date(i.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    )}
+                  </div>
+                )}
               </div>
-              <button onClick={() => handleDelete(ev.id)} disabled={deletingId === ev.id}
-                className="p-2 rounded-lg text-gray-300 hover:bg-red-50 hover:text-red-500 transition-colors shrink-0 self-start">
-                {deletingId === ev.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

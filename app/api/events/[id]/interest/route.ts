@@ -15,8 +15,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const body = await req.json().catch(() => null);
   const { senderName, senderPhone, senderEmail } = body ?? {};
 
-  if (!senderName?.trim() || !senderPhone?.trim() || !senderEmail?.trim()) {
-    return NextResponse.json({ error: "Name, phone, and email are required." }, { status: 400 });
+  if (!senderName?.trim() || !senderPhone?.trim()) {
+    return NextResponse.json({ error: "Name and phone are required." }, { status: 400 });
   }
 
   const admin = createAdminClient();
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       event_id: event.id,
       sender_name: senderName.trim(),
       sender_phone: senderPhone.trim(),
-      sender_email: senderEmail.trim(),
+      sender_email: senderEmail?.trim() || null,
       message,
     }),
     resend.emails.send({
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         ticketPrice: event.ticket_price,
         senderName,
         senderPhone,
-        senderEmail,
+        senderEmail: senderEmail?.trim() || null,
       }),
     }),
   ]);
@@ -69,7 +69,7 @@ function buildInterestEmail(p: {
   ticketPrice: number | null;
   senderName: string;
   senderPhone: string;
-  senderEmail: string;
+  senderEmail: string | null;
 }) {
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"></head>
@@ -92,10 +92,10 @@ function buildInterestEmail(p: {
         <td style="padding:10px 14px;background:#fafafa;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Phone</td>
         <td style="padding:10px 14px;background:#fafafa;font-size:14px;color:#111827">${p.senderPhone}</td>
       </tr>
-      <tr>
+      ${p.senderEmail ? `<tr>
         <td style="padding:10px 14px;background:#f3f4f6;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase">Email</td>
         <td style="padding:10px 14px;background:#f3f4f6;font-size:14px;color:#111827">${p.senderEmail}</td>
-      </tr>
+      </tr>` : ""}
     </table>
     <p style="font-size:12px;color:#9ca3af;margin:0">Sent via <a href="https://neopolis.news" style="color:#7c3aed">NeopolisNews</a></p>
   </div>

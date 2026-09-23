@@ -55,7 +55,7 @@ export default function ClaimButton({ eventId, soldOut, isFree }: Props) {
     setInterestError("");
     if (!interestName.trim()) { setInterestError("Please enter your name."); return; }
     if (!/^[\d\s+\-()]{8,15}$/.test(interestPhone.trim())) { setInterestError("Please enter a valid phone number."); return; }
-    if (!/^\S+@\S+\.\S+$/.test(interestEmail.trim())) { setInterestError("Please enter a valid email."); return; }
+    if (interestEmail.trim() && !/^\S+@\S+\.\S+$/.test(interestEmail.trim())) { setInterestError("Please enter a valid email."); return; }
 
     setInterestSending(true);
     const res = await fetch(`/api/events/${eventId}/interest`, {
@@ -64,7 +64,7 @@ export default function ClaimButton({ eventId, soldOut, isFree }: Props) {
       body: JSON.stringify({
         senderName: interestName.trim(),
         senderPhone: interestPhone.trim(),
-        senderEmail: interestEmail.trim(),
+        senderEmail: interestEmail.trim() || undefined,
       }),
     }).catch(() => null);
 
@@ -144,7 +144,7 @@ export default function ClaimButton({ eventId, soldOut, isFree }: Props) {
         />
         <input
           type="email" className={INPUT} value={interestEmail} onChange={(e) => setInterestEmail(e.target.value)}
-          placeholder="Email address *" maxLength={120}
+          placeholder="Email address (optional)" maxLength={120}
         />
         {interestError && (
           <p className="text-red-600 text-xs bg-red-50 border border-red-200 rounded-lg px-3 py-2">{interestError}</p>
