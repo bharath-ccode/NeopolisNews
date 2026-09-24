@@ -33,7 +33,7 @@ export default function BuilderLoginPage() {
     if (result === "ok") {
       router.push("/builder");
     } else if (result === "not_builder") {
-      setError("No builder account found for this email. Contact the admin.");
+      setError("No developer account found for this email. Contact the admin.");
     } else if (result === "invalid_credentials") {
       setError("Invalid email or password.");
     } else {
@@ -75,7 +75,7 @@ export default function BuilderLoginPage() {
             <p className="text-lg font-extrabold text-gray-900 leading-tight">
               Neopolis<span className="text-brand-600">News</span>
             </p>
-            <p className="text-xs text-gray-400">Builder Portal</p>
+            <p className="text-xs text-gray-400">Developer Portal</p>
           </div>
         </div>
 
@@ -84,7 +84,7 @@ export default function BuilderLoginPage() {
             <>
               <h1 className="text-xl font-bold text-gray-900 mb-1">Reset Password</h1>
               <p className="text-sm text-gray-500 mb-6">
-                Enter your builder account email and we&apos;ll send a reset link.
+                Enter your developer account email and we&apos;ll send a reset link.
               </p>
 
               {resetSent ? (
@@ -113,7 +113,7 @@ export default function BuilderLoginPage() {
                         value={resetEmail}
                         onChange={(e) => setResetEmail(e.target.value)}
                         className={inputCls}
-                        placeholder="you@builderco.com"
+                        placeholder="you@developerco.com"
                         required
                       />
                     </div>
@@ -139,7 +139,7 @@ export default function BuilderLoginPage() {
             </>
           ) : (
             <>
-              <h1 className="text-xl font-bold text-gray-900 mb-1">Builder Sign In</h1>
+              <h1 className="text-xl font-bold text-gray-900 mb-1">Developer Sign In</h1>
               <p className="text-sm text-gray-500 mb-6">
                 Access your project dashboard and post updates.
               </p>
@@ -162,7 +162,7 @@ export default function BuilderLoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className={inputCls}
-                    placeholder="you@builderco.com"
+                    placeholder="you@developerco.com"
                     required
                   />
                 </div>

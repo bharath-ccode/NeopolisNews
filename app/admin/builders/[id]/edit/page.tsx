@@ -28,14 +28,14 @@ export default function EditBuilderPage() {
 
   if (!builder) {
     return (
-      <div className="text-center py-20 text-gray-500">Builder not found.</div>
+      <div className="text-center py-20 text-gray-500">Developer not found.</div>
     );
   }
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-bold text-gray-900">Edit Builder</h2>
+        <h2 className="text-lg font-bold text-gray-900">Edit Developer</h2>
         <p className="text-sm text-gray-400">{builder.builderName}</p>
       </div>
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">

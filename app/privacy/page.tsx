@@ -55,7 +55,7 @@ export default function PrivacyPage() {
           <li><strong>Contact details</strong> — name, mobile number, and email address when you register, enquire about a property or business, list a property, or subscribe to our digest.</li>
           <li><strong>Business information</strong> — business name, address, industry, operating hours, photos, and social media links submitted during business registration or profile management.</li>
           <li><strong>Property listings</strong> — property type, location, size, price, and description when you post a classified listing.</li>
-          <li><strong>Messages &amp; enquiries</strong> — content of enquiries you send to businesses, builders, or property owners through the Platform.</li>
+          <li><strong>Messages &amp; enquiries</strong> — content of enquiries you send to businesses, developers, or property owners through the Platform.</li>
           <li><strong>Reviews</strong> — name and review content you submit for a business.</li>
           <li><strong>Account credentials</strong> — email address and password if you register with email/password, or tokens provided by Google if you sign in with Google.</li>
         </UL>
@@ -90,7 +90,7 @@ export default function PrivacyPage() {
         <UL>
           <li>To create and manage your account and verify your identity via OTP.</li>
           <li>To display business listings, property listings, and project pages on the Platform.</li>
-          <li>To deliver enquiries, contact messages, and review notifications to the relevant business owner, broker, or builder.</li>
+          <li>To deliver enquiries, contact messages, and review notifications to the relevant business owner, broker, or developer.</li>
           <li>To send transactional emails — OTP codes, claim links, enquiry notifications, and digest emails (only if you have subscribed).</li>
           <li>To show business owners the number of profile views their listing has received.</li>
           <li>To improve the Platform, fix bugs, and analyse usage patterns.</li>
@@ -103,7 +103,7 @@ export default function PrivacyPage() {
           We do not sell your personal information. We share it only in the following limited circumstances:
         </P>
         <UL>
-          <li><strong>With business owners, builders, and brokers</strong> — when you submit an enquiry or contact form, your name, phone number, and message are forwarded to the relevant party by email.</li>
+          <li><strong>With business owners, developers, and brokers</strong> — when you submit an enquiry or contact form, your name, phone number, and message are forwarded to the relevant party by email.</li>
           <li><strong>With service providers</strong> — we use Supabase (database and authentication), Resend (email delivery), Google (OAuth and Routes API for traffic data), Open-Meteo (weather), and the World Air Quality Index / WAQI project (air quality) to operate the Platform. Each provider processes data only as necessary to provide their service. No personal data is sent to Open-Meteo or WAQI.</li>
           <li><strong>For legal compliance</strong> — if required by law, court order, or governmental authority.</li>
           <li><strong>In a business transfer</strong> — if {SITE_NAME} is acquired or merged, your information may transfer to the new entity under equivalent privacy protections.</li>
@@ -162,7 +162,7 @@ export default function PrivacyPage() {
         {/* 9 */}
         <H2>9. Third-Party Links</H2>
         <P>
-          The Platform may contain links to external websites (builder websites, social media profiles, etc.).
+          The Platform may contain links to external websites (developer websites, social media profiles, etc.).
           We are not responsible for the privacy practices of those sites and encourage you to review their
           policies before providing any personal information.
         </P>

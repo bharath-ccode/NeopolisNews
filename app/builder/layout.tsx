@@ -85,7 +85,7 @@ function BuilderShell({ children }: { children: React.ReactNode }) {
               <Building2 className="w-4 h-4 text-white" />
             </div>
             <span className="text-sm font-bold text-gray-900">
-              Builder Portal
+              Developer Portal
             </span>
           </Link>
         </div>

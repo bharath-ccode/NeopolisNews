@@ -34,7 +34,7 @@ export default function ConstructionUpdatesPage() {
             What&apos;s Being <span className="text-orange-300">Built</span>
           </h1>
           <p className="text-orange-100 text-lg max-w-2xl">
-            Live construction progress from projects across the Neopolis district — milestones, floor completions, and site updates straight from builders.
+            Live construction progress from projects across the Neopolis district — milestones, floor completions, and site updates straight from developers.
           </p>
         </SectionWrapper>
       </section>
@@ -51,7 +51,7 @@ export default function ConstructionUpdatesPage() {
           <div className="text-center py-20 text-gray-400">
             <HardHat className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p className="font-medium text-gray-500">No construction updates yet</p>
-            <p className="text-sm mt-1">Builders will post updates as work progresses.</p>
+            <p className="text-sm mt-1">Developers will post updates as work progresses.</p>
           </div>
         ) : (
           <>

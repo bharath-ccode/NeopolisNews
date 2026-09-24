@@ -94,7 +94,7 @@ export default function SiteVisitForm({
         <CalendarCheck className="w-5 h-5 text-brand-600" /> Book a Site Visit
       </h3>
       <p className="text-sm text-gray-400 mb-5">
-        Pick a day and time — the builder&apos;s team confirms by phone.
+        Pick a day and time — the developer&apos;s team confirms by phone.
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">

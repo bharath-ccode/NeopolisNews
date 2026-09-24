@@ -48,7 +48,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     .select("builder_name")
     .eq("id", params.id)
     .single();
-  if (!data) return { title: "Builder — NeopolisNews" };
+  if (!data) return { title: "Developer — NeopolisNews" };
   return {
     title: `${data.builder_name} — Projects in Neopolis | NeopolisNews`,
     description: `All ${data.builder_name} projects in the Neopolis district: launches, construction progress and prices.`,

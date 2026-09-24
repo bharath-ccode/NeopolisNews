@@ -375,9 +375,9 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
 
           {!lockedBuilderId && (
             <div>
-              <label className="label">Builder</label>
+              <label className="label">Developer</label>
               <select className="input" value={builderId} onChange={e => setBuilderId(e.target.value)}>
-                <option value="">— Select a builder —</option>
+                <option value="">— Select a developer —</option>
                 {builders.map(b => <option key={b.id} value={b.id}>{b.builderName}</option>)}
               </select>
             </div>

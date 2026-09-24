@@ -243,7 +243,7 @@ export default async function ComparePage({
                 b={projB.projectType ? TYPE_LABELS[projB.projectType] ?? projB.projectType : "—"}
               />
               <Row
-                label="Builder"
+                label="Developer"
                 a={projA.builderName ?? "—"}
                 b={projB.builderName ?? "—"}
               />

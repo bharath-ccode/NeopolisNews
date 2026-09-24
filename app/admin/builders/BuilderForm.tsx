@@ -45,7 +45,7 @@ export default function BuilderForm({ initialData }: BuilderFormProps) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.builderName.trim()) {
-      setError("Builder name is required.");
+      setError("Developer name is required.");
       return;
     }
     setError(null);
@@ -75,7 +75,7 @@ export default function BuilderForm({ initialData }: BuilderFormProps) {
 
       {/* Logo */}
       <div>
-        <label className="label">Builder Logo</label>
+        <label className="label">Developer Logo</label>
         <ImageUpload
           value={form.logoUrl}
           onChange={(url) => setForm((f) => ({ ...f, logoUrl: url }))}
@@ -88,7 +88,7 @@ export default function BuilderForm({ initialData }: BuilderFormProps) {
       {/* Builder Name */}
       <div>
         <label className="label">
-          Builder Name <span className="text-red-500">*</span>
+          Developer Name <span className="text-red-500">*</span>
         </label>
         <input
           className="input"
@@ -118,7 +118,7 @@ export default function BuilderForm({ initialData }: BuilderFormProps) {
           <input
             className="input"
             type="email"
-            placeholder="contact@builder.com"
+            placeholder="contact@developer.com"
             value={form.email ?? ""}
             onChange={(e) => set("email", e.target.value)}
           />
@@ -141,7 +141,7 @@ export default function BuilderForm({ initialData }: BuilderFormProps) {
         <input
           className="input"
           type="url"
-          placeholder="https://builder.com"
+          placeholder="https://developer.com"
           value={form.website ?? ""}
           onChange={(e) => set("website", e.target.value)}
         />
@@ -151,7 +151,7 @@ export default function BuilderForm({ initialData }: BuilderFormProps) {
       <div className="flex items-center gap-3 pt-2">
         <button type="submit" disabled={saving} className="btn-primary">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          {isEdit ? "Update Builder" : "Create Builder"}
+          {isEdit ? "Update Developer" : "Create Developer"}
         </button>
         <button
           type="button"

@@ -55,7 +55,7 @@ export default function TermsPage() {
         <P>
           {SITE_NAME} is a local information platform for the Neopolis urban district in Hyderabad, India.
           It provides a business directory, real estate project listings, property classifieds, local news,
-          and related services. We connect residents, businesses, builders, and brokers within the district.
+          and related services. We connect residents, businesses, developers, and brokers within the district.
         </P>
 
         {/* 2 */}
@@ -82,10 +82,10 @@ export default function TermsPage() {
           are subject to verification at our discretion.
         </P>
 
-        <H3>3.3 Builder accounts</H3>
+        <H3>3.3 Developer accounts</H3>
         <P>
-          Real estate builders may register for a builder portal account, which is subject to approval.
-          Builders are responsible for the accuracy of all project information, pricing, availability
+          Real estate developers may register for a developer portal account, which is subject to approval.
+          Developers are responsible for the accuracy of all project information, pricing, availability
           announcements, and construction updates they publish.
         </P>
 
@@ -134,9 +134,9 @@ export default function TermsPage() {
         <H2>5. Enquiries &amp; Communications</H2>
         <P>
           When you submit an enquiry through the Platform, your name, phone number, and message are
-          forwarded to the relevant business owner, builder, or broker. {SITE_NAME} is a communication
+          forwarded to the relevant business owner, developer, or broker. {SITE_NAME} is a communication
           facilitator only and is not a party to any transaction or agreement you enter into as a result.
-          We are not liable for the conduct of any business, builder, broker, or individual you contact
+          We are not liable for the conduct of any business, developer, broker, or individual you contact
           through the Platform.
         </P>
 

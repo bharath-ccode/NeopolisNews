@@ -68,8 +68,8 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
     a: "Weather is sourced from Open-Meteo and air quality from WAQI — both use sensor readings near Kokapet. Traffic uses the Google Routes API for a representative route and is cached for 5 minutes. Minor differences from other apps are normal due to different measurement stations and update intervals.",
   },
   {
-    q: "I am a builder or developer — how do I list my project?",
-    a: "Visit neopolis.news/builder and register for a builder account. After approval you can create project listings, post construction updates, and manage availability.",
+    q: "I am a developer — how do I list my project?",
+    a: "Visit neopolis.news/builder and register for a developer account. After approval you can create project listings, post construction updates, and manage availability.",
   },
   {
     q: "The app or website isn't working properly — what should I try first?",

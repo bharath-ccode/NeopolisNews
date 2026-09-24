@@ -27,7 +27,7 @@ export default function AdminLoginPage() {
       } else if (result === "invalid_credentials") {
         setError("Invalid email or password. Please try again.");
       } else if (result === "not_admin") {
-        setError("This account is registered as a builder. Use the Builder Portal to sign in.");
+        setError("This account is registered as a developer. Use the Developer Portal to sign in.");
       } else if (result === "timeout") {
         setError("Connection timed out. The Supabase project may be paused — restore it at supabase.com/dashboard and try again.");
       } else {

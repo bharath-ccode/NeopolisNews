@@ -82,7 +82,7 @@ export default function BuilderEnquiriesPage() {
           <MessageSquare className="w-4 h-4 text-white" />
         </div>
         <div>
-          <span className="text-sm font-bold text-gray-900">Builder Portal</span>
+          <span className="text-sm font-bold text-gray-900">Developer Portal</span>
           <span className="ml-2 text-xs text-gray-400">/ Project Enquiries</span>
         </div>
       </header>

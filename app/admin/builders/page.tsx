@@ -47,22 +47,22 @@ export default function BuildersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold text-gray-900">Builders</h2>
-          <p className="text-sm text-gray-400">{builders.length} registered builder{builders.length !== 1 ? "s" : ""}</p>
+          <h2 className="text-lg font-bold text-gray-900">Developers</h2>
+          <p className="text-sm text-gray-400">{builders.length} registered developer{builders.length !== 1 ? "s" : ""}</p>
         </div>
         <Link href="/admin/builders/create" className="btn-primary text-sm py-2">
           <PlusCircle className="w-3.5 h-3.5" />
-          Add Builder
+          Add Developer
         </Link>
       </div>
 
       {builders.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-2xl border border-gray-100">
           <HardHat className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 font-medium">No builders yet</p>
-          <p className="text-sm text-gray-400 mt-1">Add your first builder to get started.</p>
+          <p className="text-gray-500 font-medium">No developers yet</p>
+          <p className="text-sm text-gray-400 mt-1">Add your first developer to get started.</p>
           <Link href="/admin/builders/create" className="btn-primary text-sm py-2 mt-4 inline-flex">
-            <PlusCircle className="w-3.5 h-3.5" /> Add Builder
+            <PlusCircle className="w-3.5 h-3.5" /> Add Developer
           </Link>
         </div>
       ) : (

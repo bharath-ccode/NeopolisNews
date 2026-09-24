@@ -62,13 +62,13 @@ export default function BuilderResetPasswordPage() {
             <p className="text-lg font-extrabold text-gray-900 leading-tight">
               Neopolis<span className="text-brand-600">News</span>
             </p>
-            <p className="text-xs text-gray-400">Builder Portal</p>
+            <p className="text-xs text-gray-400">Developer Portal</p>
           </div>
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-7">
           <h1 className="text-xl font-bold text-gray-900 mb-1">Set New Password</h1>
-          <p className="text-sm text-gray-500 mb-6">Choose a new password for your builder account.</p>
+          <p className="text-sm text-gray-500 mb-6">Choose a new password for your developer account.</p>
 
           {done ? (
             <div className="flex items-start gap-2 bg-green-50 border border-green-100 text-green-700 text-sm rounded-lg px-3 py-3">

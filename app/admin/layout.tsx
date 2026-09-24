@@ -37,7 +37,7 @@ const NAV = [
   { href: "/admin/cartoons",      icon: Sparkles,        label: "Daily Cartoon" },
   { href: "/admin/polls",         icon: BarChart2,       label: "Polls"         },
   { href: "/admin/clubs",         icon: UserCheck,       label: "Clubs"         },
-  { href: "/admin/builders",      icon: HardHat,         label: "Builders"      },
+  { href: "/admin/builders",      icon: HardHat,         label: "Developers"    },
   { href: "/admin/projects",      icon: Layers,          label: "Projects"      },
   { href: "/admin/businesses",    icon: Store,           label: "Businesses"    },
   { href: "/admin/business-discovery", icon: Search,     label: "Business Discovery" },

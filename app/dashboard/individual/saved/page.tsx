@@ -164,7 +164,7 @@ export default function SavedPropertiesPage() {
           {items.length} saved
           {[
             [favourites.length, "places"],
-            [builders.length, "builders"],
+            [builders.length, "developers"],
             [projects.length, "projects"],
             [classifieds.length, "listings"],
             [events.length, "events"],
@@ -251,7 +251,7 @@ export default function SavedPropertiesPage() {
 
           {builders.length > 0 && (
             <div className="space-y-3">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Builders You Follow</h3>
+              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Developers You Follow</h3>
               {builders.map((item) => {
                 const d = item.detail as BuilderDetail | null;
                 return (
@@ -266,7 +266,7 @@ export default function SavedPropertiesPage() {
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-sm text-gray-900 truncate">
-                        {d?.builder_name ?? "Builder no longer available"}
+                        {d?.builder_name ?? "Developer no longer available"}
                       </p>
                       {d?.address && <p className="text-xs text-gray-400 mt-0.5 truncate">{d.address}</p>}
                     </div>
