@@ -73,6 +73,8 @@ Two clients live in `lib/supabase/`:
 
 All three share the same `auth.users` table — the role is determined by which context is used and cross-checked against `builders` / RLS.
 
+**Naming split: "Builder" internally, "Developer" on screen.** Every user-visible instance of this role now reads "Developer" — public site, the `/builder/*` portal itself, and the admin panel all say "Developer." But every backend artifact keeps the original name: the `builders` table, `context/BuilderAuthContext.tsx`, `lib/buildersStore.ts` (`createBuilder`/`getBuilders`/`getBuilderById`/`getBuilderByEmail`/etc.), the `builder-assets` storage bucket, `SaveButton`'s `itemType="builder"` discriminator, the `"not_builder"` auth-result code, and every `/builder`/`/admin/builders` route/href. When touching this feature: write UI copy as "Developer," write code as "Builder" — don't rename the backend to match the UI, and don't let new UI copy regress to "Builder."
+
 The individual auth stores sessions via `@supabase/supabase-js` in `localStorage`; middleware (`middleware.ts`) is a pass-through and does **not** enforce auth — all protection is client-side via context `useEffect` redirects.
 
 ### Individual user identity model
