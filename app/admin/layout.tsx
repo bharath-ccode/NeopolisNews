@@ -26,6 +26,7 @@ import {
   Megaphone,
   Search,
   BarChart2,
+  Rocket,
 } from "lucide-react";
 import clsx from "clsx";
 import { AdminAuthProvider, useAdminAuth } from "@/context/AdminAuthContext";
@@ -50,6 +51,7 @@ const NAV = [
   { href: "/admin/price-trends",   icon: BarChart3,       label: "Price Trends"  },
   { href: "/admin/notifications",  icon: Megaphone,       label: "Notifications" },
   { href: "/admin/analytics",     icon: BarChart3,       label: "Analytics"     },
+  { href: "/admin/roadmap",       icon: Rocket,          label: "Roadmap"       },
   { href: "/admin/settings",      icon: Settings,        label: "Settings"      },
 ];
 

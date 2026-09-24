@@ -9,7 +9,7 @@ import {
   Users,
   Star,
   ArrowRight,
-  Zap,
+  Clock,
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import LeadForm from "@/components/LeadForm";
@@ -17,52 +17,50 @@ import LeadForm from "@/components/LeadForm";
 export const metadata = {
   title: "Advertise & Partner – NeopolisNews",
   description:
-    "Developer listings, sponsored content, data products, and partnership plans for the Neopolis urban district platform.",
+    "Developer listings, sponsored content, and partnership plans for the Neopolis urban district platform — free while the platform is new.",
 };
 
 // ─── Monetisation data (from the plan) ──────────────────────────────────────
+// The platform is new — everything below is free to start. Future paid
+// tiers are shown as a roadmap (no pricing committed yet), not as things
+// you can buy today. The internal pricing thinking behind them still
+// lives in /admin/roadmap so we come back and build it out later.
 
 const SEGMENTS = [
   {
     icon: Building2,
     title: "Developers",
     desc: "Tier-1 and mid-size developers building in Neopolis",
-    value: "₹3L – ₹25L/yr",
     color: "bg-blue-50 text-blue-600",
   },
   {
     icon: Home,
     title: "Brokers & Agents",
     desc: "Real estate brokers looking for qualified leads",
-    value: "₹50K – ₹2L/yr",
     color: "bg-green-50 text-green-600",
   },
   {
     icon: ShoppingBag,
     title: "Retail Brands",
     desc: "Shops, F&B, entertainment, and lifestyle brands",
-    value: "₹1L – ₹5L/yr",
     color: "bg-purple-50 text-purple-600",
   },
   {
     icon: Newspaper,
     title: "Content / PR",
     desc: "Sponsored articles, press releases, and campaigns",
-    value: "₹25K – ₹2L/article",
     color: "bg-orange-50 text-orange-600",
   },
   {
     icon: BarChart3,
     title: "Data Products",
     desc: "SaaS analytics for investors, banks, and PE funds",
-    value: "Custom SaaS pricing",
     color: "bg-yellow-50 text-yellow-600",
   },
   {
     icon: Users,
     title: "Service Vendors",
     desc: "Movers, interior designers, maintenance, utilities",
-    value: "5–20% commission",
     color: "bg-red-50 text-red-600",
   },
 ];
@@ -71,9 +69,7 @@ const DEVELOPER_PLANS = [
   {
     name: "Starter",
     subtitle: "Small developers & new projects",
-    price: "₹3,00,000",
-    period: "/year",
-    badge: null,
+    future: false,
     features: [
       "1 project page",
       "Monthly construction updates",
@@ -82,15 +78,12 @@ const DEVELOPER_PLANS = [
       "Verified Developer badge",
       "5 featured listing slots",
     ],
-    cta: "Get Started",
-    highlight: false,
+    cta: "Get Started — It's Free",
   },
   {
     name: "Growth",
     subtitle: "Mid-size developers",
-    price: "₹8,00,000",
-    period: "/year",
-    badge: "Most Popular",
+    future: true,
     features: [
       "Up to 3 project pages",
       "Drone video support",
@@ -101,15 +94,11 @@ const DEVELOPER_PLANS = [
       "CRM lead dashboard",
       "Quarterly analytics report",
     ],
-    cta: "Get Growth",
-    highlight: true,
   },
   {
     name: "Enterprise",
     subtitle: "Tier-1 developers & large projects",
-    price: "₹25,00,000",
-    period: "/year",
-    badge: null,
+    future: true,
     features: [
       "Unlimited project pages",
       "Homepage hero placement",
@@ -120,68 +109,35 @@ const DEVELOPER_PLANS = [
       "API access",
       "White-label options",
     ],
-    cta: "Talk to Sales",
-    highlight: false,
   },
 ];
 
 const RETAIL_PLANS = [
   {
     name: "Basic Profile",
-    price: "₹5,000/mo",
+    future: false,
     features: ["Business listing", "Contact & hours", "Map embed"],
-    highlight: false,
   },
   {
     name: "Growth",
-    price: "₹20,000/mo",
+    future: true,
     features: [
       "Featured placement",
       "Offer & event posts",
       "Banner ads",
       "Analytics",
     ],
-    highlight: true,
   },
   {
     name: "Premium Brand",
-    price: "₹50,000/mo",
+    future: true,
     features: [
       "Homepage sponsorship",
       "Event co-branding",
       "Sponsored articles",
       "Site-wide display ads",
     ],
-    highlight: false,
   },
-];
-
-const DATA_PRODUCTS = [
-  {
-    name: "Investor Dashboard",
-    price: "₹50,000/yr",
-    desc: "Price heatmaps, rental yield data, appreciation trends.",
-    users: "Investors, HNIs",
-  },
-  {
-    name: "Developer Analytics",
-    price: "₹1,50,000/yr",
-    desc: "Inventory velocity, lead quality, competitive benchmarks.",
-    users: "Developers",
-  },
-  {
-    name: "Institutional Reports",
-    price: "Custom",
-    desc: "Quarterly district reports for PE funds, REITs, banks.",
-    users: "PE Funds, Banks, NBFCs",
-  },
-];
-
-const TIMELINE = [
-  { phase: "Day 1", items: ["Developer listings", "Rental listings", "Ad placements"] },
-  { phase: "Month 3", items: ["Sponsored content", "Premium features", "Newsletter"] },
-  { phase: "Month 6", items: ["Resident services", "Vendor commissions", "Memberships"] },
-  { phase: "Year 2", items: ["Data SaaS", "API products", "Institutional reports"] },
 ];
 
 // ─── Page ────────────────────────────────────────────────────────────────────
@@ -195,7 +151,7 @@ export default function AdvertisePage() {
           <div className="max-w-3xl">
             <span className="inline-flex items-center gap-2 bg-white/10 text-white text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
               <TrendingUp className="w-3.5 h-3.5" />
-              Monetisation & Partnership Plans
+              Free While We&apos;re New
             </span>
             <h1 className="text-3xl md:text-5xl font-extrabold mt-2 mb-4">
               Grow With the{" "}
@@ -203,8 +159,8 @@ export default function AdvertisePage() {
             </h1>
             <p className="text-orange-100 text-lg mb-6 max-w-2xl">
               12,000+ buyers, tenants, residents, and investors. One hyper-local
-              platform. Six revenue streams ready to work for your business
-              from day one.
+              platform. Get listed free while the platform is new — no cards,
+              no catch.
             </p>
             <div className="flex flex-wrap gap-3">
               <a href="#developer-plans" className="bg-white text-accent-600 font-bold px-5 py-2.5 rounded-lg hover:bg-orange-50 transition-colors inline-flex items-center gap-2">
@@ -242,7 +198,7 @@ export default function AdvertisePage() {
       <SectionWrapper id="segments">
         <div className="text-center mb-10">
           <h2 className="section-heading">Who Advertises on NeopolisNews</h2>
-          <p className="text-gray-500 mt-2">Six partner categories — each with dedicated revenue streams.</p>
+          <p className="text-gray-500 mt-2">Six partner categories — all free to join while the platform is new.</p>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {SEGMENTS.map((s) => (
@@ -252,8 +208,7 @@ export default function AdvertisePage() {
               </div>
               <div>
                 <h3 className="font-bold text-gray-900 text-sm">{s.title}</h3>
-                <p className="text-xs text-gray-500 mt-0.5 mb-1">{s.desc}</p>
-                <span className="text-xs font-bold text-brand-700">{s.value}</span>
+                <p className="text-xs text-gray-500 mt-0.5">{s.desc}</p>
               </div>
             </div>
           ))}
@@ -266,18 +221,18 @@ export default function AdvertisePage() {
           <div className="text-center mb-10">
             <h2 className="section-heading">Developer Listing Plans</h2>
             <p className="text-gray-500 mt-2">
-              Put your project in front of India&apos;s most qualified buyers.
+              Put your project in front of India&apos;s most qualified buyers — free to start.
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-5 max-w-5xl mx-auto">
             {DEVELOPER_PLANS.map((plan) => (
               <div
                 key={plan.name}
-                className={`card p-6 flex flex-col ${plan.highlight ? "ring-2 ring-brand-500 relative" : ""}`}
+                className={`card p-6 flex flex-col ${plan.future ? "opacity-70" : "ring-2 ring-brand-500 relative"}`}
               >
-                {plan.badge && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                    {plan.badge}
+                {!plan.future && (
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                    Available Now
                   </span>
                 )}
                 <div className="mb-4">
@@ -285,8 +240,13 @@ export default function AdvertisePage() {
                   <p className="text-xs text-gray-400">{plan.subtitle}</p>
                 </div>
                 <div className="mb-5">
-                  <span className="text-4xl font-extrabold text-brand-700">{plan.price}</span>
-                  <span className="text-gray-400 text-sm">{plan.period}</span>
+                  {plan.future ? (
+                    <span className="inline-flex items-center gap-1.5 text-gray-400 font-semibold text-sm">
+                      <Clock className="w-3.5 h-3.5" /> Future — pricing not set yet
+                    </span>
+                  ) : (
+                    <span className="text-4xl font-extrabold text-green-600">Free</span>
+                  )}
                 </div>
                 <ul className="space-y-2 mb-6 flex-1">
                   {plan.features.map((f) => (
@@ -296,16 +256,18 @@ export default function AdvertisePage() {
                     </li>
                   ))}
                 </ul>
-                <a
-                  href="#contact"
-                  className={`block text-center font-semibold py-2.5 rounded-lg text-sm transition-colors ${
-                    plan.highlight
-                      ? "bg-brand-600 text-white hover:bg-brand-700"
-                      : "border border-brand-300 text-brand-600 hover:bg-brand-50"
-                  }`}
-                >
-                  {plan.cta}
-                </a>
+                {plan.future ? (
+                  <span className="block text-center font-semibold py-2.5 rounded-lg text-sm bg-gray-100 text-gray-400">
+                    Coming in a future phase
+                  </span>
+                ) : (
+                  <a
+                    href="#contact"
+                    className="block text-center font-semibold py-2.5 rounded-lg text-sm transition-colors bg-brand-600 text-white hover:bg-brand-700"
+                  >
+                    {plan.cta}
+                  </a>
+                )}
               </div>
             ))}
           </div>
@@ -317,22 +279,28 @@ export default function AdvertisePage() {
         <div className="text-center mb-10">
           <h2 className="section-heading">Retail & Brand Plans</h2>
           <p className="text-gray-500 mt-2">
-            Reach shoppers, residents, and office workers in Neopolis.
+            Reach shoppers, residents, and office workers in Neopolis — free to start.
           </p>
         </div>
         <div className="grid md:grid-cols-3 gap-5 max-w-4xl mx-auto">
           {RETAIL_PLANS.map((plan) => (
             <div
               key={plan.name}
-              className={`card p-6 ${plan.highlight ? "ring-2 ring-purple-500 relative" : ""}`}
+              className={`card p-6 ${plan.future ? "opacity-70" : "ring-2 ring-purple-500 relative"}`}
             >
-              {plan.highlight && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                  Most Popular
+              {!plan.future && (
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                  Available Now
                 </span>
               )}
               <h3 className="font-bold text-lg text-gray-900 mb-1">{plan.name}</h3>
-              <p className="text-3xl font-extrabold text-purple-700 mb-4">{plan.price}</p>
+              {plan.future ? (
+                <span className="inline-flex items-center gap-1.5 text-gray-400 font-semibold text-sm mb-4">
+                  <Clock className="w-3.5 h-3.5" /> Future — pricing not set yet
+                </span>
+              ) : (
+                <p className="text-3xl font-extrabold text-green-600 mb-4">Free</p>
+              )}
               <ul className="space-y-2 mb-6">
                 {plan.features.map((f) => (
                   <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
@@ -341,16 +309,18 @@ export default function AdvertisePage() {
                   </li>
                 ))}
               </ul>
-              <a
-                href="#contact"
-                className={`block text-center font-semibold py-2.5 rounded-lg text-sm transition-colors ${
-                  plan.highlight
-                    ? "bg-purple-600 text-white hover:bg-purple-700"
-                    : "border border-purple-300 text-purple-600 hover:bg-purple-50"
-                }`}
-              >
-                Get Started
-              </a>
+              {plan.future ? (
+                <span className="block text-center font-semibold py-2.5 rounded-lg text-sm bg-gray-100 text-gray-400">
+                  Coming in a future phase
+                </span>
+              ) : (
+                <a
+                  href="#contact"
+                  className="block text-center font-semibold py-2.5 rounded-lg text-sm transition-colors bg-purple-600 text-white hover:bg-purple-700"
+                >
+                  Get Started — It&apos;s Free
+                </a>
+              )}
             </div>
           ))}
         </div>
@@ -358,61 +328,25 @@ export default function AdvertisePage() {
 
       {/* ── Data Products ── */}
       <section className="bg-gray-50" id="data">
-        <SectionWrapper>
-          <div className="text-center mb-10">
-            <h2 className="section-heading">Data & Analytics Products</h2>
-            <p className="text-gray-500 mt-2">
-              Price heatmaps, rental yields, occupancy analytics — for investors and institutions.
+        <SectionWrapper tight>
+          <div className="max-w-xl mx-auto text-center">
+            <BarChart3 className="w-10 h-10 text-brand-500 mx-auto mb-4" />
+            <h2 className="text-2xl md:text-4xl font-extrabold text-gray-900 mb-3">
+              Data products launch Year 2.<br className="hidden sm:block" /> Join the waitlist below.
+            </h2>
+            <p className="text-gray-500 mb-8">
+              Price heatmaps, rental yields, and institutional reports — for investors and institutions. Not built yet, but we&apos;re tracking interest.
             </p>
+            <div className="card p-6 text-left">
+              <LeadForm
+                title="Join the Data Products Waitlist"
+                subtitle="We'll reach out when this launches."
+                purpose="data-products-waitlist"
+              />
+            </div>
           </div>
-          <div className="grid md:grid-cols-3 gap-5 max-w-4xl mx-auto">
-            {DATA_PRODUCTS.map((p) => (
-              <div key={p.name} className="card p-6">
-                <BarChart3 className="w-8 h-8 text-brand-500 mb-3" />
-                <h3 className="font-bold text-gray-900 mb-1">{p.name}</h3>
-                <p className="text-2xl font-extrabold text-brand-700 mb-2">{p.price}</p>
-                <p className="text-sm text-gray-500 mb-3">{p.desc}</p>
-                <span className="text-xs bg-brand-50 text-brand-700 px-2 py-1 rounded-full font-medium">
-                  {p.users}
-                </span>
-              </div>
-            ))}
-          </div>
-          <p className="text-center text-sm text-gray-400 mt-6">
-            Data products launch Year 2. Join the waitlist below.
-          </p>
         </SectionWrapper>
       </section>
-
-      {/* ── Revenue Timeline ── */}
-      <SectionWrapper id="timeline">
-        <div className="text-center mb-10">
-          <h2 className="section-heading">Revenue Activation Timeline</h2>
-          <p className="text-gray-500 mt-2">
-            Multiple streams activate progressively — strong from day one.
-          </p>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {TIMELINE.map((t) => (
-            <div key={t.phase} className="card p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center">
-                  <Zap className="w-4 h-4 text-brand-600" />
-                </div>
-                <span className="font-bold text-brand-700 text-sm">{t.phase}</span>
-              </div>
-              <ul className="space-y-1.5">
-                {t.items.map((item) => (
-                  <li key={item} className="flex items-center gap-2 text-xs text-gray-600">
-                    <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      </SectionWrapper>
 
       {/* ── Value Prop ── */}
       <section className="bg-brand-950 text-white">
@@ -447,15 +381,14 @@ export default function AdvertisePage() {
           <div>
             <h2 className="section-heading mb-3">Ready to Partner?</h2>
             <p className="text-gray-500 mb-5">
-              Talk to our sales team — we&apos;ll design a package that fits your
-              business goals and budget.
+              Talk to our team — get listed free while the platform is new.
             </p>
             <div className="space-y-4">
               {[
-                { label: "Developers", value: "₹3L – ₹25L/yr" },
-                { label: "Brokers", value: "₹50K – ₹2L/yr" },
-                { label: "Retail Brands", value: "₹5K – ₹50K/mo" },
-                { label: "Sponsored Content", value: "₹25K – ₹2L/article" },
+                { label: "Developers", value: "Free to start" },
+                { label: "Retail Brands", value: "Free to start" },
+                { label: "Brokers", value: "Coming soon" },
+                { label: "Sponsored Content", value: "Coming soon" },
               ].map((item) => (
                 <div key={item.label} className="flex items-center justify-between border-b border-gray-100 pb-3">
                   <span className="text-sm text-gray-600 flex items-center gap-2">
@@ -466,13 +399,13 @@ export default function AdvertisePage() {
               ))}
             </div>
             <p className="text-xs text-gray-400 mt-4">
-              All plans include onboarding support. Custom enterprise packages available.
+              No cards, no commitments — we&apos;ll reach out to get you onboarded.
             </p>
           </div>
           <div className="card p-6">
             <LeadForm
               title="Contact Our Sales Team"
-              subtitle="We respond within 24 hours with a custom proposal."
+              subtitle="We respond within 24 hours."
               purpose="advertise-sales"
             />
           </div>

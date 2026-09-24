@@ -22,6 +22,8 @@ export async function POST(req: NextRequest) {
   const purposeLabel: Record<string, string> = {
     "advertise-sales":  "Advertise / Sales Enquiry",
     "business-directory": "Business Directory Registration",
+    "developer-listing": "Developer Listing Interest",
+    "data-products-waitlist": "Data Products Waitlist",
     "general": "General Enquiry",
   };
 
