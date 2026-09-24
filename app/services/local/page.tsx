@@ -20,6 +20,14 @@ const TABS: { id: ServiceType; label: string; icon: React.ElementType; color: st
   { id: "driving",  label: "Driving",  icon: Car,         color: "bg-purple-50 text-purple-600" },
 ];
 
+const CTA_COPY: Record<ServiceType, { heading: string; desc: string }> = {
+  moving:   { heading: "Movers & Packers, List Your Service", desc: "Household shifting, office relocation, storage — residents compare price range and availability before they call." },
+  party:    { heading: "Party & Event Planners, List Your Service", desc: "Decorators, caterers, and planners — get found by residents planning their next celebration." },
+  home:     { heading: "Home Service Providers, List Your Service", desc: "Electricians, plumbers, cleaners, and more — residents search here first when something needs fixing." },
+  delivery: { heading: "Delivery Services, List Your Service", desc: "Same-day and scheduled delivery — get found by residents who need something moved fast." },
+  driving:  { heading: "Drivers & Chauffeur Services, List Your Service", desc: "Daily commutes, airport drops, outstation trips — list your driving service here." },
+};
+
 interface Provider {
   name: string;
   type: ServiceType;
@@ -307,11 +315,10 @@ function LocalServicesContent() {
           <div className="grid lg:grid-cols-2 gap-10 items-center">
             <div>
               <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
-                List Your Service Business
+                {CTA_COPY[active].heading}
               </h2>
               <p className="text-gray-400 mb-5">
-                Get found by Neopolis residents who need moving, home, party,
-                delivery and driving services.
+                {CTA_COPY[active].desc}
               </p>
               <ul className="space-y-2 text-sm text-gray-300">
                 {["Appear in category & subtype search","Phone & availability shown","Pricing hint attracts enquiries","Reach 12,000+ district residents"].map((item) => (
@@ -320,7 +327,7 @@ function LocalServicesContent() {
                   </li>
                 ))}
               </ul>
-              <Link href="/auth/register"
+              <Link href="/register-business"
                 className="inline-flex items-center gap-2 mt-6 bg-white text-gray-900 font-bold px-6 py-3 rounded-xl text-sm hover:bg-gray-100 transition-colors"
               >
                 Register Now <ArrowRight className="w-4 h-4" />

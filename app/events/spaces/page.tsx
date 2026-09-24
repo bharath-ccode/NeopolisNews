@@ -247,7 +247,7 @@ function EventSpacesInner() {
                 List Your Event Space
               </h2>
               <p className="text-violet-200 mb-5">
-                Get your venue in front of event planners, corporates, and residents actively searching for spaces in Neopolis.
+                Convention centre, banquet hall, outdoor space, or rooftop venue — get in front of event planners, corporates, and residents actively searching for spaces in Neopolis.
               </p>
               <ul className="space-y-2 text-sm text-violet-100">
                 {[
@@ -264,7 +264,7 @@ function EventSpacesInner() {
               </ul>
               <div className="flex gap-3 mt-6">
                 <Link
-                  href="/auth/register"
+                  href="/register-business"
                   className="inline-flex items-center gap-2 bg-white text-violet-700 font-bold px-6 py-3 rounded-xl text-sm hover:bg-violet-50 transition-colors"
                 >
                   Register Your Venue <ArrowRight className="w-4 h-4" />

@@ -427,17 +427,17 @@ function HealthInner() {
           <div className="grid lg:grid-cols-2 gap-10 items-center">
             <div>
               <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
-                Register Your Health Business
+                Hospital, Clinic, Pharmacy, or Wellness Business?
               </h2>
               <p className="text-emerald-200 mb-5">
-                Get listed in the Neopolis Health Directory. Residents search for hospitals, clinics, and pharmacies here first.
+                Get listed in the Neopolis Health Directory — hospitals, clinics, diagnostics, pharmacies, ambulance services, and wellness (spas, gyms, yoga & meditation studios) all find residents here first.
               </p>
               <ul className="space-y-2 text-sm text-emerald-100">
                 {[
-                  "Emergency number shown prominently",
-                  "Business hours & location visible",
-                  "Searchable by speciality",
-                  "Reach 12,000+ district residents",
+                  "Emergency number shown prominently on your listing",
+                  "Doctors & practitioners listed by name and speciality",
+                  "Residents book appointments straight from your profile",
+                  "Reach 12,000+ district residents searching by speciality",
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-emerald-300 shrink-0" />
@@ -446,7 +446,7 @@ function HealthInner() {
                 ))}
               </ul>
               <Link
-                href="/auth/register"
+                href="/register-business"
                 className="inline-flex items-center gap-2 mt-6 bg-white text-emerald-700 font-bold px-6 py-3 rounded-xl text-sm hover:bg-emerald-50 transition-colors"
               >
                 Register Now <ArrowRight className="w-4 h-4" />

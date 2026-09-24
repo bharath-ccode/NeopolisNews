@@ -24,6 +24,16 @@ export async function POST(req: NextRequest) {
     "business-directory": "Business Directory Registration",
     "developer-listing": "Developer Listing Interest",
     "data-products-waitlist": "Data Products Waitlist",
+    "education-directory": "Education Directory Registration",
+    "entertainment-directory": "Cinema Listing Interest",
+    "event-space": "Event Space Registration",
+    "health-directory": "Health Directory Registration",
+    "homepage-hero": "Homepage Enquiry",
+    "newsletter": "Newsletter Signup",
+    "rental-requirement": "Rental Requirement",
+    "services-directory": "Services Directory Registration",
+    "vendor-registration": "Vendor Registration",
+    "wellness-directory": "Wellness Directory Registration",
     "general": "General Enquiry",
   };
 

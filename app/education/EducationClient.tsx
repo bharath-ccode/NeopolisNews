@@ -277,17 +277,17 @@ function EducationInner() {
           <div className="grid lg:grid-cols-2 gap-10 items-center">
             <div>
               <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
-                Register Your Institution
+                School, Day Care, or Coaching Institute?
               </h2>
               <p className="text-indigo-200 mb-5">
-                Get listed in the Neopolis Education Directory. Parents searching for schools, day care, and coaching find you here first.
+                Get listed in the Neopolis Education Directory — schools, day care centres, and coaching &amp; tuition institutes all find Neopolis families here first.
               </p>
               <ul className="space-y-2 text-sm text-indigo-100">
                 {[
-                  "Board affiliation & curriculum shown",
-                  "Hours, location & contact visible",
-                  "Filterable by board and speciality",
-                  "Reach 12,000+ district families",
+                  "Fee range, grade range & board shown upfront",
+                  "Student achievements showcased on your profile",
+                  "Admissions enquiries come in with grade & age already filled",
+                  "Reach 12,000+ district families searching by board and grade",
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-indigo-300 shrink-0" />
@@ -296,7 +296,7 @@ function EducationInner() {
                 ))}
               </ul>
               <Link
-                href="/auth/register"
+                href="/register-business"
                 className="inline-flex items-center gap-2 mt-6 bg-white text-indigo-800 font-bold px-6 py-3 rounded-xl text-sm hover:bg-indigo-50 transition-colors"
               >
                 Register Now <ArrowRight className="w-4 h-4" />

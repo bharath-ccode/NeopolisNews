@@ -417,7 +417,7 @@ function WellnessContent() {
                 ))}
               </ul>
               <Link
-                href="/auth/register"
+                href="/register-business"
                 className="inline-flex items-center gap-2 mt-6 bg-white text-purple-700 font-bold px-6 py-3 rounded-xl text-sm hover:bg-purple-50 transition-colors"
               >
                 Register Now <ArrowRight className="w-4 h-4" />

@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MapPin, ExternalLink, Film, Ticket } from "lucide-react";
+import Link from "next/link";
+import { MapPin, ExternalLink, Film, Ticket, CheckCircle, ArrowRight } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import SaveButton from "@/components/SaveButton";
+import LeadForm from "@/components/LeadForm";
 import { trackTicketClick } from "@/lib/trackTicketClick";
 import { formatTime12h } from "@/lib/formatTime";
 
@@ -299,6 +301,49 @@ export default function CinemasPage() {
               </div>
             </>
           )}
+        </SectionWrapper>
+      </section>
+
+      {/* ── CTA ── */}
+      <section className="bg-red-950 text-white">
+        <SectionWrapper>
+          <div className="grid lg:grid-cols-2 gap-10 items-center">
+            <div>
+              <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
+                Own a Cinema in Neopolis?
+              </h2>
+              <p className="text-red-200 mb-5">
+                Multiplex, IMAX, 4DX, Dolby Atmos, or single screen — list your cinema and manage showtimes straight from your dashboard.
+              </p>
+              <ul className="space-y-2 text-sm text-red-100">
+                {[
+                  "Now Showing list managed from your dashboard",
+                  "Per-showtime BookMyShow booking links",
+                  "Falls back to your cinema's own booking link automatically",
+                  "Reach 12,000+ district residents planning a movie night",
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-red-300 shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/register-business"
+                className="inline-flex items-center gap-2 mt-6 bg-white text-red-800 font-bold px-6 py-3 rounded-xl text-sm hover:bg-red-50 transition-colors"
+              >
+                Register Now <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+            <div className="bg-red-900 rounded-2xl border border-red-700 p-6">
+              <LeadForm
+                title="List Your Cinema"
+                subtitle="We'll set up your profile with showtimes and booking links."
+                purpose="entertainment-directory"
+                dark
+              />
+            </div>
+          </div>
         </SectionWrapper>
       </section>
     </>

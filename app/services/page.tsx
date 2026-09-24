@@ -302,16 +302,15 @@ export default function ServicesPage() {
           <div className="grid lg:grid-cols-2 gap-10 items-center">
             <div>
               <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
-                Are You a Service Provider?
+                Movers, Party Planners, Home Services, Delivery, or Driving?
               </h2>
               <p className="text-brand-300 mb-5">
-                Get listed in the Neopolis Services directory and receive
-                qualified leads from verified residents and businesses.
+                Get listed in the Neopolis Services directory — movers & packers, party &amp; event help, home services, delivery, and driving all find residents here first.
               </p>
               <ul className="space-y-2 text-sm text-brand-200">
                 {[
-                  "Zero upfront cost to list",
-                  "Pay only on successful referrals",
+                  "Listed under your exact category and subtype",
+                  "Availability & price hint shown upfront",
                   "Verified Vendor badge",
                   "Direct enquiry via WhatsApp & call",
                   "Analytics on profile views",
