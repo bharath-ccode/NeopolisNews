@@ -5,6 +5,7 @@ import Navbar from "./Navbar";
 import Footer from "./Footer";
 import NewsTicker from "./NewsTicker";
 import MobileTabBar from "./MobileTabBar";
+import ConciergeWidget from "./ConciergeWidget";
 import { MobileMenuProvider } from "@/context/MobileMenuContext";
 
 export default function ConditionalShell({
@@ -28,6 +29,7 @@ export default function ConditionalShell({
       {/* Clears the fixed bottom tab bar so it never overlaps footer content. */}
       <div className="md:hidden" style={{ height: "calc(56px + env(safe-area-inset-bottom, 0px))" }} aria-hidden="true" />
       <MobileTabBar />
+      <ConciergeWidget />
     </MobileMenuProvider>
   );
 }
