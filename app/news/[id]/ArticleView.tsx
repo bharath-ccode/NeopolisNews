@@ -130,17 +130,29 @@ export default async function ArticleView(
     : `More in ${article.tag}`;
 
   // Same order as the admin articles list (created_at desc, all categories) —
-  // "next" is whichever published article comes right after this one in that order.
+  // next = the published article right after this one in that order (older),
+  // prev = the one right before it (newer). Together these let a reader walk
+  // the whole feed from the detail page without returning to /news each time.
   const { data: nextArticleData } = await admin
     .from("articles")
-    .select("id, title")
+    .select("id, title, image_url")
     .eq("status", "published")
     .lt("created_at", articleData.created_at)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  const nextArticle = nextArticleData as { id: string; title: string } | null;
+  const { data: prevArticleData } = await admin
+    .from("articles")
+    .select("id, title, image_url")
+    .eq("status", "published")
+    .gt("created_at", articleData.created_at)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  const nextArticle = nextArticleData as { id: string; title: string; image_url: string | null } | null;
+  const prevArticle = prevArticleData as { id: string; title: string; image_url: string | null } | null;
   const nextArticleHref = nextArticle ? `${articlePath}${nextArticle.id}` : null;
+  const prevArticleHref = prevArticle ? `${articlePath}${prevArticle.id}` : null;
 
   const articleJsonLd = {
     "@context": "https://schema.org",
@@ -373,6 +385,57 @@ export default async function ArticleView(
           </div>
         )}
 
+        {/* Keep reading — the main way to move through the day's news
+            without going back to /news each time; image + real title, not
+            a bare link, so it's impossible to miss. */}
+        {(prevArticleHref || nextArticleHref) && (
+          <div className="mt-10 pt-8 border-t border-gray-100">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Keep Reading</h2>
+            <div className="grid sm:grid-cols-2 gap-4">
+              {prevArticle && prevArticleHref && (
+                <Link
+                  href={prevArticleHref}
+                  className="card p-4 hover:shadow-md transition-shadow flex items-center gap-3"
+                >
+                  <ArrowLeft className="w-5 h-5 text-brand-500 shrink-0" />
+                  {prevArticle.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={prevArticle.image_url} alt="" className="w-14 h-14 object-cover rounded-lg shrink-0" />
+                  ) : (
+                    <div className="w-14 h-14 bg-gray-100 rounded-lg shrink-0 flex items-center justify-center">
+                      <Newspaper className="w-5 h-5 text-gray-300" />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Previous</p>
+                    <p className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">{prevArticle.title}</p>
+                  </div>
+                </Link>
+              )}
+              {nextArticle && nextArticleHref && (
+                <Link
+                  href={nextArticleHref}
+                  className="card p-4 hover:shadow-md transition-shadow flex items-center gap-3 sm:text-right sm:flex-row-reverse"
+                >
+                  <ArrowRight className="w-5 h-5 text-brand-500 shrink-0" />
+                  {nextArticle.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={nextArticle.image_url} alt="" className="w-14 h-14 object-cover rounded-lg shrink-0" />
+                  ) : (
+                    <div className="w-14 h-14 bg-gray-100 rounded-lg shrink-0 flex items-center justify-center">
+                      <Newspaper className="w-5 h-5 text-gray-300" />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Next</p>
+                    <p className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">{nextArticle.title}</p>
+                  </div>
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-between mt-8">
           <Link
             href="/news"
@@ -380,14 +443,6 @@ export default async function ArticleView(
           >
             <ArrowLeft className="w-4 h-4" /> Back to all news
           </Link>
-          {nextArticleHref && (
-            <Link
-              href={nextArticleHref}
-              className="inline-flex items-center gap-2 text-brand-600 hover:text-brand-800 text-sm font-semibold"
-            >
-              Next Article <ArrowRight className="w-4 h-4" />
-            </Link>
-          )}
         </div>
       </div>
     </div>
