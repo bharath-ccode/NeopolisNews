@@ -41,6 +41,7 @@ export const DIGEST_SOURCES: DigestSource[] = [
   // City (Hyderabad)
   { name: "TOI Hyderabad",    url: "https://timesofindia.indiatimes.com/rssfeeds/2646863.cms",          level: "city" },
   { name: "Deccan Chronicle", url: "https://www.deccanchronicle.com/rss.xml",                           level: "city" },
+  { name: "Siasat",           url: "https://www.siasat.com/feed/",                                      level: "city" },
 ];
 
 export const DIGEST_LEVELS: DigestLevel[] = ["international", "national", "state", "city"];

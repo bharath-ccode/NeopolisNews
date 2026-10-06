@@ -18,7 +18,7 @@ import {
   Plus,
   X,
 } from "lucide-react";
-import { LEVEL_LABELS, DIGEST_LEVELS, type DigestLevel, type StoryLevel } from "@/lib/digestSources";
+import { LEVEL_LABELS, DIGEST_LEVELS, DIGEST_SOURCES, type DigestLevel, type StoryLevel } from "@/lib/digestSources";
 
 interface DigestArticle {
   id: string;
@@ -340,14 +340,15 @@ export default function AiDigestPage() {
         {DIGEST_LEVELS.map((level) => {
           const article = articles.find((a) => a.digest_level === level);
           const Icon = LEVEL_ICONS[level];
+          const sources = DIGEST_SOURCES.filter((s) => s.level === level);
           return (
             <div
               key={level}
-              className={`card p-3 flex items-center gap-2.5 border ${
+              className={`card p-3 flex items-start gap-2.5 border ${
                 article ? (article.status === "published" ? "border-green-200 bg-green-50" : "border-gray-200") : "border-dashed border-gray-200"
               }`}
             >
-              <Icon className={`w-4 h-4 shrink-0 ${article?.status === "published" ? "text-green-600" : "text-gray-400"}`} />
+              <Icon className={`w-4 h-4 shrink-0 mt-0.5 ${article?.status === "published" ? "text-green-600" : "text-gray-400"}`} />
               <div className="min-w-0">
                 <p className="text-xs font-semibold text-gray-700 truncate">{LEVEL_LABELS[level]}</p>
                 <p className={`text-xs ${
@@ -355,6 +356,9 @@ export default function AiDigestPage() {
                   article.status === "published" ? "text-green-600 font-medium" : "text-amber-600"
                 }`}>
                   {!article ? "Not generated" : article.status === "published" ? "Published" : "Draft"}
+                </p>
+                <p className="text-[11px] text-gray-400 mt-1 leading-snug" title={sources.map((s) => s.name).join(", ")}>
+                  {sources.map((s) => s.name).join(" · ")}
                 </p>
               </div>
             </div>
@@ -490,7 +494,7 @@ export default function AiDigestPage() {
 
       {/* Info box */}
       <div className="card p-4 border-dashed text-xs text-gray-400 leading-relaxed">
-        <strong className="text-gray-600">How it works:</strong> At 4 AM IST daily, the system fetches headlines from 8 RSS feeds across 4 levels and asks Claude to write one article per level. You review each, optionally give feedback to refine, then publish. Only the articles you approve go live.
+        <strong className="text-gray-600">How it works:</strong> At 4 AM IST daily, the system fetches headlines from {DIGEST_SOURCES.length} RSS feeds across 4 levels and asks Claude to write one article per level. You review each, optionally give feedback to refine, then publish. Only the articles you approve go live.
         <br />
         <strong className="text-gray-600 mt-2 block">SQL needed (one-time):</strong>
         <code className="text-gray-500 block mt-1 bg-gray-50 p-2 rounded">

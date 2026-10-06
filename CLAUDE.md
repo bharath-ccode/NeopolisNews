@@ -140,7 +140,7 @@ _All DB-backed features require their `supabase/migrations/*.sql` to have been r
 
 ### Completed — news & content
 - **Articles** — Supabase-backed CRUD with categories (construction / launches / infrastructure / community / **editorial**), draft/publish, admin editor (`ArticleForm`), public `/news` + `/news/[id]`
-- **AI news digests** — daily 4 AM Vercel cron generates international/national/state/city digests from fetched headlines (Anthropic `claude-sonnet-4-6`); admin review queue at `/admin/ai-digest` (regenerate-with-feedback, approve/publish)
+- **AI news digests** — daily 4 AM Vercel cron generates international/national/state/city digests from fetched headlines (Anthropic `claude-sonnet-4-6`); admin review queue at `/admin/ai-digest` (regenerate-with-feedback, approve/publish). RSS sources per level live in `lib/digestSources.ts`'s `DIGEST_SOURCES` (city/Hyderabad: TOI Hyderabad, Deccan Chronicle, Siasat); `/admin/ai-digest`'s status-overview cards list each level's source names so it's visible which feeds a level draws from before or after generating, not just in the source file.
 - **Editor's Desk** — compose articles from editor pointers + headlines (Anthropic); always filed under the **Editorial** category
 - **Telugu edition** — path-based `/news/te/[id]` (old `?lang=te` 308-redirects); Google Cloud Translation API v2, cached in `article_translations`; auto-translate at publish + lazy on first view; admin review/edit at `/admin/news/[id]/telugu`; self-hosted Noto Sans Telugu font; hreflang + sitemap entries
 - **Cover image generation** — in `ArticleForm`, generate a branded headline card (`next/og`) or an AI editorial illustration (Gemini native image generation), compare candidates and pick; stored in `news-media` bucket. The AI illustration is two-step like the cartoon generator: Claude first briefs a concrete scene from the full article body (not just title/excerpt), then Gemini illustrates that scene — avoids the generic abstract-shapes look a template prompt straight from the title produced
@@ -217,6 +217,12 @@ Three agentic (multi-step, tool-using) opportunities identified against the app'
 ---
 
 ## Known Gotchas
+
+### Fresh environment: `npm install` before `tsc`/`build`, and a TypeScript 6.0 tsconfig quirk
+
+A fresh checkout/container has no `node_modules` — `npx tsc --noEmit` fails with a wall of `Cannot find module 'react'`/`'next/server'`/etc. before it even reaches real type errors. Run `npm install` first.
+
+Separately, `tsconfig.json`'s `downlevelIteration: true` is deprecated as of TypeScript 6.0 (this repo's `npx tsc --version` may resolve to 6.x depending on what's cached) and **halts `tsc` entirely** with `TS5101` before checking any file — not a real code error. Fixed by adding `"ignoreDeprecations": "5.0"` alongside it (the compiler's own error message suggests `"6.0"`, but only `"5.0"` is actually accepted by the 6.0.2 compiler seen here — trial-and-error confirmed `"5.0"` works, `"6.0"` throws `TS5103: Invalid value for '--ignoreDeprecations'`). Both are already in `tsconfig.json`; if `tsc` ever throws `TS5101`/`TS5103` again, it means this combination stopped working on whatever TypeScript version is current — don't re-guess, check the installed `npx tsc --version` and re-derive the right value the same way.
 
 ### Next.js data cache causes stale Supabase data on server-rendered pages
 
