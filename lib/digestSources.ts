@@ -29,10 +29,12 @@ export const DIGEST_SOURCES: DigestSource[] = [
   // International
   { name: "BBC News",         url: "https://feeds.bbci.co.uk/news/rss.xml",                            level: "international" },
   { name: "Reuters Business", url: "https://feeds.reuters.com/reuters/businessNews",                    level: "international" },
+  { name: "Reuters",          url: "https://feeds.reuters.com/reuters/topNews",                         level: "international" },
 
   // National (India)
   { name: "Economic Times",   url: "https://economictimes.indiatimes.com/rssfeedsdefault.cms",          level: "national" },
   { name: "NDTV",             url: "https://feeds.feedburner.com/ndtvnews-top-stories",                 level: "national" },
+  { name: "Indian Express",   url: "https://indianexpress.com/feed/",                                   level: "national" },
 
   // State (Telangana)
   { name: "Telangana Today",  url: "https://telanganatoday.com/feed",                                   level: "state" },
