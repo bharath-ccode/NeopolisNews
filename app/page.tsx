@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import HomeNewsAndCartoon from "@/components/HomeNewsAndCartoon";
+import HomeFeaturedEvents from "@/components/HomeFeaturedEvents";
 import HomeTrafficWidget from "@/components/HomeTrafficWidget";
 import LeadForm from "@/components/LeadForm";
 import { createAdminClient } from "@/lib/supabase/server";
@@ -174,6 +175,9 @@ export default async function HomePage() {
 
       {/* ── Latest headlines + Daily Cartoon ── */}
       <HomeNewsAndCartoon />
+
+      {/* ── Featured events ── */}
+      <HomeFeaturedEvents />
 
       {/* ── Banner ── */}
       <section className="relative w-full overflow-hidden" style={{ height: "clamp(220px, 40vw, 560px)" }}>
