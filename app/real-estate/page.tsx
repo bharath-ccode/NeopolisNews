@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import LeadForm from "@/components/LeadForm";
+import BuyerInterestForm from "@/components/BuyerInterestForm";
 import { createAdminClient } from "@/lib/supabase/server";
 import ProjectFiltersGrid, { type ProjectListItem } from "./ProjectFiltersGrid";
 
@@ -47,23 +48,28 @@ export default async function RealEstatePage() {
       {/* ── Hero ── */}
       <section className="bg-gradient-to-br from-brand-900 to-brand-800 text-white py-14 md:py-20">
         <SectionWrapper tight>
-          <div className="max-w-3xl">
-            <span className="tag-blue mb-4">Real Estate Intelligence Hub</span>
-            <h1 className="text-3xl md:text-5xl font-extrabold mt-3 mb-4">
-              Every Project. Every Price.{" "}
-              <span className="text-brand-400">Live.</span>
-            </h1>
-            <p className="text-brand-200 text-lg mb-6">
-              Project pages, unit plans, and live availability status —
-              all for the Neopolis district.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <a href="#projects" className="btn-primary">
-                Browse Projects
-              </a>
-              <Link href="/advertise" className="btn-secondary border-brand-500 text-brand-300 hover:bg-brand-800">
-                List Your Project <ArrowRight className="w-4 h-4" />
-              </Link>
+          <div className="grid lg:grid-cols-[1.3fr_1fr] gap-10 items-start">
+            <div>
+              <span className="tag-blue mb-4">Real Estate Intelligence Hub</span>
+              <h1 className="text-3xl md:text-5xl font-extrabold mt-3 mb-4">
+                Every Project. Every Price.{" "}
+                <span className="text-brand-400">Live.</span>
+              </h1>
+              <p className="text-brand-200 text-lg mb-6">
+                Project pages, unit plans, and live availability status —
+                all for the Neopolis district.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <a href="#projects" className="btn-primary">
+                  Browse Projects
+                </a>
+                <Link href="/advertise" className="btn-secondary border-brand-500 text-brand-300 hover:bg-brand-800">
+                  List Your Project <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl p-6 shadow-xl">
+              <BuyerInterestForm />
             </div>
           </div>
         </SectionWrapper>

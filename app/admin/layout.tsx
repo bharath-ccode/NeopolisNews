@@ -27,6 +27,7 @@ import {
   Search,
   BarChart2,
   Rocket,
+  Users,
 } from "lucide-react";
 import clsx from "clsx";
 import { AdminAuthProvider, useAdminAuth } from "@/context/AdminAuthContext";
@@ -40,6 +41,7 @@ const NAV = [
   { href: "/admin/clubs",         icon: UserCheck,       label: "Clubs"         },
   { href: "/admin/builders",      icon: HardHat,         label: "Developers"    },
   { href: "/admin/projects",      icon: Layers,          label: "Projects"      },
+  { href: "/admin/buyer-interests", icon: Users,         label: "Buyer Interest" },
   { href: "/admin/businesses",    icon: Store,           label: "Businesses"    },
   { href: "/admin/business-discovery", icon: Search,     label: "Business Discovery" },
   { href: "/admin/events",        icon: CalendarDays,    label: "Events"        },
