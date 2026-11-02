@@ -99,6 +99,41 @@ function parseItems(xml: string, sourceName: string, max = 6): HeadlineItem[] {
   return items;
 }
 
+export function isLikelyUrl(s: string): boolean {
+  return /^https?:\/\/\S+$/i.test(s.trim());
+}
+
+export interface ArticleSource {
+  url: string;
+  pageTitle: string;
+  text: string;
+}
+
+/** Fetches a specific article someone pasted a link to (the cartoon
+ *  generator and Editor's Desk both let an admin ground generation on a
+ *  real article instead of a headline pool). Extraction is deliberately
+ *  crude — strip tags, no readability parsing — since Claude only needs
+ *  enough of the page to work from, not a clean read. */
+export async function fetchArticleSource(url: string): Promise<ArticleSource> {
+  const res = await fetch(url, {
+    headers: { "User-Agent": "NeopolisNews/1.0 RSS Reader" },
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const html = await res.text();
+
+  const titleMatch = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(html);
+  const pageTitle = titleMatch ? stripHtml(titleMatch[1]) : "";
+
+  const withoutScripts = html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ");
+  const text = stripHtml(withoutScripts).slice(0, 3000);
+
+  if (!text) throw new Error("No readable content found on that page");
+  return { url, pageTitle, text };
+}
+
 export async function fetchHeadlines(level: DigestLevel): Promise<HeadlineItem[]> {
   const sources = DIGEST_SOURCES.filter((s) => s.level === level);
   const results = await Promise.allSettled(

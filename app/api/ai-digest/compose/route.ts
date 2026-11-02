@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createAdminClient } from "@/lib/supabase/server";
-import { LEVEL_SCOPE, type HeadlineItem } from "@/lib/digestSources";
+import { LEVEL_SCOPE, isLikelyUrl, fetchArticleSource, type HeadlineItem } from "@/lib/digestSources";
 
 export const maxDuration = 60;
 
@@ -26,13 +26,37 @@ export async function POST(req: NextRequest) {
     .filter(Boolean);
 
   if (cleanHeadlines.length < 1 || cleanHeadlines.length > 3)
-    return NextResponse.json({ error: "Provide 1 to 3 headlines." }, { status: 400 });
+    return NextResponse.json({ error: "Provide 1 to 3 headlines or links." }, { status: 400 });
   if (!pointer?.trim())
     return NextResponse.json({ error: "The pointer (story direction) is required." }, { status: 400 });
   if (pointer.trim().length > 2000)
     return NextResponse.json({ error: "Pointer is too long (max 2000 characters)." }, { status: 400 });
 
-  const headlineText = cleanHeadlines.map((h, i) => `${i + 1}. ${h}`).join("\n");
+  // Each headline slot may be typed text, or a pasted link to a specific
+  // news item — fetched and stripped the same way the cartoon generator
+  // grounds on a pasted article, so the model works from the real story
+  // instead of just a one-line headline.
+  const linkWarnings: string[] = [];
+  const resolved = await Promise.all(
+    cleanHeadlines.map(async (h) => {
+      if (!isLikelyUrl(h)) return { kind: "headline" as const, text: h };
+      try {
+        const source = await fetchArticleSource(h);
+        return { kind: "link" as const, url: h, pageTitle: source.pageTitle || h, text: source.text };
+      } catch (err) {
+        linkWarnings.push(`Couldn't fetch ${h} (${String(err instanceof Error ? err.message : err)}) — using the link text as the headline instead.`);
+        return { kind: "headline" as const, text: h };
+      }
+    })
+  );
+
+  const headlineText = resolved
+    .map((item, i) =>
+      item.kind === "link"
+        ? `${i + 1}. [Fetched from link] ${item.pageTitle}\n${item.text}`
+        : `${i + 1}. ${item.text}`
+    )
+    .join("\n\n");
 
   const prompt = `You are a journalist for NeopolisNews, a hyperlocal news platform for the Neopolis urban district (Kokapet & Narsingi, Hyderabad) — read by residents, IT professionals, home buyers and local business owners.
 
@@ -47,15 +71,14 @@ EDITOR'S POINTER (this defines the story — follow it faithfully):
 Write one news story that:
 1. Develops the story exactly along the editor's pointer — the pointer decides the angle, what to emphasize, and what to leave out
 2. Uses the given headlines as the factual leads; do NOT invent specific facts, quotes, statistics or dates that are not implied by the brief — where detail is missing, write around it rather than fabricating
-3. Frames concrete impact for Neopolis/Kokapet residents and professionals where the topic allows
-4. Is factual, grounded and analytical — not sensational
-5. Reads like The Hindu or The Wire: thoughtful, people-focused
+3. Is factual, grounded and analytical — not sensational
+4. Reads like The Hindu or The Wire: thoughtful, people-focused
 
 Format your response as valid JSON ONLY (no markdown fences) with this exact structure:
 {
   "title": "Compelling headline under 80 characters",
   "excerpt": "2-sentence summary under 220 characters",
-  "content": "Full article body in HTML. Use <p> for paragraphs, <h2> for section headers, <ul><li> for lists. Minimum 300 words. End with a 'What This Means for You' section when relevant.",
+  "content": "Full article body in HTML. Use <p> for paragraphs, <h2> for section headers, <ul><li> for lists. Minimum 300 words. If relevant, end with a short 'What This Means for You' section — 2 to 3 sentences, ONE concrete and specific takeaway for a Neopolis/Kokapet resident or professional. Do not restate the article or pad it with generic advice; omit the section entirely if there's no real local angle.",
   "readTime": "X min read"
 }`;
 
@@ -74,10 +97,15 @@ Format your response as valid JSON ONLY (no markdown fences) with this exact str
   }
 
   // Store the brief in the same shape the regenerate route expects, so
-  // feedback-driven rewrites keep the pointer and headlines as context.
+  // feedback-driven rewrites keep the pointer, headlines and any fetched
+  // link content as context.
   const digestHeadlines: HeadlineItem[] = [
     { source: "Editor's pointer", title: pointer.trim(), description: "" },
-    ...cleanHeadlines.map((h) => ({ source: "Editor headline", title: h, description: "" })),
+    ...resolved.map((item) =>
+      item.kind === "link"
+        ? { source: "Editor link", title: item.pageTitle, description: item.text.slice(0, 1500) }
+        : { source: "Editor headline", title: item.text, description: "" }
+    ),
   ];
 
   const todayIST = getTodayIST();
@@ -106,7 +134,7 @@ Format your response as valid JSON ONLY (no markdown fences) with this exact str
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ articleId: inserted.id }, { status: 201 });
+  return NextResponse.json({ articleId: inserted.id, linkWarnings }, { status: 201 });
 }
 
 function getTodayIST(): string {

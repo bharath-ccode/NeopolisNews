@@ -54,7 +54,7 @@ Format your response as valid JSON ONLY (no markdown fences) with this exact str
 {
   "title": "Compelling headline under 80 characters for the ${tag} digest",
   "excerpt": "2-sentence summary under 220 characters explaining impact on Hyderabad professionals",
-  "content": "Full article body in HTML. Use <p> for paragraphs, <h2> for section headers, <ul><li> for lists. Minimum 350 words. End with a 'What This Means for You' section.",
+  "content": "Full article body in HTML. Use <p> for paragraphs, <h2> for section headers, <ul><li> for lists. Minimum 350 words. End with a short 'What This Means for You' section — 2 to 3 sentences, ONE concrete and specific takeaway for Hyderabad IT/business professionals. Do not restate the article or pad it with generic advice.",
   "readTime": "X min read"
 }`;
 

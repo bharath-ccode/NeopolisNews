@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { fetchHeadlines, stripHtml } from "@/lib/digestSources";
+import { fetchHeadlines, fetchArticleSource, type ArticleSource } from "@/lib/digestSources";
 import { uploadBufferToNewsMedia } from "@/lib/serverStorage";
 import { generateAiImage } from "@/lib/generateAiImage";
 import { watermarkCartoon } from "@/lib/watermarkCartoon";
@@ -15,36 +15,6 @@ interface GeneratedCartoon {
   title: string;
   caption: string;
   scene: string;
-}
-
-interface ArticleSource {
-  url: string;
-  pageTitle: string;
-  text: string;
-}
-
-/** Fetches a specific article the admin pasted a link to. Extraction is
- *  deliberately crude (strip tags, no readability parsing) — same
- *  no-dependency approach as the RSS parsing in this file — since Claude
- *  only needs enough of the page to ground the cartoon, not a clean read. */
-async function fetchArticleSource(url: string): Promise<ArticleSource> {
-  const res = await fetch(url, {
-    headers: { "User-Agent": "NeopolisNews/1.0 RSS Reader" },
-    signal: AbortSignal.timeout(8000),
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const html = await res.text();
-
-  const titleMatch = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(html);
-  const pageTitle = titleMatch ? stripHtml(titleMatch[1]) : "";
-
-  const withoutScripts = html
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style[\s\S]*?<\/style>/gi, " ");
-  const text = stripHtml(withoutScripts).slice(0, 3000);
-
-  if (!text) throw new Error("No readable content found on that page");
-  return { url, pageTitle, text };
 }
 
 function buildTextPrompt(opts: { headlineText?: string; source?: ArticleSource; notes?: string }): string {

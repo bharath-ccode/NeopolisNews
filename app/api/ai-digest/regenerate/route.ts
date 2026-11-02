@@ -70,7 +70,7 @@ Format your response as valid JSON ONLY (no markdown fences):
 {
   "title": "Revised headline under 80 characters for ${tag} digest",
   "excerpt": "Revised 2-sentence summary under 220 characters",
-  "content": "Revised full HTML article with <p>, <h2>, <ul><li> tags. Minimum 350 words.",
+  "content": "Revised full HTML article with <p>, <h2>, <ul><li> tags. Minimum 350 words. If it ends with a 'What This Means for You' section, keep it SHORT — 2 to 3 sentences, ONE concrete and specific takeaway, not a restatement of the article or generic padding.",
   "readTime": "X min read"
 }`;
 

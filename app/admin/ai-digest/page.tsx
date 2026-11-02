@@ -74,6 +74,7 @@ export default function AiDigestPage() {
   const [composePointer, setComposePointer] = useState("");
   const [composing, setComposing] = useState(false);
   const [composeError, setComposeError] = useState("");
+  const [composeWarnings, setComposeWarnings] = useState<string[]>([]);
 
   const fetchArticles = useCallback(async (d: string) => {
     setLoading(true);
@@ -169,6 +170,7 @@ export default function AiDigestPage() {
     e.preventDefault();
     setComposing(true);
     setComposeError("");
+    setComposeWarnings([]);
     try {
       const res = await fetch("/api/ai-digest/compose", {
         method: "POST",
@@ -180,6 +182,7 @@ export default function AiDigestPage() {
       });
       const data = await res.json();
       if (!res.ok) { setComposeError(data.error ?? "Failed to compose."); return; }
+      if (data.linkWarnings?.length) setComposeWarnings(data.linkWarnings);
       setComposeHeadlines(["", ""]);
       setComposePointer("");
       setShowCompose(false);
@@ -243,8 +246,8 @@ export default function AiDigestPage() {
               <PenLine className="w-4 h-4 text-amber-600" /> Editor&apos;s Desk
             </h3>
             <p className="text-xs text-gray-500 mt-0.5">
-              You give the headlines and the angle — the AI only writes. Drafts land in
-              today&apos;s review queue below.
+              You give the headlines (or paste links to specific news items) and the angle —
+              the AI only writes. Drafts land in today&apos;s review queue below.
             </p>
           </div>
           <button
@@ -255,11 +258,17 @@ export default function AiDigestPage() {
           </button>
         </div>
 
+        {composeWarnings.length > 0 && (
+          <div className="mt-3 text-xs text-amber-800 bg-amber-100 border border-amber-200 rounded-xl px-4 py-2.5 space-y-1">
+            {composeWarnings.map((w, i) => <p key={i}>⚠️ {w}</p>)}
+          </div>
+        )}
+
         {showCompose && (
           <form onSubmit={handleCompose} className="mt-4 space-y-3">
             <div className="space-y-2">
               <label className="block text-xs font-semibold text-gray-600">
-                Headlines / leads (1–3) *
+                Headlines / leads, or links to specific news items (1–3) *
               </label>
               {composeHeadlines.map((h, i) => (
                 <div key={i} className="flex items-center gap-2">
@@ -270,7 +279,7 @@ export default function AiDigestPage() {
                       setComposeHeadlines((prev) => prev.map((v, j) => (j === i ? e.target.value : v)))
                     }
                     maxLength={200}
-                    placeholder={`Headline ${i + 1} — e.g. "GHMC approves new link road from Kokapet to ORR exit 17"`}
+                    placeholder={`Headline or link ${i + 1} — e.g. "GHMC approves new link road from Kokapet to ORR exit 17" or https://...`}
                     className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
                   />
                   {composeHeadlines.length > 1 && (
