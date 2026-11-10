@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Search, Loader2, Users, Phone, Mail } from "lucide-react";
+import { Search, Loader2, Users, Phone, Mail, AlertCircle } from "lucide-react";
 
 const TIER_LABELS: Record<string, string> = {
   affordable: "Affordable",
@@ -29,14 +29,27 @@ function formatDate(d: string) {
 export default function AdminBuyerInterestsPage() {
   const [rows, setRows] = useState<BuyerInterest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/api/admin/buyer-interests");
-    const data = await res.json().catch(() => []);
-    setRows(Array.isArray(data) ? data : []);
-    setLoading(false);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/buyer-interests");
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setError((data as { error?: string })?.error ?? `Failed to load (${res.status}).`);
+        setRows([]);
+        return;
+      }
+      setRows(Array.isArray(data) ? data : []);
+    } catch {
+      setError("Network error — couldn't reach the server.");
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
@@ -77,11 +90,18 @@ export default function AdminBuyerInterestsPage() {
         </div>
       </div>
 
+      {error && (
+        <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+          <AlertCircle className="w-4 h-4 shrink-0" /> {error}
+          {/401|admin sign-in|expired/i.test(error) && " — try logging out and back in to /admin."}
+        </div>
+      )}
+
       {loading ? (
         <div className="flex justify-center py-16">
           <Loader2 className="w-6 h-6 animate-spin text-brand-500" />
         </div>
-      ) : filtered.length === 0 ? (
+      ) : error ? null : filtered.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <Users className="w-8 h-8 mx-auto mb-2 opacity-30" />
           <p className="text-sm font-medium text-gray-500">No buyer interest submissions yet</p>
