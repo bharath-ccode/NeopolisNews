@@ -481,3 +481,59 @@ export async function deleteProject(id: string): Promise<void> {
   const { error } = await sb.from("projects").delete().eq("id", id);
   if (error) throw error;
 }
+
+// ─── Price sheet history ──────────────────────────────────────────────────
+// Each entry is a snapshot — never overwritten — so the project's price
+// trajectory survives across phases for later trend analysis.
+
+export interface PriceSnapshot {
+  id?: string;
+  projectId: string;
+  basePricePerSft: number;
+  lifecycleStatus: LifecycleStatus | null;
+  charges: Record<string, string>;
+  priceSheetUrl: string | null;
+  source: "manual" | "price_sheet_import";
+  recordedAt: string; // "YYYY-MM-DD"
+}
+
+export async function getProjectPriceHistory(projectId: string): Promise<PriceSnapshot[]> {
+  const sb = createClient();
+  const { data, error } = await sb
+    .from("project_price_history")
+    .select("id, project_id, base_price_per_sft, lifecycle_status, charges, price_sheet_url, source, recorded_at")
+    .eq("project_id", projectId)
+    .order("recorded_at", { ascending: false });
+  if (error) throw error;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data ?? []).map((r: any) => ({
+    id: r.id,
+    projectId: r.project_id,
+    basePricePerSft: r.base_price_per_sft,
+    lifecycleStatus: r.lifecycle_status,
+    charges: r.charges ?? {},
+    priceSheetUrl: r.price_sheet_url,
+    source: r.source,
+    recordedAt: r.recorded_at,
+  }));
+}
+
+export async function addPriceSnapshot(input: Omit<PriceSnapshot, "id">): Promise<void> {
+  const sb = createClient();
+  const { error } = await sb.from("project_price_history").insert({
+    project_id:         input.projectId,
+    base_price_per_sft: input.basePricePerSft,
+    lifecycle_status:   input.lifecycleStatus,
+    charges:            input.charges,
+    price_sheet_url:    input.priceSheetUrl,
+    source:              input.source,
+    recorded_at:         input.recordedAt,
+  });
+  if (error) throw error;
+}
+
+export async function deletePriceSnapshot(id: string): Promise<void> {
+  const sb = createClient();
+  const { error } = await sb.from("project_price_history").delete().eq("id", id);
+  if (error) throw error;
+}

@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import {
   Save, Loader2, PlusCircle, Trash2, ChevronDown, ChevronUp,
-  Building2, Phone, Globe, Users, Layers, LayoutList, ExternalLink, Sparkles, MapPinned,
+  Building2, Phone, Globe, Users, Layers, LayoutList, ExternalLink, Sparkles, MapPinned, IndianRupee,
 } from "lucide-react";
 import ImageUpload from "@/components/admin/ImageUpload";
 import BrochureImporter, { type ImportedProjectData } from "@/components/admin/BrochureImporter";
+import PriceSheetImporter, { type ImportedPriceSheet } from "@/components/admin/PriceSheetImporter";
 
 // pdfjs-dist touches browser-only globals — never let it load during SSR.
 const BrochurePagePicker = dynamic(() => import("@/components/admin/BrochurePagePicker"), { ssr: false });
@@ -16,6 +17,7 @@ import { getBuilders, type Builder } from "@/lib/buildersStore";
 import { AMENITY_CATEGORIES } from "@/lib/amenitiesData";
 import {
   createProject, updateProject,
+  getProjectPriceHistory, addPriceSnapshot, deletePriceSnapshot, type PriceSnapshot,
   type Project, type ProjectInput, type ProjectType, type ProjectTier, type LifecycleStatus, type Locality,
   LIFECYCLE_STAGES, LOCALITIES,
   type UnitFacing, type UnitPlan, type ContactPhone, type Tower, type TowerFloorPlan,
@@ -41,7 +43,7 @@ const FACING_OPTIONS: UnitFacing[] = [
   "North-East", "North-West", "South-East", "South-West",
 ];
 
-type Tab = "info" | "contacts" | "towers" | "unit_plans" | "amenities";
+type Tab = "info" | "contacts" | "towers" | "unit_plans" | "amenities" | "price_sheet";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -77,6 +79,18 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
   const [tier, setTier]                 = useState<ProjectTier | "">(initialData?.tier ?? "");
   const [locality, setLocality]         = useState<Locality | "">(initialData?.locality ?? "");
   const [lifecycleStatus, setLifecycleStatus] = useState<LifecycleStatus | "">(initialData?.lifecycleStatus ?? "");
+
+  // Price sheet history — snapshots, never overwritten; requires a saved project.
+  const [priceHistory, setPriceHistory]       = useState<PriceSnapshot[]>([]);
+  const [loadingHistory, setLoadingHistory]   = useState(false);
+  const [snapshotPrice, setSnapshotPrice]     = useState("");
+  const [snapshotDate, setSnapshotDate]       = useState(() => new Date().toISOString().slice(0, 10));
+  const [snapshotStage, setSnapshotStage]     = useState<LifecycleStatus | "">("");
+  const [snapshotCharges, setSnapshotCharges] = useState<[string, string][]>([]);
+  const [snapshotUrl, setSnapshotUrl]         = useState<string | null>(null);
+  const [savingSnapshot, setSavingSnapshot]   = useState(false);
+  const [snapshotError, setSnapshotError]     = useState<string | null>(null);
+  const [confirmDeleteSnapshot, setConfirmDeleteSnapshot] = useState<string | null>(null);
   const [expectedCompletionDate, setExpectedCompletionDate] = useState(initialData?.expectedCompletionDate ?? "");
   const [maxFloors, setMaxFloors]       = useState(initialData?.projectDetail?.maxFloors?.toString() ?? "");
   const [amenitiesSqft, setAmenitiesSqft] = useState(initialData?.projectDetail?.amenitiesSqft?.toString() ?? "");
@@ -120,6 +134,66 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
   }, [lockedBuilderId]);
 
   const isEdit = !!initialData;
+
+  const refreshPriceHistory = useCallback(() => {
+    if (!initialData?.id) return;
+    setLoadingHistory(true);
+    getProjectPriceHistory(initialData.id)
+      .then(setPriceHistory)
+      .catch(() => {})
+      .finally(() => setLoadingHistory(false));
+  }, [initialData?.id]);
+
+  useEffect(() => { refreshPriceHistory(); }, [refreshPriceHistory]);
+
+  function handlePriceSheetImport(data: ImportedPriceSheet) {
+    setSnapshotPrice(String(data.basePricePerSft));
+    setSnapshotCharges(Object.entries(data.charges));
+    setSnapshotUrl(data.priceSheetUrl);
+    setSnapshotDate(new Date().toISOString().slice(0, 10));
+  }
+
+  async function saveSnapshot() {
+    if (!initialData?.id) return;
+    const price = Number(snapshotPrice);
+    if (!price || price <= 0) { setSnapshotError("Enter a valid base price per sft."); return; }
+    setSavingSnapshot(true);
+    setSnapshotError(null);
+    try {
+      const charges: Record<string, string> = {};
+      for (const [k, v] of snapshotCharges) {
+        if (k.trim()) charges[k.trim()] = v.trim();
+      }
+      await addPriceSnapshot({
+        projectId: initialData.id,
+        basePricePerSft: price,
+        lifecycleStatus: (snapshotStage || lifecycleStatus || null) as LifecycleStatus | null,
+        charges,
+        priceSheetUrl: snapshotUrl,
+        source: snapshotUrl ? "price_sheet_import" : "manual",
+        recordedAt: snapshotDate,
+      });
+      setSnapshotPrice("");
+      setSnapshotCharges([]);
+      setSnapshotUrl(null);
+      setSnapshotStage("");
+      setSnapshotDate(new Date().toISOString().slice(0, 10));
+      refreshPriceHistory();
+    } catch (err) {
+      setSnapshotError(err instanceof Error ? err.message : "Failed to save snapshot.");
+    } finally {
+      setSavingSnapshot(false);
+    }
+  }
+
+  async function removeSnapshot(id: string) {
+    if (confirmDeleteSnapshot !== id) { setConfirmDeleteSnapshot(id); return; }
+    setConfirmDeleteSnapshot(null);
+    try {
+      await deletePriceSnapshot(id);
+      refreshPriceHistory();
+    } catch { /* best-effort — list stays as-is on failure */ }
+  }
 
   // ── Brochure import handler ──
   function handleImport(data: ImportedProjectData, pdfUrl: string) {
@@ -295,6 +369,7 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
     { key: "towers",     label: "Towers",          icon: Layers     },
     { key: "unit_plans", label: "Unit Plans",      icon: LayoutList, badge: unitPlans.length },
     { key: "amenities",  label: "Amenities",       icon: Sparkles,   badge: amenities.length },
+    { key: "price_sheet", label: "Price Sheet",    icon: IndianRupee, badge: priceHistory.length },
   ];
 
   return (
@@ -815,6 +890,149 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {tab === "price_sheet" && (
+        <div className="space-y-6">
+          {!initialData?.id ? (
+            <p className="text-sm text-gray-500 bg-gray-50 border border-gray-100 rounded-xl p-4">
+              Save the project first — price sheet history is tracked per saved project, and comes back
+              whenever you reopen it to edit.
+            </p>
+          ) : (
+            <>
+              <p className="text-xs text-gray-400">
+                Every save below adds a new snapshot — nothing is overwritten, so the price trajectory
+                for this project builds up over time as the developer reissues the sheet.
+              </p>
+
+              <PriceSheetImporter onImport={handlePriceSheetImport} />
+
+              <div className="card p-5 space-y-4">
+                <h3 className="font-bold text-gray-900 text-sm">Add Price Snapshot</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="label">Base Price (₹/sft) <span className="text-red-500">*</span></label>
+                    <input className="input" type="number" min={0} value={snapshotPrice}
+                      onChange={(e) => setSnapshotPrice(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="label">Effective Date</label>
+                    <input className="input" type="date" value={snapshotDate}
+                      onChange={(e) => setSnapshotDate(e.target.value)} />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="label">Project Stage at This Price</label>
+                  <select className="input" value={snapshotStage}
+                    onChange={(e) => setSnapshotStage(e.target.value as LifecycleStatus | "")}>
+                    <option value="">
+                      {lifecycleStatus ? `— use current stage (${LIFECYCLE_STAGES.find(s => s.id === lifecycleStatus)?.label}) —` : "— select stage —"}
+                    </option>
+                    {LIFECYCLE_STAGES.map((s) => (
+                      <option key={s.id} value={s.id}>{s.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="label !mb-0">Other Charges</label>
+                    <button type="button" onClick={() => setSnapshotCharges((c) => [...c, ["", ""]])}
+                      className="flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-800">
+                      <PlusCircle className="w-3.5 h-3.5" /> Add charge
+                    </button>
+                  </div>
+                  {snapshotCharges.length === 0 && (
+                    <p className="text-xs text-gray-400">e.g. floor rise, facing premium, club membership, car parking…</p>
+                  )}
+                  <div className="space-y-2">
+                    {snapshotCharges.map(([k, v], i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <input className="input flex-1" placeholder="Label — e.g. Floor Rise Charges" value={k}
+                          onChange={(e) => setSnapshotCharges((c) => c.map((row, j) => j === i ? [e.target.value, row[1]] : row))} />
+                        <input className="input flex-1" placeholder="Value — e.g. ₹20/sft from 3rd floor" value={v}
+                          onChange={(e) => setSnapshotCharges((c) => c.map((row, j) => j === i ? [row[0], e.target.value] : row))} />
+                        <button type="button" onClick={() => setSnapshotCharges((c) => c.filter((_, j) => j !== i))}
+                          className="text-gray-300 hover:text-red-500 transition-colors shrink-0">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {snapshotUrl && (
+                  <p className="text-xs text-gray-400">
+                    Source: <a href={snapshotUrl} target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline">price sheet PDF</a>
+                  </p>
+                )}
+
+                {snapshotError && <p className="text-xs text-red-600">{snapshotError}</p>}
+
+                <button type="button" onClick={saveSnapshot} disabled={savingSnapshot || !snapshotPrice}
+                  className="flex items-center gap-2 btn-primary text-sm disabled:opacity-60">
+                  {savingSnapshot ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  {savingSnapshot ? "Saving…" : "Save Snapshot"}
+                </button>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-gray-900 text-sm mb-3">History</h3>
+                {loadingHistory ? (
+                  <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-brand-500" /></div>
+                ) : priceHistory.length === 0 ? (
+                  <p className="text-sm text-gray-400">No price snapshots yet.</p>
+                ) : (
+                  <div className="card overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-100 text-left text-xs text-gray-400 uppercase tracking-wide">
+                          <th className="px-4 py-2.5 font-semibold">Date</th>
+                          <th className="px-4 py-2.5 font-semibold">Base ₹/sft</th>
+                          <th className="px-4 py-2.5 font-semibold">Stage</th>
+                          <th className="px-4 py-2.5 font-semibold">Charges</th>
+                          <th className="px-4 py-2.5 font-semibold">Source</th>
+                          <th className="px-4 py-2.5"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {priceHistory.map((h) => (
+                          <tr key={h.id} className="hover:bg-gray-50/50">
+                            <td className="px-4 py-2.5 text-gray-700 whitespace-nowrap">{h.recordedAt}</td>
+                            <td className="px-4 py-2.5 text-gray-900 font-semibold whitespace-nowrap">₹{h.basePricePerSft.toLocaleString("en-IN")}</td>
+                            <td className="px-4 py-2.5 text-gray-500">
+                              {LIFECYCLE_STAGES.find((s) => s.id === h.lifecycleStatus)?.label ?? <span className="text-gray-300">—</span>}
+                            </td>
+                            <td className="px-4 py-2.5 text-gray-500">
+                              {Object.keys(h.charges).length > 0
+                                ? <span title={Object.entries(h.charges).map(([k, v]) => `${k}: ${v}`).join("\n")}>{Object.keys(h.charges).length} item{Object.keys(h.charges).length === 1 ? "" : "s"}</span>
+                                : <span className="text-gray-300">—</span>}
+                            </td>
+                            <td className="px-4 py-2.5">
+                              {h.priceSheetUrl ? (
+                                <a href={h.priceSheetUrl} target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline text-xs">PDF</a>
+                              ) : (
+                                <span className="text-xs text-gray-400">{h.source === "manual" ? "Manual" : "Import"}</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-2.5 text-right">
+                              <button type="button" onClick={() => removeSnapshot(h.id!)}
+                                className={`text-xs font-semibold transition-colors ${confirmDeleteSnapshot === h.id ? "text-red-600" : "text-gray-300 hover:text-red-500"}`}>
+                                {confirmDeleteSnapshot === h.id ? "Confirm?" : <Trash2 className="w-4 h-4" />}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
 
