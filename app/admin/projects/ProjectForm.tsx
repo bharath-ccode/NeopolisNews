@@ -9,10 +9,9 @@ import {
 } from "lucide-react";
 import ImageUpload from "@/components/admin/ImageUpload";
 import BrochureImporter, { type ImportedProjectData } from "@/components/admin/BrochureImporter";
-import type { PlanCrop } from "@/components/admin/ProjectPlanPicker";
 
 // pdfjs-dist touches browser-only globals — never let it load during SSR.
-const ProjectPlanPicker = dynamic(() => import("@/components/admin/ProjectPlanPicker"), { ssr: false });
+const BrochurePagePicker = dynamic(() => import("@/components/admin/BrochurePagePicker"), { ssr: false });
 import { getBuilders, type Builder } from "@/lib/buildersStore";
 import { AMENITY_CATEGORIES } from "@/lib/amenitiesData";
 import {
@@ -71,7 +70,9 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
   const [bannerImageUrl, setBannerImageUrl] = useState<string | null>(initialData?.bannerImageUrl ?? null);
   const [projectPlanUrl, setProjectPlanUrl] = useState(initialData?.projectPlanUrl ?? "");
   const [brochureUrl, setBrochureUrl]       = useState(initialData?.brochureUrl ?? "");
-  const [planPick, setPlanPick] = useState<{ page: number; crop: PlanCrop } | null>(null);
+  const [planPick, setPlanPick]     = useState<number | null>(null);
+  const [logoPick, setLogoPick]     = useState<number | null>(null);
+  const [bannerPick, setBannerPick] = useState<number | null>(null);
   const [projectType, setProjectType]   = useState<ProjectType | "">(initialData?.projectType ?? "");
   const [tier, setTier]                 = useState<ProjectTier | "">(initialData?.tier ?? "");
   const [locality, setLocality]         = useState<Locality | "">(initialData?.locality ?? "");
@@ -123,7 +124,9 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
   // ── Brochure import handler ──
   function handleImport(data: ImportedProjectData, pdfUrl: string) {
     if (pdfUrl) setBrochureUrl(pdfUrl);
-    setPlanPick(data.projectPlan ? { page: data.projectPlan.pageNumber, crop: data.projectPlan.crop } : null);
+    setPlanPick(data.projectPlanPage ?? null);
+    setLogoPick(data.logoPage ?? null);
+    setBannerPick(data.bannerPage ?? null);
     if (data.projectName)        setProjectName(data.projectName);
     if (data.projectType)        setProjectType(data.projectType as ProjectType);
     if (data.tier)               setTier(data.tier as ProjectTier);
@@ -328,12 +331,48 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
           <div>
             <label className="label">Project Logo</label>
             <ImageUpload value={projectLogoUrl} onChange={setProjectLogoUrl} folder="projects/logos" label="Upload Logo" />
+            {brochureUrl && !logoPick && (
+              <button type="button" onClick={() => setLogoPick(1)}
+                className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 hover:text-brand-800">
+                <MapPinned className="w-3.5 h-3.5" /> Pick from brochure instead
+              </button>
+            )}
+            {logoPick && brochureUrl && (
+              <div className="mt-3">
+                <BrochurePagePicker
+                  brochureUrl={brochureUrl}
+                  initialPage={logoPick}
+                  folder="projects/logos"
+                  label="logo"
+                  onConfirm={(url) => { setProjectLogoUrl(url); setLogoPick(null); }}
+                  onSkip={() => setLogoPick(null)}
+                />
+              </div>
+            )}
           </div>
 
           <div>
             <label className="label">Banner Picture</label>
             <p className="text-xs text-gray-400 mb-2">Full-width hero image shown at the top of the project page — use a high-quality render or photo of the completed project.</p>
             <ImageUpload value={bannerImageUrl} onChange={setBannerImageUrl} folder="projects/banners" label="Upload Banner" />
+            {brochureUrl && !bannerPick && (
+              <button type="button" onClick={() => setBannerPick(1)}
+                className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 hover:text-brand-800">
+                <MapPinned className="w-3.5 h-3.5" /> Pick from brochure instead
+              </button>
+            )}
+            {bannerPick && brochureUrl && (
+              <div className="mt-3">
+                <BrochurePagePicker
+                  brochureUrl={brochureUrl}
+                  initialPage={bannerPick}
+                  folder="projects/banners"
+                  label="banner picture"
+                  onConfirm={(url) => { setBannerImageUrl(url); setBannerPick(null); }}
+                  onSkip={() => setBannerPick(null)}
+                />
+              </div>
+            )}
           </div>
 
           <div>
@@ -360,17 +399,18 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
             </div>
             <p className="text-xs text-gray-400 mt-1">Link to the overall project layout diagram shown on the public project page.</p>
             {brochureUrl && !planPick && (
-              <button type="button" onClick={() => setPlanPick({ page: 1, crop: "full" })}
+              <button type="button" onClick={() => setPlanPick(1)}
                 className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 hover:text-brand-800">
                 <MapPinned className="w-3.5 h-3.5" /> Pick page from brochure instead of pasting a link
               </button>
             )}
             {planPick && brochureUrl && (
               <div className="mt-3">
-                <ProjectPlanPicker
+                <BrochurePagePicker
                   brochureUrl={brochureUrl}
-                  initialPage={planPick.page}
-                  initialCrop={planPick.crop}
+                  initialPage={planPick}
+                  folder="projects/plans"
+                  label="master plan"
                   onConfirm={(url) => { setProjectPlanUrl(url); setPlanPick(null); }}
                   onSkip={() => setPlanPick(null)}
                 />

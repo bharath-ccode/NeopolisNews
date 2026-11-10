@@ -31,7 +31,9 @@ export interface ImportedProjectData {
     homeOffice?: boolean;
   }[];
   amenities?: string[];
-  projectPlan?: { pageNumber: number; crop: "full" | "left_half" | "right_half" | "top_half" | "bottom_half" };
+  projectPlanPage?: number;
+  logoPage?: number;
+  bannerPage?: number;
 }
 
 interface Props {

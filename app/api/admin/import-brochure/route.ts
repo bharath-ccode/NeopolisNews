@@ -73,14 +73,15 @@ Extract these fields (omit any field you cannot confidently identify):
     }
   ],
   "amenities": string[],
-  "projectPlan": {
-    "pageNumber": number,
-    "crop": "full" | "left_half" | "right_half" | "top_half" | "bottom_half"
-  }
+  "projectPlanPage": number,
+  "logoPage": number,
+  "bannerPage": number
 }
 
 Rules:
-- projectPlan: find the page showing the overall master/site plan — a top-down layout of the project showing tower/block positions, roads, and landscaping, usually labeled "Master Plan" or "Site Plan" and marked with a compass/north arrow. If that diagram shares the page with unrelated content (e.g. an amenities list or text panel occupying the other half), set "crop" to whichever half contains the diagram; otherwise "full". Omit this field entirely if no such page exists.
+- projectPlanPage: the page number showing the overall master/site plan — a top-down layout of the project showing tower/block positions, roads, and landscaping, usually labeled "Master Plan" or "Site Plan" and marked with a compass/north arrow. Omit if no such page exists. The admin crops the exact region themselves afterward, so just name the page.
+- logoPage: the page number with the clearest standalone developer/project logo — usually the cover page or an early branding page. Omit if none stands out. The admin crops the exact region themselves afterward, so just name the page.
+- bannerPage: the page with the best full-width hero render/photo of the completed building (an exterior elevation shot, not a floor plan or a logo page) — usually near the start of the brochure. Omit if none stands out. The admin crops the exact region themselves afterward, so just name the page.
 - priceRangeMin / priceRangeMax: price PER SQUARE FOOT in INR (e.g. ₹12,000/sft → 12000). If only one price is shown, use it for both.
 - phone: E.164 format — e.g. "+918399939999". Strip spaces and dashes.
 - lifecycleStatus: infer from context ("Under Construction" → under_construction, "Ready to Move" → ready_to_move, "Pre Launch" → pre_launch).
@@ -178,21 +179,20 @@ export async function POST(req: NextRequest) {
     data.amenities = [];
   }
 
-  // Validate projectPlan rather than trust it blindly — the client renders
-  // whatever page number this names, so a malformed value should just drop
-  // the auto-pick (falls back to the existing manual-paste field) instead
-  // of the client rendering garbage.
-  const CROPS = ["full", "left_half", "right_half", "top_half", "bottom_half"];
-  const plan = data.projectPlan as { pageNumber?: unknown; crop?: unknown } | undefined;
-  const pageNumber = Number(plan?.pageNumber);
-  if (plan && Number.isInteger(pageNumber) && pageNumber >= 1) {
-    data.projectPlan = {
-      pageNumber,
-      crop: CROPS.includes(plan.crop as string) ? plan.crop : "full",
-    };
-  } else {
-    delete data.projectPlan;
-  }
+  // Validate the page-number fields rather than trust them blindly — the
+  // client renders whatever page number these name, so a malformed value
+  // should just drop the auto-pick (falls back to manual upload/paste)
+  // instead of the client rendering garbage.
+  const toPage = (v: unknown): number | undefined => {
+    const n = Number(v);
+    return Number.isInteger(n) && n >= 1 ? n : undefined;
+  };
+  const projectPlanPage = toPage(data.projectPlanPage);
+  const logoPage = toPage(data.logoPage);
+  const bannerPage = toPage(data.bannerPage);
+  if (projectPlanPage) data.projectPlanPage = projectPlanPage; else delete data.projectPlanPage;
+  if (logoPage) data.logoPage = logoPage; else delete data.logoPage;
+  if (bannerPage) data.bannerPage = bannerPage; else delete data.bannerPage;
 
   // brochureUrl = where the PDF actually lives now (our storage when possible)
   return NextResponse.json({ ...data, brochureUrl });
