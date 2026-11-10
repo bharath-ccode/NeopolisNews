@@ -246,10 +246,17 @@ export default async function HomePage() {
             <div className="bg-black/25 backdrop-blur rounded-2xl border border-white/10 p-6">
               <LeadForm
                 title="Get Free Expert Advice"
-                subtitle="Buy, rent, or invest in Neopolis — our advisors will guide you."
+                subtitle="Real estate, local businesses, events, and everything else on Neopolis — our team will point you in the right direction."
                 purpose="homepage-hero"
                 dark
               />
+              <Link
+                href="/real-estate"
+                className="mt-4 flex items-center justify-between gap-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-sm text-brand-100 transition-colors"
+              >
+                <span>Looking to buy a home? Tell us exactly what you want.</span>
+                <ArrowRight className="w-4 h-4 shrink-0" />
+              </Link>
             </div>
           </div>
         </div>
