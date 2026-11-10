@@ -10,6 +10,14 @@ export interface GeneratedImage {
   mimeType: string;
 }
 
+// 503 ("model overloaded") and 429 (rate limit) are transient — Google's own
+// guidance is "usually temporary, try again" — so retry those a couple of
+// times with a short backoff rather than failing the whole generation on
+// one bad request. Anything else (safety blocks, bad key, 400s) won't be
+// fixed by retrying, so those still fail immediately.
+const RETRY_STATUSES = new Set([429, 503]);
+const RETRY_DELAYS_MS = [1000, 2500];
+
 export async function generateAiImage(
   prompt: string,
   aspectRatio: "16:9" | "4:3" | "1:1" = "16:9"
@@ -17,21 +25,27 @@ export async function generateAiImage(
   const apiKey = process.env.GOOGLE_AI_API_KEY;
   if (!apiKey) throw new Error("GOOGLE_AI_API_KEY is not configured");
 
-  const res = await fetch(`${ENDPOINT}?key=${apiKey}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    cache: "no-store",
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        responseModalities: ["IMAGE"],
-        imageConfig: { aspectRatio },
-      },
-    }),
-  });
+  let res: Response;
+  let detail = "";
+  for (let attempt = 0; ; attempt++) {
+    res = await fetch(`${ENDPOINT}?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseModalities: ["IMAGE"],
+          imageConfig: { aspectRatio },
+        },
+      }),
+    });
+    if (res.ok || !RETRY_STATUSES.has(res.status) || attempt >= RETRY_DELAYS_MS.length) break;
+    await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
+  }
 
   if (!res.ok) {
-    const detail = await res.text().catch(() => "");
+    detail = await res.text().catch(() => "");
     throw new Error(`Image generation failed: ${res.status} ${detail.slice(0, 300)}`);
   }
 
