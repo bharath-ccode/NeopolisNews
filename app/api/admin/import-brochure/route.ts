@@ -72,10 +72,15 @@ Extract these fields (omit any field you cannot confidently identify):
       "homeOffice": boolean
     }
   ],
-  "amenities": string[]
+  "amenities": string[],
+  "projectPlan": {
+    "pageNumber": number,
+    "crop": "full" | "left_half" | "right_half" | "top_half" | "bottom_half"
+  }
 }
 
 Rules:
+- projectPlan: find the page showing the overall master/site plan — a top-down layout of the project showing tower/block positions, roads, and landscaping, usually labeled "Master Plan" or "Site Plan" and marked with a compass/north arrow. If that diagram shares the page with unrelated content (e.g. an amenities list or text panel occupying the other half), set "crop" to whichever half contains the diagram; otherwise "full". Omit this field entirely if no such page exists.
 - priceRangeMin / priceRangeMax: price PER SQUARE FOOT in INR (e.g. ₹12,000/sft → 12000). If only one price is shown, use it for both.
 - phone: E.164 format — e.g. "+918399939999". Strip spaces and dashes.
 - lifecycleStatus: infer from context ("Under Construction" → under_construction, "Ready to Move" → ready_to_move, "Pre Launch" → pre_launch).
@@ -171,6 +176,22 @@ export async function POST(req: NextRequest) {
     data.amenities = (data.amenities as string[]).filter((a) => ALL_AMENITIES.includes(a));
   } else {
     data.amenities = [];
+  }
+
+  // Validate projectPlan rather than trust it blindly — the client renders
+  // whatever page number this names, so a malformed value should just drop
+  // the auto-pick (falls back to the existing manual-paste field) instead
+  // of the client rendering garbage.
+  const CROPS = ["full", "left_half", "right_half", "top_half", "bottom_half"];
+  const plan = data.projectPlan as { pageNumber?: unknown; crop?: unknown } | undefined;
+  const pageNumber = Number(plan?.pageNumber);
+  if (plan && Number.isInteger(pageNumber) && pageNumber >= 1) {
+    data.projectPlan = {
+      pageNumber,
+      crop: CROPS.includes(plan.crop as string) ? plan.crop : "full",
+    };
+  } else {
+    delete data.projectPlan;
   }
 
   // brochureUrl = where the PDF actually lives now (our storage when possible)

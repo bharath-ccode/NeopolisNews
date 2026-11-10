@@ -2,12 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import {
   Save, Loader2, PlusCircle, Trash2, ChevronDown, ChevronUp,
-  Building2, Phone, Globe, Users, Layers, LayoutList, ExternalLink, Sparkles,
+  Building2, Phone, Globe, Users, Layers, LayoutList, ExternalLink, Sparkles, MapPinned,
 } from "lucide-react";
 import ImageUpload from "@/components/admin/ImageUpload";
 import BrochureImporter, { type ImportedProjectData } from "@/components/admin/BrochureImporter";
+import type { PlanCrop } from "@/components/admin/ProjectPlanPicker";
+
+// pdfjs-dist touches browser-only globals — never let it load during SSR.
+const ProjectPlanPicker = dynamic(() => import("@/components/admin/ProjectPlanPicker"), { ssr: false });
 import { getBuilders, type Builder } from "@/lib/buildersStore";
 import { AMENITY_CATEGORIES } from "@/lib/amenitiesData";
 import {
@@ -66,6 +71,7 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
   const [bannerImageUrl, setBannerImageUrl] = useState<string | null>(initialData?.bannerImageUrl ?? null);
   const [projectPlanUrl, setProjectPlanUrl] = useState(initialData?.projectPlanUrl ?? "");
   const [brochureUrl, setBrochureUrl]       = useState(initialData?.brochureUrl ?? "");
+  const [planPick, setPlanPick] = useState<{ page: number; crop: PlanCrop } | null>(null);
   const [projectType, setProjectType]   = useState<ProjectType | "">(initialData?.projectType ?? "");
   const [tier, setTier]                 = useState<ProjectTier | "">(initialData?.tier ?? "");
   const [locality, setLocality]         = useState<Locality | "">(initialData?.locality ?? "");
@@ -117,6 +123,7 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
   // ── Brochure import handler ──
   function handleImport(data: ImportedProjectData, pdfUrl: string) {
     if (pdfUrl) setBrochureUrl(pdfUrl);
+    setPlanPick(data.projectPlan ? { page: data.projectPlan.pageNumber, crop: data.projectPlan.crop } : null);
     if (data.projectName)        setProjectName(data.projectName);
     if (data.projectType)        setProjectType(data.projectType as ProjectType);
     if (data.tier)               setTier(data.tier as ProjectTier);
@@ -352,6 +359,23 @@ export default function ProjectForm({ initialData, lockedBuilderId, redirectTo }
               )}
             </div>
             <p className="text-xs text-gray-400 mt-1">Link to the overall project layout diagram shown on the public project page.</p>
+            {brochureUrl && !planPick && (
+              <button type="button" onClick={() => setPlanPick({ page: 1, crop: "full" })}
+                className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 hover:text-brand-800">
+                <MapPinned className="w-3.5 h-3.5" /> Pick page from brochure instead of pasting a link
+              </button>
+            )}
+            {planPick && brochureUrl && (
+              <div className="mt-3">
+                <ProjectPlanPicker
+                  brochureUrl={brochureUrl}
+                  initialPage={planPick.page}
+                  initialCrop={planPick.crop}
+                  onConfirm={(url) => { setProjectPlanUrl(url); setPlanPick(null); }}
+                  onSkip={() => setPlanPick(null)}
+                />
+              </div>
+            )}
           </div>
 
           <div>
