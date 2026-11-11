@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {
   Building2, CheckCircle, TrendingUp, Users, ArrowRight, ShieldCheck,
-  LayoutList, Calendar, BarChart3,
+  LayoutList, Calendar, BarChart3, Newspaper,
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import LeadForm from "@/components/LeadForm";
@@ -61,6 +61,11 @@ const DEVELOPER_PLANS: PlanTier[] = [
 ];
 
 const REASSURANCES = [
+  {
+    icon: Newspaper,
+    title: "This isn't a real estate portal",
+    desc: "NeopolisNews is where residents and prospective residents already come for local news, clinics, schools, cafes, services and events — real estate is one section among many, not the whole site. That's what makes our project comparisons credible instead of self-serving, and it's what brings traffic a pure listings site never will. Staying off the platform doesn't avoid a competitor — it skips a venue your buyers are already on.",
+  },
   {
     icon: ShieldCheck,
     title: "You're in control",
