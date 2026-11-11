@@ -7,7 +7,6 @@ import {
   Home,
   ShoppingBag,
   Newspaper,
-  BarChart3,
   CheckCircle,
   TrendingUp,
   ArrowRight,
@@ -148,28 +147,6 @@ export default function AdvertisePage() {
           </div>
         </div>
       </SectionWrapper>
-
-      {/* ── Data Products ── */}
-      <section className="bg-gray-50" id="data">
-        <SectionWrapper tight>
-          <div className="max-w-xl mx-auto text-center">
-            <BarChart3 className="w-10 h-10 text-brand-500 mx-auto mb-4" />
-            <h2 className="text-2xl md:text-4xl font-extrabold text-gray-900 mb-3">
-              Data products launch Year 2.<br className="hidden sm:block" /> Join the waitlist below.
-            </h2>
-            <p className="text-gray-500 mb-8">
-              Price heatmaps, rental yields, and institutional reports — for investors and institutions. Not built yet, but we&apos;re tracking interest.
-            </p>
-            <div className="card p-6 text-left">
-              <LeadForm
-                title="Join the Data Products Waitlist"
-                subtitle="We'll reach out when this launches."
-                purpose="data-products-waitlist"
-              />
-            </div>
-          </div>
-        </SectionWrapper>
-      </section>
 
       {/* ── Contact / Lead Form (other partner types) ── */}
       <SectionWrapper id="contact">
