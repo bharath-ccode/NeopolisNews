@@ -157,7 +157,7 @@ _All DB-backed features require their `supabase/migrations/*.sql` to have been r
 - **Points, streaks, badges & public leaderboard** — attendance-verified points for wellness sessions and appointments (`/leaderboard`, `/api/points`)
 - **Buyer–seller messaging threads** on property listings (`/api/messages`)
 - **Web push notifications** + PWA scaffolding (VAPID; `/api/push`); news publish pushes to the `news` topic
-- **Saved properties**, **saved-search email alerts** (Resend, one-click unsubscribe), **site-visit bookings**, **project update subscriptions**
+- **Saved properties**, **saved-search email alerts** (Resend, one-click unsubscribe), **site-visit bookings**, **project update subscriptions**. Site-visit bookings (`/api/projects/[id]/site-visits`) only wrote to `site_visit_bookings` and relied on the developer remembering to check `/builder/site-visits` — no notification at all, unlike `project_enquiries`'s enquiry flow which already emailed `contacts(email) ?? builders(email) ?? ADMIN_EMAIL`. Now mirrors that exact pattern (same fallback chain, same visual email template) — a booking also sends a best-effort Resend email with the visitor's name/phone and requested date/slot, so a site visit request is never silently sitting in a dashboard nobody checks.
 
 ### Completed — real estate & local
 - **Builder portal** (`/builder`) — projects, launches, availability, construction updates
