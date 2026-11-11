@@ -68,6 +68,12 @@ function formatInr(val: number) {
   return `₹${val.toLocaleString("en-IN")}`;
 }
 
+function formatShortDate(iso: string) {
+  return new Date(iso + "T00:00:00").toLocaleDateString("en-IN", {
+    day: "numeric", month: "short", year: "numeric",
+  });
+}
+
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 
 export async function generateMetadata(
@@ -164,7 +170,7 @@ export default async function ProjectDetailPage({
   const admin = createAdminClient();
   const today = new Date().toISOString().split("T")[0];
 
-  const [{ data: projectData }, { data: annData }, { data: updateData }] = await Promise.all([
+  const [{ data: projectData }, { data: annData }, { data: updateData }, { data: priceHistoryData }] = await Promise.all([
     admin.from("projects").select(PROJECT_SELECT).eq("id", params.id).single(),
     admin
       .from("availability_announcements")
@@ -179,6 +185,13 @@ export default async function ProjectDetailPage({
       .eq("project_id", params.id)
       .eq("status", "published")
       .order("created_at", { ascending: false }),
+    admin
+      .from("project_price_history")
+      .select("base_price_per_sft, charges, recorded_at")
+      .eq("project_id", params.id)
+      .order("recorded_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   if (!projectData) notFound();
@@ -186,6 +199,7 @@ export default async function ProjectDetailPage({
   const project: Project = toProject(projectData);
   const announcements: Announcement[] = (annData ?? []).map(toAnnouncement);
   const constructionUpdates = updateData ?? [];
+  const latestPrice = priceHistoryData as { base_price_per_sft: number; charges: Record<string, string>; recorded_at: string } | null;
 
   const towers    = project.projectDetail?.towers ?? [];
   const unitPlans = project.unitPlans ?? [];
@@ -571,8 +585,31 @@ export default async function ProjectDetailPage({
         </section>
       )}
 
+      {/* ── Latest price update ── */}
+      {latestPrice && (
+        <section className="bg-white border-b border-gray-100">
+          <SectionWrapper tight>
+            <div className="max-w-4xl mx-auto card p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+              <div className="flex-1">
+                <p className="text-xs font-bold text-brand-600 uppercase tracking-wider mb-1">Latest Price Update</p>
+                <p className="text-2xl font-black text-gray-900">
+                  ₹{latestPrice.base_price_per_sft.toLocaleString("en-IN")}/sft
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Shared by the project team on {formatShortDate(latestPrice.recorded_at)}
+                  {Object.keys(latestPrice.charges ?? {}).length > 0 && " · plus floor rise, facing & other charges"}
+                </p>
+              </div>
+              <a href="#enquire" className="btn-primary shrink-0 justify-center">
+                Contact for Full Details
+              </a>
+            </div>
+          </SectionWrapper>
+        </section>
+      )}
+
       {/* ── Site visit + Enquiry ── */}
-      <section className="bg-brand-950 text-white">
+      <section id="enquire" className="bg-brand-950 text-white">
         <SectionWrapper tight>
           <div className="grid lg:grid-cols-2 gap-8 max-w-4xl mx-auto items-start">
             <SiteVisitForm projectId={project.id!} projectName={project.projectName} />
