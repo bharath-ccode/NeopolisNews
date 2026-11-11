@@ -117,6 +117,21 @@ export default function AdvertiseRealEstatePage() {
         </SectionWrapper>
       </section>
 
+      {/* ── Online reach callout ── */}
+      <section className="bg-amber-50 border-y border-amber-100">
+        <SectionWrapper tight>
+          <div className="max-w-3xl mx-auto text-center py-2">
+            <p className="text-lg md:text-xl font-bold text-gray-900 leading-snug">
+              Your next buyer might be scrolling from Dubai, not driving past your hoarding.
+            </p>
+            <p className="text-gray-600 mt-2">
+              NRIs and GCC-based professionals already research and buy property entirely online —
+              NeopolisNews puts your project in front of them, not just the walk-in crowd.
+            </p>
+          </div>
+        </SectionWrapper>
+      </section>
+
       {/* ── Reassurances (address the real objections developers raise) ── */}
       <SectionWrapper>
         <div className="text-center mb-10">
