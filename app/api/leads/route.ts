@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rateLimit";
 import { Resend } from "resend";
-
-
+import { createAdminClient } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
   const limited = rateLimit(req, "leads", { limit: 5 });
@@ -15,6 +14,16 @@ export async function POST(req: NextRequest) {
   if (!name?.trim() || !phone?.trim()) {
     return NextResponse.json({ error: "Name and phone are required." }, { status: 400 });
   }
+
+  // Persist first — this is the durable record admins review; the email
+  // below is just a heads-up and shouldn't block or be blocked by it.
+  await createAdminClient().from("leads").insert({
+    name: name.trim(),
+    phone: phone.trim(),
+    email: email?.trim() || null,
+    message: message?.trim() || null,
+    purpose: purpose || "general",
+  }).then(({ error }) => { if (error) console.error("leads insert:", error.message); });
 
   const toEmail = process.env.ADMIN_EMAIL;
   if (!toEmail) return NextResponse.json({ ok: true }); // silently succeed if no admin email configured

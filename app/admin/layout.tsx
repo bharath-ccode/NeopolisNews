@@ -42,6 +42,7 @@ const NAV = [
   { href: "/admin/builders",      icon: HardHat,         label: "Developers"    },
   { href: "/admin/projects",      icon: Layers,          label: "Projects"      },
   { href: "/admin/buyer-interests", icon: Users,         label: "Buyer Interest" },
+  { href: "/admin/advertise-leads", icon: Megaphone,     label: "Advertise Enquiries" },
   { href: "/admin/businesses",    icon: Store,           label: "Businesses"    },
   { href: "/admin/business-discovery", icon: Search,     label: "Business Discovery" },
   { href: "/admin/events",        icon: CalendarDays,    label: "Events"        },
