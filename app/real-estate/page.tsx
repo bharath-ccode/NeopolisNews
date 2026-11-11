@@ -63,7 +63,7 @@ export default async function RealEstatePage() {
                 <a href="#projects" className="btn-primary">
                   Browse Projects
                 </a>
-                <Link href="/advertise" className="btn-secondary border-brand-500 text-brand-300 hover:bg-brand-800">
+                <Link href="/advertise/real-estate" className="btn-secondary border-brand-500 text-brand-300 hover:bg-brand-800">
                   List Your Project <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
@@ -165,7 +165,7 @@ export default async function RealEstatePage() {
                   </li>
                 ))}
               </ul>
-              <Link href="/advertise" className="btn-accent mt-6">
+              <Link href="/advertise/real-estate" className="btn-accent mt-6">
                 View Developer Plans <ArrowRight className="w-4 h-4" />
               </Link>
             </div>

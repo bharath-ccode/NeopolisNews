@@ -1,15 +1,16 @@
+import Link from "next/link";
 import {
   Building2,
+  Stethoscope,
+  GraduationCap,
+  Wrench,
   Home,
   ShoppingBag,
   Newspaper,
   BarChart3,
   CheckCircle,
   TrendingUp,
-  Users,
-  Star,
   ArrowRight,
-  Clock,
 } from "lucide-react";
 import SectionWrapper from "@/components/SectionWrapper";
 import LeadForm from "@/components/LeadForm";
@@ -17,130 +18,50 @@ import LeadForm from "@/components/LeadForm";
 export const metadata = {
   title: "Advertise & Partner – NeopolisNews",
   description:
-    "Developer listings, sponsored content, and partnership plans for the Neopolis urban district platform — free while the platform is new.",
+    "Developer listings, business directories, and partnership plans for the Neopolis urban district platform — free while the platform is new.",
 };
 
-// ─── Monetisation data (from the plan) ──────────────────────────────────────
-// The platform is new — everything below is free to start. Future paid
-// tiers are shown as a roadmap (no pricing committed yet), not as things
-// you can buy today. The internal pricing thinking behind them still
-// lives in /admin/roadmap so we come back and build it out later.
-
-const SEGMENTS = [
+// Each of these four verticals has its own dedicated pitch page — the fields,
+// features and objections differ too much (a developer's concerns are not a
+// school's) for one generic page to speak to any of them well.
+const SEGMENT_PAGES = [
   {
+    href: "/advertise/real-estate",
     icon: Building2,
-    title: "Developers",
-    desc: "Tier-1 and mid-size developers building in Neopolis",
+    title: "Real Estate",
+    desc: "Developers listing projects — dedicated page, site-visit & enquiry leads",
     color: "bg-blue-50 text-blue-600",
   },
   {
-    icon: Home,
-    title: "Brokers & Agents",
-    desc: "Real estate brokers looking for qualified leads",
-    color: "bg-green-50 text-green-600",
+    href: "/advertise/health",
+    icon: Stethoscope,
+    title: "Health & Wellness",
+    desc: "Hospitals, clinics, pharmacies, wellness studios — appointment requests",
+    color: "bg-emerald-50 text-emerald-600",
   },
   {
-    icon: ShoppingBag,
-    title: "Retail Brands",
-    desc: "Shops, F&B, entertainment, and lifestyle brands",
+    href: "/advertise/education",
+    icon: GraduationCap,
+    title: "Education",
+    desc: "Schools, day cares, coaching centres — campus-visit requests",
+    color: "bg-indigo-50 text-indigo-600",
+  },
+  {
+    href: "/advertise/services",
+    icon: Wrench,
+    title: "Local Services",
+    desc: "Movers, party planning, home services, delivery, drivers",
     color: "bg-purple-50 text-purple-600",
   },
-  {
-    icon: Newspaper,
-    title: "Content / PR",
-    desc: "Sponsored articles, press releases, and campaigns",
-    color: "bg-orange-50 text-orange-600",
-  },
-  {
-    icon: BarChart3,
-    title: "Data Products",
-    desc: "SaaS analytics for investors, banks, and PE funds",
-    color: "bg-yellow-50 text-yellow-600",
-  },
-  {
-    icon: Users,
-    title: "Service Vendors",
-    desc: "Movers, interior designers, maintenance, utilities",
-    color: "bg-red-50 text-red-600",
-  },
 ];
 
-const DEVELOPER_PLANS = [
-  {
-    name: "Starter",
-    subtitle: "Small developers & new projects",
-    future: false,
-    features: [
-      "1 project page",
-      "Monthly construction updates",
-      "Basic inventory display",
-      "Lead capture form",
-      "Verified Developer badge",
-      "5 featured listing slots",
-    ],
-    cta: "Get Started — It's Free",
-  },
-  {
-    name: "Growth",
-    subtitle: "Mid-size developers",
-    future: true,
-    features: [
-      "Up to 3 project pages",
-      "Drone video support",
-      "Price trend dashboard",
-      "Priority placement",
-      "Sponsored listing badges",
-      "20 featured listing slots",
-      "CRM lead dashboard",
-      "Quarterly analytics report",
-    ],
-  },
-  {
-    name: "Enterprise",
-    subtitle: "Tier-1 developers & large projects",
-    future: true,
-    features: [
-      "Unlimited project pages",
-      "Homepage hero placement",
-      "Dedicated account manager",
-      "Custom data analytics",
-      "4 sponsored articles/year",
-      "Email campaigns to users",
-      "API access",
-      "White-label options",
-    ],
-  },
+// Other partner types without a dedicated page yet — same generic contact
+// form as before.
+const OTHER_SEGMENTS = [
+  { icon: Home, title: "Brokers & Agents", desc: "Real estate brokers looking for qualified leads" },
+  { icon: ShoppingBag, title: "Retail Brands", desc: "Shops, F&B, entertainment, and lifestyle brands" },
+  { icon: Newspaper, title: "Content / PR", desc: "Sponsored articles, press releases, and campaigns" },
 ];
-
-const RETAIL_PLANS = [
-  {
-    name: "Basic Profile",
-    future: false,
-    features: ["Business listing", "Contact & hours", "Map embed"],
-  },
-  {
-    name: "Growth",
-    future: true,
-    features: [
-      "Featured placement",
-      "Offer & event posts",
-      "Banner ads",
-      "Analytics",
-    ],
-  },
-  {
-    name: "Premium Brand",
-    future: true,
-    features: [
-      "Homepage sponsorship",
-      "Event co-branding",
-      "Sponsored articles",
-      "Site-wide display ads",
-    ],
-  },
-];
-
-// ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function AdvertisePage() {
   return (
@@ -162,15 +83,6 @@ export default function AdvertisePage() {
               platform. Get listed free while the platform is new — no cards,
               no catch.
             </p>
-            <div className="flex flex-wrap gap-3">
-              <a href="#developer-plans" className="bg-white text-accent-600 font-bold px-5 py-2.5 rounded-lg hover:bg-orange-50 transition-colors inline-flex items-center gap-2">
-                <Building2 className="w-4 h-4" />
-                Developer Plans
-              </a>
-              <a href="#contact" className="border-2 border-white text-white font-bold px-5 py-2.5 rounded-lg hover:bg-white/10 transition-colors inline-flex items-center gap-2">
-                Talk to Sales <ArrowRight className="w-4 h-4" />
-              </a>
-            </div>
           </div>
         </SectionWrapper>
       </section>
@@ -194,135 +106,46 @@ export default function AdvertisePage() {
         </SectionWrapper>
       </section>
 
-      {/* ── Partner Segments ── */}
+      {/* ── Segment picker ── */}
       <SectionWrapper id="segments">
         <div className="text-center mb-10">
-          <h2 className="section-heading">Who Advertises on NeopolisNews</h2>
-          <p className="text-gray-500 mt-2">Six partner categories — all free to join while the platform is new.</p>
+          <h2 className="section-heading">What Are You Listing?</h2>
+          <p className="text-gray-500 mt-2">Pick your category for plans and details built around what you actually need.</p>
         </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {SEGMENTS.map((s) => (
-            <div key={s.title} className="card p-5 flex gap-4">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${s.color}`}>
-                <s.icon className="w-5 h-5" />
+        <div className="grid sm:grid-cols-2 gap-4 max-w-4xl mx-auto mb-6">
+          {SEGMENT_PAGES.map((s) => (
+            <Link
+              key={s.title}
+              href={s.href}
+              className="card p-5 flex gap-4 items-center hover:shadow-md hover:border-brand-200 transition-all group"
+            >
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${s.color}`}>
+                <s.icon className="w-6 h-6" />
               </div>
-              <div>
-                <h3 className="font-bold text-gray-900 text-sm">{s.title}</h3>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-gray-900">{s.title}</h3>
                 <p className="text-xs text-gray-500 mt-0.5">{s.desc}</p>
               </div>
-            </div>
+              <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-brand-600 transition-colors shrink-0" />
+            </Link>
           ))}
         </div>
-      </SectionWrapper>
 
-      {/* ── Developer Plans ── */}
-      <section className="bg-gray-50" id="developer-plans">
-        <SectionWrapper>
-          <div className="text-center mb-10">
-            <h2 className="section-heading">Developer Listing Plans</h2>
-            <p className="text-gray-500 mt-2">
-              Put your project in front of India&apos;s most qualified buyers — free to start.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-5 max-w-5xl mx-auto">
-            {DEVELOPER_PLANS.map((plan) => (
-              <div
-                key={plan.name}
-                className={`card p-6 flex flex-col ${plan.future ? "opacity-70" : "ring-2 ring-brand-500 relative"}`}
-              >
-                {!plan.future && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                    Available Now
-                  </span>
-                )}
-                <div className="mb-4">
-                  <h3 className="font-bold text-xl text-gray-900 mb-0.5">{plan.name}</h3>
-                  <p className="text-xs text-gray-400">{plan.subtitle}</p>
+        <div className="max-w-4xl mx-auto">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Other partner types</p>
+          <div className="grid sm:grid-cols-3 gap-4">
+            {OTHER_SEGMENTS.map((s) => (
+              <div key={s.title} className="card p-4 flex gap-3">
+                <div className="w-9 h-9 rounded-xl bg-gray-50 text-gray-500 flex items-center justify-center shrink-0">
+                  <s.icon className="w-4 h-4" />
                 </div>
-                <div className="mb-5">
-                  {plan.future ? (
-                    <span className="inline-flex items-center gap-1.5 text-gray-400 font-semibold text-sm">
-                      <Clock className="w-3.5 h-3.5" /> Future — pricing not set yet
-                    </span>
-                  ) : (
-                    <span className="text-4xl font-extrabold text-green-600">Free</span>
-                  )}
+                <div>
+                  <h3 className="font-bold text-gray-900 text-sm">{s.title}</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">{s.desc}</p>
                 </div>
-                <ul className="space-y-2 mb-6 flex-1">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
-                      <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                {plan.future ? (
-                  <span className="block text-center font-semibold py-2.5 rounded-lg text-sm bg-gray-100 text-gray-400">
-                    Coming in a future phase
-                  </span>
-                ) : (
-                  <a
-                    href="#contact"
-                    className="block text-center font-semibold py-2.5 rounded-lg text-sm transition-colors bg-brand-600 text-white hover:bg-brand-700"
-                  >
-                    {plan.cta}
-                  </a>
-                )}
               </div>
             ))}
           </div>
-        </SectionWrapper>
-      </section>
-
-      {/* ── Retail Plans ── */}
-      <SectionWrapper id="retail-plans">
-        <div className="text-center mb-10">
-          <h2 className="section-heading">Retail & Brand Plans</h2>
-          <p className="text-gray-500 mt-2">
-            Reach shoppers, residents, and office workers in Neopolis — free to start.
-          </p>
-        </div>
-        <div className="grid md:grid-cols-3 gap-5 max-w-4xl mx-auto">
-          {RETAIL_PLANS.map((plan) => (
-            <div
-              key={plan.name}
-              className={`card p-6 ${plan.future ? "opacity-70" : "ring-2 ring-purple-500 relative"}`}
-            >
-              {!plan.future && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                  Available Now
-                </span>
-              )}
-              <h3 className="font-bold text-lg text-gray-900 mb-1">{plan.name}</h3>
-              {plan.future ? (
-                <span className="inline-flex items-center gap-1.5 text-gray-400 font-semibold text-sm mb-4">
-                  <Clock className="w-3.5 h-3.5" /> Future — pricing not set yet
-                </span>
-              ) : (
-                <p className="text-3xl font-extrabold text-green-600 mb-4">Free</p>
-              )}
-              <ul className="space-y-2 mb-6">
-                {plan.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
-                    <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              {plan.future ? (
-                <span className="block text-center font-semibold py-2.5 rounded-lg text-sm bg-gray-100 text-gray-400">
-                  Coming in a future phase
-                </span>
-              ) : (
-                <a
-                  href="#contact"
-                  className="block text-center font-semibold py-2.5 rounded-lg text-sm transition-colors bg-purple-600 text-white hover:bg-purple-700"
-                >
-                  Get Started — It&apos;s Free
-                </a>
-              )}
-            </div>
-          ))}
         </div>
       </SectionWrapper>
 
@@ -348,45 +171,20 @@ export default function AdvertisePage() {
         </SectionWrapper>
       </section>
 
-      {/* ── Value Prop ── */}
-      <section className="bg-brand-950 text-white">
-        <SectionWrapper tight>
-          <div className="text-center mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
-              Why Advertise on NeopolisNews?
-            </h2>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {[
-              { icon: Users, title: "Hyper-local Audience", desc: "100% Neopolis-focused — no wasted impressions." },
-              { icon: TrendingUp, title: "High Purchase Intent", desc: "Users are actively buying, renting, or moving in." },
-              { icon: Star, title: "Premium Context", desc: "Editorial trust drives ad effectiveness." },
-              { icon: BarChart3, title: "Full Analytics", desc: "Views, clicks, leads — all tracked and reported." },
-            ].map((v) => (
-              <div key={v.title} className="text-center px-2">
-                <div className="w-12 h-12 rounded-2xl bg-brand-800 flex items-center justify-center mx-auto mb-3">
-                  <v.icon className="w-6 h-6 text-brand-300" />
-                </div>
-                <h3 className="font-bold text-white text-sm mb-1">{v.title}</h3>
-                <p className="text-xs text-brand-400">{v.desc}</p>
-              </div>
-            ))}
-          </div>
-        </SectionWrapper>
-      </section>
-
-      {/* ── Contact / Lead Form ── */}
+      {/* ── Contact / Lead Form (other partner types) ── */}
       <SectionWrapper id="contact">
         <div className="grid lg:grid-cols-2 gap-10 items-start">
           <div>
-            <h2 className="section-heading mb-3">Ready to Partner?</h2>
+            <h2 className="section-heading mb-3">Not Sure Which Category Fits?</h2>
             <p className="text-gray-500 mb-5">
               Talk to our team — get listed free while the platform is new.
             </p>
             <div className="space-y-4">
               {[
-                { label: "Developers", value: "Free to start" },
-                { label: "Retail Brands", value: "Free to start" },
+                { label: "Real Estate", value: "Free to start" },
+                { label: "Health & Wellness", value: "Free to start" },
+                { label: "Education", value: "Free to start" },
+                { label: "Local Services", value: "Free to start" },
                 { label: "Brokers", value: "Coming soon" },
                 { label: "Sponsored Content", value: "Coming soon" },
               ].map((item) => (
